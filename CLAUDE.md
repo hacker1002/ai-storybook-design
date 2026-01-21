@@ -204,7 +204,7 @@ Bảng lưu các vấn đề tồn đọng trong story.
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
-| `title` | VARCHAR | Tên phong cách |
+| `name` | VARCHAR | Tên phong cách |
 | `description` | TEXT | Mô tả chi tiết |
 | `image_references[]` | JSONB | `[{ title, media_url }]` |
 
@@ -212,15 +212,17 @@ Bảng lưu các vấn đề tồn đọng trong story.
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
-| `title` | VARCHAR | Tên địa danh |
+| `name` | VARCHAR | Tên địa danh |
 | `description` | TEXT | Mô tả chi tiết |
+| `nation` | VARCHAR | Quốc gia |
+| `city` | VARCHAR | Thành phố |
 | `image_references[]` | JSONB | `[{ title, media_url }]` |
 
 #### eras
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
-| `title` | VARCHAR | Tên thời đại |
+| `name` | VARCHAR | Tên thời đại |
 | `description` | TEXT | Mô tả chi tiết |
 | `image_references[]` | JSONB | `[{ title, media_url }]` |
 
@@ -228,7 +230,7 @@ Bảng lưu các vấn đề tồn đọng trong story.
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
-| `title` | VARCHAR | Tên môi trường |
+| `name` | VARCHAR | Tên môi trường |
 | `description` | TEXT | Mô tả chi tiết |
 | `image_references[]` | JSONB | `[{ title, media_url }]` |
 
