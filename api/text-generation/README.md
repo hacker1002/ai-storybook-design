@@ -1,4 +1,4 @@
-# Text Generation Edge Functions
+# Text Generation Functions
 
 Overview of all text generation functions for AI Storybook Canvas.
 
@@ -6,25 +6,27 @@ Overview of all text generation functions for AI Storybook Canvas.
 
 | # | Function | Agent | Description | File |
 |---|----------|-------|-------------|------|
-| 1 | generate-manuscript | Orchestrator | Điều phối việc tạo manuscript hoàn chỉnh qua 3 bước tuần tự. Function này gọi lần lượt 3 step functions và quản lý flow tổng thể. | [01-generate-manuscript.md](./01-generate-manuscript.md) |
-| 2 | generate-story-draft | Story Teller | Phân tích ý tưởng và tạo khung truyện ban đầu bao gồm: character bible, prop bible, stage bible, phân tích nghệ thuật, và phân chia nội dung từng spread. Function này cũng tạo Story và Snapshot record trong DB. | [02-generate-story-draft.md](./02-generate-story-draft.md) |
-| 3 | generate-art-direction | Art Director | Tạo hình (visual design) cho characters, props, stages và kịch bản hình ảnh chi tiết cho từng trang. | [03-generate-art-direction.md](./03-generate-art-direction.md) |
-| 4 | generate-quality-check | Tester Agents | Kiểm tra chất lượng nội dung qua nhiều góc nhìn: Story Consistency, Plot, và Age Appropriateness. | [04-generate-quality-check.md](./04-generate-quality-check.md) |
+| 0 | generate-manuscript | Orchestrator | Điều phối việc tạo manuscript hoàn chỉnh qua 5 bước tuần tự. | [00-generate-manuscript.md](./00-generate-manuscript.md) |
+| 1 | generate-story-draft | Story Teller | Phân tích ý tưởng và tạo khung truyện ban đầu: character/prop/stage bible, phân tích nghệ thuật, phân chia nội dung từng spread. Tạo Story + Snapshot trong DB. | [01-generate-story-draft.md](./01-generate-story-draft.md) |
+| 2 | generate-spread-visual-plan | Art Director | Tạo visual design cho characters, props, stages và kịch bản hình ảnh cơ bản cho từng spread. Chưa xử lý composition. | [02-generate-spread-visual-plan.md](./02-generate-spread-visual-plan.md) |
+| 3 | generate-text-refinement | Word Smith | Biên tập và tinh chỉnh nội dung text trong textboxes[] của mỗi spread. Tập trung vào chất lượng ngôn ngữ. | [03-generate-text-refinement.md](./03-generate-text-refinement.md) |
+| 4 | generate-spread-composition | Art Director | Thiết kế bố cục cho mỗi spread: xác định geometry cho images và textboxes, cập nhật visual_description với text zone notes. | [04-generate-spread-composition.md](./04-generate-spread-composition.md) |
+| 5 | generate-quality-check | Tester Agents | Kiểm tra chất lượng nội dung qua nhiều góc nhìn: Story Consistency, Plot, và Age Appropriateness. | [05-generate-quality-check.md](./05-generate-quality-check.md) |
 
 ## Visual Description Generation
 
 | # | Function | Description | File |
 |---|----------|-------------|------|
-| 5 | generate-visual-description-character | Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh character. Có thể được sử dụng độc lập hoặc được gọi bởi Step 2 (Art Direction) để tối ưu visual description. | [05-generate-visual-description-character.md](./05-generate-visual-description-character.md) |
-| 6 | generate-visual-description-prop | Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh prop. | [06-generate-visual-description-prop.md](./06-generate-visual-description-prop.md) |
-| 7 | generate-visual-description-stage | Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh stage/background. | [07-generate-visual-description-stage.md](./07-generate-visual-description-stage.md) |
-| 8 | generate-visual-description-spread | Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh spread (scene composition với characters, props, và stage). | [08-generate-visual-description-spread.md](./08-generate-visual-description-spread.md) |
+| 6 | generate-visual-description-character | Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh character. | [06-generate-visual-description-character.md](./06-generate-visual-description-character.md) |
+| 7 | generate-visual-description-prop | Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh prop. | [07-generate-visual-description-prop.md](./07-generate-visual-description-prop.md) |
+| 8 | generate-visual-description-stage | Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh stage/background. | [08-generate-visual-description-stage.md](./08-generate-visual-description-stage.md) |
+| 9 | generate-visual-description-spread | Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh spread (scene composition với characters, props, và stage). | [09-generate-visual-description-spread.md](./09-generate-visual-description-spread.md) |
 
 ## Translation
 
 | # | Function | Description | File |
 |---|----------|-------------|------|
-| 9 | translate-content | Dịch nội dung truyện sang ngôn ngữ khác, giữ nguyên formatting và context phù hợp với đối tượng độc giả. | [09-translate-content.md](./09-translate-content.md) |
+| 10 | translate-content | Dịch nội dung truyện sang ngôn ngữ khác, giữ nguyên formatting và context phù hợp với đối tượng độc giả. | [10-translate-content.md](./10-translate-content.md) |
 
 ## Pipeline Flow Diagram
 
@@ -32,9 +34,9 @@ Overview of all text generation functions for AI Storybook Canvas.
 User Input (Story Idea + Attributes)
         ↓
 ┌─────────────────────────────────────────────────┐
-│ 1. generate-manuscript (ORCHESTRATOR)           │
+│ 0. generate-manuscript (ORCHESTRATOR)           │
 │    - Validates input                             │
-│    - Manages 3-step pipeline                     │
+│    - Manages 5-step pipeline                     │
 │    - Handles errors gracefully                   │
 └──────────────────────┬──────────────────────────┘
                        ↓
@@ -45,10 +47,8 @@ User Input (Story Idea + Attributes)
 │ Output:                                          │
 │ ✓ Story + Snapshot in DB                        │
 │ ✓ docs[] (4 documents)                          │
-│   - manuscript (full text)                       │
-│   - story_structure                              │
-│   - artistic_imagery                             │
-│   - moral_lesson                                 │
+│   - manuscript, story_structure                  │
+│   - artistic_imagery, moral_lesson               │
 │ ✓ characters[] (basic info, personality)        │
 │ ✓ props[] (name, type)                          │
 │ ✓ stages[] (name, location)                     │
@@ -56,21 +56,42 @@ User Input (Story Idea + Attributes)
 └──────────────────────┬──────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────┐
-│ Step 2: generate-art-direction                  │
-│         (Art Director Agent)                     │
+│ Step 2: generate-spread-visual-plan             │
+│         (Art Director)                           │
 │                                                  │
-│ Enhances:                                        │
+│ Updates:                                         │
 │ ✓ characters[].visual_description                │
 │ ✓ props[].visual_description                     │
 │ ✓ stages[].visual_description                    │
-│ ✓ spreads[].images[] (detailed image scripts)   │
-│                                                  │
-│ Optional: Calls generate-visual-description-*   │
-│           for optimization                       │
+│ ✓ spreads[].images[] (basic, NO geometry yet)   │
 └──────────────────────┬──────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────┐
-│ Step 3: generate-quality-check                  │
+│ Step 3: generate-text-refinement                │
+│         (Word Smith Agent)                       │
+│                                                  │
+│ Updates:                                         │
+│ ✓ spreads[].textboxes[].language[].text         │
+│   - Refined for reading level                    │
+│   - Improved rhythm and flow                     │
+│   - Economy of words                             │
+└──────────────────────┬──────────────────────────┘
+                       ↓
+┌─────────────────────────────────────────────────┐
+│ Step 4: generate-spread-composition             │
+│         (Art Director)                           │
+│                                                  │
+│ Updates:                                         │
+│ ✓ spreads[].images[].geometry                   │
+│ ✓ spreads[].images[].visual_description         │
+│   + text zone notes appended                     │
+│ ✓ spreads[].images[].text_zone                  │
+│ ✓ spreads[].images[].composition_notes          │
+│ ✓ spreads[].textboxes[].language[].geometry     │
+└──────────────────────┬──────────────────────────┘
+                       ↓
+┌─────────────────────────────────────────────────┐
+│ Step 5: generate-quality-check                  │
 │         (Tester Agents)                          │
 │                                                  │
 │ Creates:                                         │
@@ -97,7 +118,7 @@ User Input (Story Idea + Attributes)
 │                                                  │
 │ • translate-content                              │
 │   - Translates manuscript, textboxes, etc.      │
-│   - Preserves @key references          │
+│   - Preserves @key references                   │
 │   - Maintains age-appropriate language          │
 └─────────────────────────────────────────────────┘
 ```
@@ -105,25 +126,29 @@ User Input (Story Idea + Attributes)
 ## Key Concepts
 
 ### Multi-Step Pipeline
-The manuscript generation follows a **3-step sequential pipeline**:
-1. **Story Analysis** - Creates story structure and content
-2. **Art Direction** - Adds visual descriptions
-3. **Quality Check** - Validates content quality
+The manuscript generation follows a **5-step sequential pipeline**:
+1. **Story Draft** - Creates story structure and content (Story Teller)
+2. **Spread Visual Plan** - Adds visual descriptions for entities + basic image plans (Art Director)
+3. **Text Refinement** - Polishes text content in textboxes (Word Smith)
+4. **Spread Composition** - Designs layout with geometry + text zones (Art Director)
+5. **Quality Check** - Validates content quality (Tester Agents)
 
-Each step can be skipped if needed via options parameters.
+Steps 2, 3, 4 (Art Direction) can be skipped together via `skipArtDirection` option.
 
 ### Error Handling Strategy
 - **Step 1 fails** → Return error, no story created
 - **Step 2 fails** → Return partial result, keep Step 1 data
-- **Step 3 fails** → Return partial result, keep Step 1 + Step 2 data
+- **Step 3 fails** → Return partial result, keep Step 1 + 2 data
+- **Step 4 fails** → Return partial result, keep Step 1 + 2 + 3 data
+- **Step 5 fails** → Return partial result, keep all previous data
 
 ### Visual Description Functions
-Functions 5-8 can be used:
+Functions 6-9 can be used:
 - **Independently** - To optimize existing visual descriptions
 - **Within Pipeline** - Called by Art Director (Step 2) automatically
 
 ### Translation Support
-Function 9 provides multi-language support:
+Function 10 provides multi-language support:
 - Translates any content type (manuscript, textbox, visual_description, metadata)
 - Preserves @key references
 - Maintains age-appropriate vocabulary

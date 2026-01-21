@@ -22,7 +22,7 @@ cowork/
 ├── CLAUDE.md                           # File này - hướng dẫn cho Claude
 ├── CoreDB.xlsx                         # Database schema (Excel)
 ├── EDGE-FUNCTIONS-SPEC(OLD).md         # Spec tổng quan (cũ) các Edge Functions
-├── EDGE-FUNCTIONS-TEXT-GENERATION.md   # Chi tiết Text Generation functions
+├── api/text-generation/   # Chi tiết các Text Generation functions
 ```
 
 ---
@@ -503,5 +503,4 @@ python3 -c "import pandas as pd; xl = pd.ExcelFile('CoreDB.xlsx'); print(xl.shee
 ## Liên hệ & Tài liệu
 
 - Database Schema: `CoreDB.xlsx`
-- Edge Functions Spec: `EDGE-FUNCTIONS-SPEC(OLD).md`
-- Text Generation Details: `EDGE-FUNCTIONS-TEXT-GENERATION.md`
+- Edge Functions Old Spec: `EDGE-FUNCTIONS-SPEC(OLD).md`

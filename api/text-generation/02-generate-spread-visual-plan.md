@@ -1,7 +1,7 @@
-# 3. generate-art-direction
+# 2. generate-spread-visual-plan
 
 ## Description
-**Art Director Agent** - Tạo hình (visual design) cho characters, props, stages và kịch bản hình ảnh chi tiết cho từng trang.
+**Art Director Agent - Phase 1** - Tạo visual design cho characters, props, stages và kịch bản hình ảnh cơ bản cho từng spread. Chưa xử lý composition/bố cục cho text.
 
 ## DB Schema Dependencies
 
@@ -14,12 +14,12 @@
 - `snapshot.characters[].visual_description` - UPDATE
 - `snapshot.props[].visual_description` - UPDATE
 - `snapshot.stages[].visual_description` - UPDATE
-- `snapshot.spreads[].images[]` - UPDATE (thêm mới)
+- `snapshot.spreads[].images[]` - UPDATE (thêm mới, chưa có geometry cuối cùng)
 - `story.artstyle_id` → `art_styles.description` - READ
 
 ## Parameters
 ```typescript
-interface GenerateArtDirectionParams {
+interface GenerateSpreadVisualPlanParams {
   storyId: string;
   snapshotId: string;
 }
@@ -27,32 +27,31 @@ interface GenerateArtDirectionParams {
 
 ## Result
 ```typescript
-interface GenerateArtDirectionResult {
+interface GenerateSpreadVisualPlanResult {
   success: boolean;
   updatedCharacters: {
-    mentionName: string;
+    key: string;              // @key
     visualDescription: string;
   }[];
   updatedProps: {
-    mentionName: string;
+    key: string;
     visualDescription: string;
   }[];
   updatedStages: {
-    mentionName: string;
+    key: string;
     visualDescription: string;
   }[];
   updatedSpreads: {
     number: number;
-    images: ImageItem[];          // Kịch bản hình ảnh
+    images: ImageItemBasic[];
   }[];
 }
 
-interface ImageItem {
+interface ImageItemBasic {
   title: string;
-  geometry: { x: number; y: number; w: number; h: number; rotation: number };
-  visual_description: string;
-  stage: string;                  // @mention
-  actions: string;                // @character doing something
+  visual_description: string;    // Mô tả cảnh, CHƯA có ghi chú về text placement
+  stage: string;                 // @mention
+  actions: string;               // @character doing something
   temporal: {
     era: string;
     season: string;
@@ -69,7 +68,6 @@ interface ImageItem {
   emotional: {
     mood: string;
   };
-  composition_notes: string;      // Ghi chú bố cục cho illustrator
 }
 ```
 
@@ -82,16 +80,17 @@ You are an expert Art Director for children's picture books. Your role is to tra
 Your expertise includes:
 - Character design for picture books (appealing, recognizable, consistent)
 - Color theory and palette selection
-- Composition and visual storytelling
+- Visual storytelling through imagery
 - Age-appropriate visual complexity
 - Consistency across multiple illustrations
 - Art style adaptation
 
-You work with the Story Teller's analysis to create visual designs that:
-- Capture personality through visual elements
-- Maintain consistency across all illustrations
-- Support the emotional journey of the story
-- Are practical for illustration execution
+In this phase, you focus on:
+- Creating visual identities for characters, props, and stages
+- Planning image content for each spread (what to show, not how to layout)
+- Ensuring visual consistency across the book
+
+You do NOT handle text placement or composition in this phase.
 ```
 
 ### User Prompt Template
@@ -146,17 +145,16 @@ For each stage in stages[]:
 - Key landmarks or elements
 - How characters interact with the space
 
-### 4. SPREAD IMAGE SCRIPTS
-For each spread, create detailed image specifications:
+### 4. SPREAD IMAGE PLANS
+For each spread, define what images to show:
 
 {
   "spread_number": 1,
   "images": [{
     "title": "Miu discovers the forest path",
-    "geometry": { "x": 0, "y": 0, "w": 100, "h": 100, "rotation": 0 },
-    "visual_description": "...",
+    "visual_description": "Miu standing at the edge of a forest, looking at a winding path that disappears between tall trees. Fallen autumn leaves scattered on the ground. Warm sunlight filtering through the canopy.",
     "stage": "@forest_1",
-    "actions": "@miu_cat standing at forest edge, looking curiously at winding path",
+    "actions": "@miu_cat standing at forest edge, looking curiously at winding path, tail raised with interest",
     "temporal": {
       "era": "contemporary",
       "season": "autumn",
@@ -176,6 +174,11 @@ For each spread, create detailed image specifications:
   }]
 }
 
+**Notes:**
+- Do NOT include geometry (x, y, w, h) - this will be handled in composition phase
+- Do NOT mention text placement in visual_description
+- Focus on WHAT to show, not WHERE to place it
+
 ---
 
 ## VISUAL CONSISTENCY RULES
@@ -187,9 +190,9 @@ For each spread, create detailed image specifications:
 
 ## OUTPUT FORMAT
 Return JSON with:
-- characters: array of { mentionName, visualDescription }
-- props: array of { mentionName, visualDescription }
-- stages: array of { mentionName, visualDescription }
+- characters: array of { key, visualDescription }
+- props: array of { key, visualDescription }
+- stages: array of { key, visualDescription }
 - spreads: array of { number, images[] }
 ```
 
@@ -204,6 +207,11 @@ Return JSON with:
    - characters[].visual_description
    - props[].visual_description
    - stages[].visual_description
-   - spreads[].images[]
+   - spreads[].images[] (basic, không có geometry)
 7. Return result
 ```
+
+## Error Handling
+- Nếu snapshot không tồn tại → Return error
+- Nếu LLM response không parse được → Retry 1 lần
+- Nếu vẫn fail → Return partial result với những gì đã parse được
