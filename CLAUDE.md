@@ -37,20 +37,81 @@ cowork/
 | `description` | TEXT | Mô tả truyện |
 | `owner_id` | UUID | ID người sở hữu |
 | `step` | SMALLINT | 1: manuscript, 2: sketch, 3: illustration |
-| `art_style_id` | UUID | FK → `art_styles` - Phong cách nghệ thuật |
-| `era_id` | UUID | FK → `eras` - Thời đại lịch sử |
-| `location_id` | UUID | FK → `locations` - Địa danh cụ thể |
-| `genre` | SMALLINT | Thể loại |
-| `target_age` | VARCHAR | Nhóm độ tuổi (kids-3-6, kids-7-12, teens) |
-| `target_core_value` | VARCHAR | Giá trị cốt lõi (Đạo đức, Trí tuệ, Nghị lực) |
+| `type` | SMALLINT | 0: source story (thư viện assets), 1: normal story |
 | `original_language` | VARCHAR | Ngôn ngữ gốc (vi, en) |
 | `current_version` | UUID | Version hiện tại |
-| `current_content` | JSONB | Autosave content |
-| `type` | SMALLINT | 0: source story (thư viện assets), 1: normal story |
-| `cover` | JSONB | Thông tin bìa sách |
-| `storyboard` | JSONB | Storyboard thumbnails |
-| `background_music` | JSONB | Nhạc nền |
-| `prints` | JSONB | Thông tin in ấn |
+| `current_content` | JSONB | Autosave content (ghi đè mỗi khi user dừng 1p) |
+| `cover` | JSONB | Thông tin bìa: `{ thumbnail_url, normal_url }` |
+| `book_type` | SMALLINT | Sách tranh/Truyện chữ có hình/Comics/Manga *(required: general)* |
+| `dimension` | SMALLINT | Square (20cm x 20cm) *(required: general)* |
+| `target_audience` | SMALLINT | preschool (2-5), primary (6-8), (9-10) *(required: general)* |
+| `target_core_value` | VARCHAR | Đạo đức, Trí tuệ, Nghị lực *(required: general)* |
+| `genre` | SMALLINT | 1: fantasy, 2: scifi, 3: mystery, 4: romance, 5: horror *(required: creative)* |
+| `writing_style` | SMALLINT | Phong cách viết *(required: creative)* |
+| `era_id` | UUID | FK → `eras` *(required: creative)* |
+| `location_id` | UUID | FK → `locations` *(required: creative)* |
+| `artstyle_id` | UUID | FK → `art_styles` *(required: creative)* |
+| `background_music` | JSONB | `{ title, media_url }` |
+| `typography` | JSONB | Default typography settings cho truyện |
+| `page_layout` | JSONB | Default layout cho trang mới |
+| `remix` | JSONB | Thông tin remix (languages, price, access_resources) |
+| `print & export` | JSONB | Thông tin in ấn & export |
+
+**typography structure:**
+```json
+{
+  "size": 16,
+  "weight": 400,
+  "style": "normal",
+  "family": "...",
+  "color": "#000000",
+  "line_height": 1.5,
+  "letter_spacing": 0,
+  "decoration": "none",
+  "text_align": "left",
+  "text_transform": "none"
+}
+```
+
+**page_layout structure:**
+```json
+{
+  "textbox": {
+    "geometry": { "x": 0, "y": 0, "w": 100, "h": 50 },
+    "z-index": 1,
+    "fill": { "color": "#fff", "opacity": 1 },
+    "outline": { "color": "#000", "width": 1, "radius": 0, "type": "solid" }
+  },
+  "image": {
+    "geometry": { "x": 0, "y": 50, "w": 100, "h": 50 },
+    "z-index": 0
+  }
+}
+```
+
+**remix structure:**
+```json
+{
+  "languages[]": [{ "name": "English", "code": "en_US" }],
+  "price": 0,
+  "access_resources[]": ["manuscript", "sketch", "illustration"]
+}
+```
+
+**print & export structure:**
+```json
+{
+  "filename": "...",
+  "cover_material": "...",
+  "spread_material": "...",
+  "isbn": "...",
+  "bleed": 3,
+  "color_profile": "CMYK",
+  "type": "...",
+  "resolution": "300dpi",
+  "format": "pdf"
+}
+```
 
 ### Bảng Snapshot (các fields chính)
 | Field | Type | Mô tả |
@@ -66,78 +127,173 @@ cowork/
 | `props[]` | JSONB | Danh sách đạo cụ |
 | `stages[]` | JSONB | Danh sách bối cảnh |
 
-### Bảng Flags (các fields chính)
-Bảng lưu các vấn đề tồn đọng trong story (issues/bugs mà Tester phát hiện).
+### Bảng Flags
+Bảng lưu các vấn đề tồn đọng trong story.
 
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
-| `user_id` | UUID | ID người tạo flag (tester hoặc system) |
+| `user_id` | UUID | ID người tạo flag |
 | `story_id` | UUID | Link đến Story |
-| `snapshot_id` | UUID | Link đến Snapshot được kiểm tra |
 | `title` | VARCHAR | Tiêu đề vấn đề |
 | `content` | TEXT | Mô tả chi tiết vấn đề |
-| `suggestion` | TEXT | Gợi ý cách khắc phục |
-| `type` | SMALLINT | Loại vấn đề (0: consistency, 1: plot, 2: age_inappropriate, 3: other) |
-| `severity` | SMALLINT | Mức độ nghiêm trọng (0: suggestion, 1: minor, 2: major, 3: critical) |
-| `target_type` | SMALLINT | Loại đối tượng (0: story, 1: character, 2: prop, 3: stage, 4: spread) |
-| `target_id` | VARCHAR | ID đối tượng (mention_name hoặc spread number) |
-| `tester` | VARCHAR | Tên tester phát hiện (Story Consistency, Plot, Age Appropriateness) |
-| `status` | SMALLINT | Trạng thái (0: open, 1: in_progress, 2: resolved, 3: ignored) |
+| `type` | SMALLINT | Loại vấn đề |
+| `status` | SMALLINT | Trạng thái |
+
+### Bảng Users & Profiles
+
+#### users
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `email` | VARCHAR | Email đăng nhập |
+| `password` | INT | Mật khẩu (hashed) |
+
+#### profiles
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | FK → users |
+| `name` | VARCHAR | Tên hiển thị |
+| `avatar` | VARCHAR | URL avatar |
+
+### Bảng Collaboration
+
+#### collaborations
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | FK → users |
+| `story_id` | UUID | FK → stories |
+| `access_rights` | JSONB | Quyền truy cập chi tiết |
+
+**access_rights structure:**
+```json
+{
+  "new_spread": true,
+  "delete_spread": false,
+  "languages[]": [{ "name": "Vietnamese", "code": "vi_VN" }],
+  "steps": { "manuscript": true, "sketch": true, "illustration": false },
+  "spreads[]": [{ "spread_number": 1, "view": true, "edit": true }]
+}
+```
+
+#### share_links
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | FK → users |
+| `story_id` | UUID | FK → stories |
+| `name` | VARCHAR | Tên link |
+| `url` | VARCHAR | URL chia sẻ |
+| `privacy` | SMALLINT | Mức độ riêng tư |
+| `passcode` | VARCHAR | Mã truy cập (nếu có) |
+| `access_steps` | JSONB | `{ manuscript, sketch, illustration }` |
 
 ### Bảng Resources (Lookup Tables)
 
 #### asset_categories
-Phân loại các loại assets (nhân vật, đồ vật...).
-
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `name` | VARCHAR | Tên category (Cat, Dog, Pig, Old man, Car...) |
-| `type` | TINYINT | Loại (human, animal, plant, item) |
+| `type` | TINYINT | human, animal, plant, item |
 | `description` | TEXT | Mô tả thêm |
 
 #### art_styles
-Các phong cách nghệ thuật cho truyện.
-
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `title` | VARCHAR | Tên phong cách |
-| `description` | TEXT | Mô tả chi tiết phong cách |
-| `image_references[]` | JSONB | Hình ảnh tham khảo `[{ title, media_url }]` |
+| `description` | TEXT | Mô tả chi tiết |
+| `image_references[]` | JSONB | `[{ title, media_url }]` |
 
 #### locations
-Các địa danh cụ thể (thành phố, địa điểm nổi tiếng...).
-
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `title` | VARCHAR | Tên địa danh |
 | `description` | TEXT | Mô tả chi tiết |
-| `image_references[]` | JSONB | Hình ảnh tham khảo `[{ title, media_url }]` |
+| `image_references[]` | JSONB | `[{ title, media_url }]` |
 
 #### eras
-Các thời đại lịch sử.
-
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `title` | VARCHAR | Tên thời đại |
 | `description` | TEXT | Mô tả chi tiết |
-| `image_references[]` | JSONB | Hình ảnh tham khảo `[{ title, media_url }]` |
+| `image_references[]` | JSONB | `[{ title, media_url }]` |
 
 #### environments
-Các môi trường/bối cảnh chung (rừng, biển, thành phố...).
-
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `title` | VARCHAR | Tên môi trường |
 | `description` | TEXT | Mô tả chi tiết |
-| `image_references[]` | JSONB | Hình ảnh tham khảo `[{ title, media_url }]` |
+| `image_references[]` | JSONB | `[{ title, media_url }]` |
+
+#### page_layouts
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `title` | VARCHAR | Tên layout |
+| `book_type` | SMALLINT | Loại sách áp dụng |
+| `dimension` | SMALLINT | Kích thước |
+| `aspect_ratio` | VARCHAR | Tỉ lệ khung hình |
+| `content` | JSONB | Nội dung layout (textbox, image geometry) |
+
+### Bảng AI
+
+#### prompt_templates
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `name` | VARCHAR | Tên template |
+| `content` | TEXT | Nội dung prompt |
+| `model` | VARCHAR | Model AI sử dụng |
+
+#### agents
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `name` | VARCHAR | Tên agent |
+| `instruction` | TEXT | Hướng dẫn cho agent |
+| `model` | VARCHAR | Model AI sử dụng |
+| `description` | TEXT | Mô tả (để orchestrator đọc và gọi) |
+| `type` | SMALLINT | 1: story agents, 2: characters, 3: parents, 4: children |
+
+#### ai_requests
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `name` | VARCHAR | Tên request |
+| `content` | TEXT | Nội dung |
+| `model` | VARCHAR | Model sử dụng |
+| `timestamp` | TIMESTAMP | Thời điểm tạo |
+| `status` | SMALLINT | Trạng thái |
+| `params` | JSON | Tham số |
 
 ### Chi tiết JSONB structures
+
+#### docs[] structure
+```json
+{
+  "type": "manuscript | story_structure | artistic_imagery | moral_lesson",
+  "title": "...",
+  "content": "...",
+  "url": "..."
+}
+```
+
+- `type`: 0 = hệ thống đọc/sửa, 1 = user đọc/sửa, 2 = user chỉ đọc
+- 4 loại docs:
+
+| Type | Mô tả |
+|------|-------|
+| `manuscript` | Cốt truyện hoàn chỉnh |
+| `story_structure` | Cấu trúc truyện - three-act, conflicts, pacing |
+| `artistic_imagery` | Hình tượng nghệ thuật - metaphors, symbols |
+| `moral_lesson` | Bài học đạo đức - themes, emotional journey |
 
 #### spreads[] structure
 ```json
@@ -145,7 +301,8 @@ Các môi trường/bối cảnh chung (rừng, biển, thành phố...).
   "number": 1,
   "left_page": { "number": 1, "type": "story" },
   "right_page": { "number": 2, "type": "story" },
-  "manuscript": "trang 1: <cốt truyện trang 1>, trang 2: <cốt truyện trang 2>. Nếu spread chỉ có 1 trang thì không cần chia",
+  "manuscript": "cốt truyện của spread",
+  "tiny_sketch_media_url": "...",
   "images[]": [{
     "title": "...",
     "geometry": { "x": 0, "y": 0, "w": 100, "h": 100, "rotation": 0 },
@@ -158,7 +315,7 @@ Các môi trường/bối cảnh chung (rừng, biển, thành phố...).
     "image_references[]": [{ "title": "...", "media_url": "..." }],
     "sketch[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
     "illustration[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
-    "final_hires_image_url": "...",
+    "final_hires_media_url": "...",
     "interaction": { "sound_effect": "...", "target_url": "..." }
   }],
   "videos[]": [{
@@ -170,8 +327,11 @@ Các môi trường/bối cảnh chung (rừng, biển, thành phố...).
   }],
   "textboxes[]": [{
     "order": 1,
-    "language[]": [{ "text": "...", "typography": {...} }],
-    "geometry": { "x": 0, "y": 0, "w": 100, "h": 100, "rotation": 0 },
+    "language[]": [{
+      "text": "...",
+      "geometry": { "x": 0, "y": 0, "w": 100, "h": 100, "rotation": 0 },
+      "typography": { "size": 16, "weight": 400, "style": "normal", "family": "...", "color": "#000", "line_height": 1.5, "letter_spacing": 0, "decoration": "none", "text_align": "left", "text_transform": "none" }
+    }],
     "fill": { "color": "...", "opacity": 1 },
     "outline": { "color": "...", "width": 1, "radius": 0, "type": "solid" },
     "audio": { "script": "...", "media_url": "...", "speed": 1, "emotion": "...", "voice": "..." },
@@ -191,13 +351,14 @@ Các môi trường/bối cảnh chung (rừng, biển, thành phố...).
 #### characters[] structure
 ```json
 {
+  "order": 1,
   "mention_name": "miu_cat",
   "name": "Miu",
   "basic_info": {
     "description": "...",
     "gender": "male",
-    "age": "3 tuổi (tương đương trẻ 5 tuổi)",
-    "category_id": "category_1",  // FK → asset_categories
+    "age": "3 tuổi",
+    "category_id": "category_1",
     "role": "main character"
   },
   "personality": {
@@ -215,11 +376,9 @@ Các môi trường/bối cảnh chung (rừng, biển, thành phố...).
     "hair": "...",
     "eyes": "...",
     "face": "...",
-    "build": "...",
-    "outfit": "..."
+    "build": "..."
   },
   "visual_description": "...",
-  "inseparable_item": "...",
   "sketch[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
   "illustration[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
   "image_references[]": [{ "title": "...", "media_url": "..." }],
@@ -229,12 +388,8 @@ Các môi trường/bối cảnh chung (rừng, biển, thành phố...).
     "similarity": 0.5,
     "style_exaggeration": 0.5,
     "speaker_boost": false,
-    "media_url": "...",
-    "system_voice": "..."
-  },
-  "metadata": {
-    "role_importance": "main",
-    "is_replaceable": false
+    "system_voice": "...",
+    "media_url": "..."
   }
 }
 ```
@@ -242,11 +397,12 @@ Các môi trường/bối cảnh chung (rừng, biển, thành phố...).
 #### props[] structure
 ```json
 {
+  "order": 1,
   "name": "Chiếc nơ đỏ",
   "mention_name": "red_bow",
-  "category_id": "category_1",  // FK → asset_categories
+  "category_id": "category_1",
   "visual_description": "...",
-  "type": "narrative",
+  "type": "narrative | anchor",
   "sketch[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
   "illustration[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
   "image_references[]": [{ "title": "...", "media_url": "..." }],
@@ -254,36 +410,23 @@ Các môi trường/bối cảnh chung (rừng, biển, thành phố...).
 }
 ```
 
+- `narrative props`: đồ vật dẫn chuyện, tương tác với character
+- `anchor props`: đồ vật nằm trong stages, tạo sự nhất quán
+
 #### stages[] structure
 ```json
 {
+  "order": 1,
   "name": "Khu rừng 1",
   "mention_name": "forest_1",
   "visual_description": "...",
-  "location_id": "location_1",  // FK → `locations`
+  "location_id": "uuid",  // FK → locations
   "sketch[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
   "illustration[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
-  "image_references[]": [{ "title": "...", "media_url": "..." }]
+  "image_references[]": [{ "title": "...", "media_url": "..." }],
+  "sounds[]": [{ "title": "...", "media_url": "..." }]
 }
 ```
-
-#### docs[] structure
-```json
-{
-  "type": "manuscript | story_structure | artistic_imagery | moral_lesson",
-  "title": "...",
-  "content": "..." // Markdown content
-}
-```
-
-- 4 loại docs:
-
-| Type | Mô tả |
-|------|-------|
-| `manuscript` | Cốt truyện hoàn chỉnh - nội dung truyện đầy đủ từ đầu đến cuối |
-| `story_structure` | Cấu trúc truyện - three-act, conflicts, pacing, key plot points |
-| `artistic_imagery` | Hình tượng nghệ thuật - metaphors, symbols, visual motifs |
-| `moral_lesson` | Bài học đạo đức - themes, emotional journey, age-appropriate messaging |
 
 ---
 
@@ -295,7 +438,7 @@ Các môi trường/bối cảnh chung (rừng, biển, thành phố...).
 
 ### 2. Art Style
 - **KHÔNG** truyền `artStyleId` vào parameter
-- Art style được lấy từ `story.art_style_id` → query bảng `art_style` để lấy description
+- Art style được lấy từ `story.artstyle_id` → query bảng `art_styles` để lấy description
 - Sử dụng art style description trong prompt để đảm bảo consistency
 
 ### 3. Negative Prompt (Text Generation)
@@ -354,5 +497,5 @@ python3 -c "import pandas as pd; xl = pd.ExcelFile('CoreDB.xlsx'); print(xl.shee
 ## Liên hệ & Tài liệu
 
 - Database Schema: `CoreDB.xlsx`
-- Edge Functions Spec: `EDGE-FUNCTIONS-SPEC.md`
+- Edge Functions Spec: `EDGE-FUNCTIONS-SPEC(OLD).md`
 - Text Generation Details: `EDGE-FUNCTIONS-TEXT-GENERATION.md`
