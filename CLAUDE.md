@@ -216,6 +216,7 @@ Bảng lưu các vấn đề tồn đọng trong story.
 | `description` | TEXT | Mô tả chi tiết |
 | `nation` | VARCHAR | Quốc gia |
 | `city` | VARCHAR | Thành phố |
+| `type` | SMALLINT | 0: địa điểm có thật, 1: địa điểm hư cấu/ngoài trái đất |
 | `image_references[]` | JSONB | `[{ title, media_url }]` |
 
 #### eras
@@ -259,9 +260,12 @@ Bảng lưu các vấn đề tồn đọng trong story.
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `name` | VARCHAR | Tên agent |
-| `instruction` | TEXT | Hướng dẫn cho agent |
-| `model` | VARCHAR | Model AI sử dụng |
+| `key` | VARCHAR | Key định danh agent |
 | `description` | TEXT | Mô tả (để orchestrator đọc và gọi) |
+| `knowledge` | TEXT | Kiến thức của agent |
+| `instruction` | TEXT | Hướng dẫn cho agent |
+| `lens` | TEXT | Lens/góc nhìn của agent |
+| `model` | VARCHAR | Model AI sử dụng |
 | `type` | SMALLINT | 1: story agents, 2: characters, 3: parents, 4: children |
 
 #### ai_requests
@@ -354,7 +358,7 @@ Bảng lưu các vấn đề tồn đọng trong story.
 ```json
 {
   "order": 1,
-  "mention_name": "miu_cat",
+  "key": "miu_cat",
   "name": "Miu",
   "basic_info": {
     "description": "...",
@@ -401,7 +405,7 @@ Bảng lưu các vấn đề tồn đọng trong story.
 {
   "order": 1,
   "name": "Chiếc nơ đỏ",
-  "mention_name": "red_bow",
+  "key": "red_bow",
   "category_id": "category_1",
   "visual_description": "...",
   "type": "narrative | anchor",
@@ -420,7 +424,7 @@ Bảng lưu các vấn đề tồn đọng trong story.
 {
   "order": 1,
   "name": "Khu rừng 1",
-  "mention_name": "forest_1",
+  "key": "forest_1",
   "visual_description": "...",
   "location_id": "uuid",  // FK → locations
   "sketch[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
@@ -454,9 +458,9 @@ Bảng lưu các vấn đề tồn đọng trong story.
 - Điều này đảm bảo style và tone nhất quán giữa các characters, props, stages
 
 ### 5. Mention Name Convention
-- Format: lowercase, underscore separated
+- Format: lowercase, underscore separated cho `key` prop (@key)
 - Ví dụ: `@miu_cat`, `@red_bow`, `@forest_1`
-- **KHÔNG** translate @mention_name trong bất kỳ trường hợp nào
+- **KHÔNG** translate @key trong bất kỳ trường hợp nào
 
 ### 6. Image Generation Model
 - Model AI cho image generation được **fix cứng trong code**
