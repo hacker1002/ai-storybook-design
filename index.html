@@ -7,6 +7,61 @@
   <meta name="description" content="AI Storybook Canvas API Documentation - Create children's picture books with AI">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
 
+  <!-- Password Protection - Hide everything by default -->
+  <style id="auth-style">
+    body { display: none !important; }
+    #access-denied {
+      display: flex !important;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      flex-direction: column;
+      background: #f5f5f5;
+      margin: 0;
+    }
+    #access-denied h1 { color: #333; margin-bottom: 10px; }
+    #access-denied p { color: #666; }
+  </style>
+
+  <script>
+    (function() {
+      const CORRECT_PASSWORD = 'AIStorybook2026';
+      const STORAGE_KEY = 'docs_authenticated';
+
+      // Check if already authenticated
+      if (sessionStorage.getItem(STORAGE_KEY) === 'true') {
+        // Remove the hiding style
+        document.getElementById('auth-style').remove();
+        return;
+      }
+
+      // Prompt for password
+      let attempts = 0;
+
+      while (attempts < 3) {
+        const password = prompt('🔒 Enter password to access documentation:');
+        if (password === null) {
+          // User cancelled - show access denied
+          window.AUTH_DENIED = true;
+          return;
+        }
+        if (password === CORRECT_PASSWORD) {
+          sessionStorage.setItem(STORAGE_KEY, 'true');
+          document.getElementById('auth-style').remove();
+          return;
+        }
+        attempts++;
+        if (attempts < 3) {
+          alert('❌ Incorrect password. ' + (3 - attempts) + ' attempts remaining.');
+        }
+      }
+
+      // Max attempts - show access denied
+      window.AUTH_DENIED = true;
+    })();
+  </script>
+
   <!-- Docsify Theme -->
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
 
@@ -64,83 +119,83 @@
   </style>
 </head>
 <body>
+  <!-- Access Denied Screen -->
+  <div id="access-denied">
+    <h1>🚫 Access Denied</h1>
+    <p>Refresh the page to try again.</p>
+  </div>
+
+  <!-- Docsify App -->
   <div id="app">Loading...</div>
 
   <script>
-    window.$docsify = {
-      name: 'AI Storybook Canvas',
-      nameLink: '/',
-      repo: '',
-      loadSidebar: true,
-      auto2top: true,
-      maxLevel: 4,
-      subMaxLevel: 3,
+    // If auth denied, stop here and show access denied screen
+    if (window.AUTH_DENIED) {
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('access-denied').style.display = 'flex';
+    } else {
+      document.getElementById('access-denied').style.display = 'none';
 
-      // Search plugin
-      search: {
-        paths: 'auto',
-        placeholder: 'Search documentation...',
-        noData: 'No results found',
-        depth: 6,
-        hideOtherSidebarContent: false,
-      },
+      window.$docsify = {
+        name: 'AI Storybook Canvas',
+        nameLink: '/',
+        repo: '',
+        loadSidebar: true,
+        auto2top: true,
+        maxLevel: 4,
+        subMaxLevel: 3,
 
-      // Copy code button
-      copyCode: {
-        buttonText: 'Copy',
-        errorText: 'Error',
-        successText: 'Copied!'
-      },
-
-      // Pagination
-      pagination: {
-        previousText: 'Previous',
-        nextText: 'Next',
-        crossChapter: true,
-        crossChapterText: true,
-      },
-
-      // Flexible alerts
-      'flexible-alerts': {
-        note: {
-          label: "Note"
+        // Search plugin
+        search: {
+          paths: 'auto',
+          placeholder: 'Search documentation...',
+          noData: 'No results found',
+          depth: 6,
+          hideOtherSidebarContent: false,
         },
-        tip: {
-          label: "Tip"
+
+        // Copy code button
+        copyCode: {
+          buttonText: 'Copy',
+          errorText: 'Error',
+          successText: 'Copied!'
         },
-        warning: {
-          label: "Warning"
+
+        // Pagination
+        pagination: {
+          previousText: 'Previous',
+          nextText: 'Next',
+          crossChapter: true,
+          crossChapterText: true,
         },
-        attention: {
-          label: "Attention"
+
+        // Flexible alerts
+        'flexible-alerts': {
+          note: { label: "Note" },
+          tip: { label: "Tip" },
+          warning: { label: "Warning" },
+          attention: { label: "Attention" }
         }
       }
     }
   </script>
 
-  <!-- Docsify v4 -->
-  <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
-
-  <!-- Search Plugin -->
-  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
-
-  <!-- Copy Code Plugin -->
-  <script src="//cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
-
-  <!-- Pagination Plugin -->
-  <script src="//cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
-
-  <!-- Syntax Highlighting -->
-  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-javascript.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-markdown.min.js"></script>
-
-  <!-- Zoom Image Plugin -->
-  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"></script>
-
-  <!-- Emoji Plugin -->
-  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/emoji.min.js"></script>
+  <!-- Only load Docsify if authenticated -->
+  <script>
+    if (!window.AUTH_DENIED) {
+      // Docsify v4
+      document.write('<script src="//cdn.jsdelivr.net/npm/docsify@4"><\/script>');
+      document.write('<script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"><\/script>');
+      document.write('<script src="//cdn.jsdelivr.net/npm/docsify-copy-code@2"><\/script>');
+      document.write('<script src="//cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"><\/script>');
+      document.write('<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"><\/script>');
+      document.write('<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"><\/script>');
+      document.write('<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"><\/script>');
+      document.write('<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-javascript.min.js"><\/script>');
+      document.write('<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-markdown.min.js"><\/script>');
+      document.write('<script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"><\/script>');
+      document.write('<script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/emoji.min.js"><\/script>');
+    }
+  </script>
 </body>
 </html>
