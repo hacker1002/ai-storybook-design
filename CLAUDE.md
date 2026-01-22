@@ -18,11 +18,13 @@ Hướng dẫn cho Claude AI khi làm việc với project này.
 ## Cấu trúc Files
 
 ```
-cowork/
-├── CLAUDE.md                           # File này - hướng dẫn cho Claude
-├── CoreDB.xlsx                         # Database schema (Excel)
-├── EDGE-FUNCTIONS-SPEC(OLD).md         # Spec tổng quan (cũ) các Edge Functions
-├── api/text-generation/   # Chi tiết các Text Generation functions
+docs/
+├── README.md                    # Homepage (file này hiển thị trên docsify)
+├── _sidebar.md                  # Navigation sidebar
+├── CLAUDE.md                    # Database Schema & Guidelines
+├── index.html                   # Docsify config
+│
+└── api/text-generation/         # API Text Generation Documentation
 ```
 
 ---
