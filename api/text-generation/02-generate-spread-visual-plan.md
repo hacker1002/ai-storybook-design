@@ -73,6 +73,10 @@ interface ImageItemBasic {
 
 ## Prompt
 
+> **DB Template Names:**
+> - System: `ART_DIRECTOR_P1_SYSTEM`
+> - User: `VISUAL_PLAN_USER_TEMPLATE`
+
 ### System Prompt
 ```
 You are an expert Art Director for children's picture books. Your role is to translate story elements into compelling visual designs.
@@ -98,13 +102,46 @@ You do NOT handle text placement or composition in this phase.
 Based on the story analysis, create visual designs for all elements:
 
 ## STORY CONTEXT
-- Title: {title}
-- Target Audience: {audience}
-- Art Style: {artStyleDescription}
-- Language: {language}
+- Title: {%title%}
+- Target Audience: {%target_audience%}
+- Art Style: {%art_style_description%}
+- Language: {%language%}
 
-## EXISTING ANALYSIS
-{Get all info from DB Snapshot: docs, characters, props, stages, spreads}
+## DOCUMENTS
+{ // from snapshot.docs[]:
+- type: "manuscript", title: "...", content: "..."
+- type: "story_structure", title: "...", content: "..."
+- ...
+}
+{%docs_text%}
+
+## CHARACTERS
+{ // from snapshot.characters[]:
+- key: "@miu_cat", name: "Miu", basic_info: {...}, personality: {...}, appearance: {...}
+- ...
+}
+{%characters_text%}
+
+## PROPS
+{ // from snapshot.props[]:
+- key: "@red_bow", name: "Chiếc nơ đỏ", category_id: "...", type: "narrative"
+- ...
+}
+{%props_text%}
+
+## STAGES
+{ // from snapshot.stages[]:
+- key: "@forest_1", name: "Khu rừng", location_id: "..."
+- ...
+}
+{%stages_text%}
+
+## SPREADS
+{ // from snapshot.spreads[]:
+- number: 1, manuscript: "...", textboxes: [...]
+- ...
+}
+{%spreads_text%}
 
 ---
 
@@ -199,16 +236,22 @@ Return JSON with:
 ## Flow
 ```
 1. Validate input parameters (storyId, snapshotId)
-2. Lấy snapshot data từ DB (docs, characters, props, stages, spreads từ Step 1)
-3. Lấy artstyle description từ story.artstyle_id
-4. Call LLM với story context và existing analysis
-5. Parse JSON response
-6. Update snapshot:
+2. Lấy prompt templates từ DB:
+   - Query `prompt_templates` với name = "ART_DIRECTOR_P1_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "VISUAL_PLAN_USER_TEMPLATE" → user prompt template
+3. Lấy snapshot data từ DB (docs, characters, props, stages, spreads từ Step 1)
+4. Lấy artstyle description từ story.artstyle_id
+5. Render user prompt template với variables:
+   - title, target_audience, art_style_description, language
+   - docs_text, characters_text, props_text, stages_text, spreads_text
+6. Call LLM với system prompt và rendered user prompt
+7. Parse JSON response
+8. Update snapshot:
    - characters[].visual_description
    - props[].visual_description
    - stages[].visual_description
    - spreads[].images[] (basic, không có geometry)
-7. Return result
+9. Return result
 ```
 
 ## Error Handling

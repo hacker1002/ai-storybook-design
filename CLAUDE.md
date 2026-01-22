@@ -253,9 +253,28 @@ Bảng lưu các vấn đề tồn đọng trong story.
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
-| `name` | VARCHAR | Tên template |
-| `content` | TEXT | Nội dung prompt |
-| `model` | VARCHAR | Model AI sử dụng |
+| `name` | VARCHAR | **UNIQUE** key (UPPER_SNAKE_CASE) - dùng để query từ code |
+| `content` | TEXT | Nội dung prompt với `{%variable%}` placeholders |
+| `model` | VARCHAR | Model AI sử dụng (e.g., `gemini-3-flash-preview`) |
+| `created_at` | TIMESTAMPTZ | Thời điểm tạo |
+| `updated_at` | TIMESTAMPTZ | Thời điểm cập nhật |
+
+**Xem chi tiết:** [Prompt Template System](#prompt-template-system)
+
+#### prompt_versions
+Lưu lịch sử thay đổi của prompt templates. **Auto-populated** bởi trigger khi UPDATE `prompt_templates.content`.
+
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `template_id` | UUID | FK → `prompt_templates` (ON DELETE CASCADE) |
+| `name` | VARCHAR | Tên template tại thời điểm thay đổi |
+| `content` | TEXT | Nội dung **CŨ** trước khi bị overwrite |
+| `model` | VARCHAR | Model tại thời điểm thay đổi |
+| `version` | INT | Version number (auto-increment per template) |
+| `changed_at` | TIMESTAMPTZ | Thời điểm thay đổi |
+
+**Trigger:** `trigger_save_prompt_version` - fires BEFORE UPDATE on `prompt_templates` khi `content` thay đổi
 
 #### agents
 | Field | Type | Mô tả |
@@ -467,6 +486,94 @@ Bảng lưu các vấn đề tồn đọng trong story.
 ### 6. Image Generation Model
 - Model AI cho image generation được **fix cứng trong code**
 - Không cần parameter `optimizeFor`
+
+---
+
+## Prompt Template System
+
+### Variable Syntax
+- **Pattern:** `{%variable_name%}`
+- **Example:** `{%story_idea%}`, `{%language%}`, `{%categories_text%}`
+- JSON trong content **không cần escape** - giữ nguyên `{}` bình thường
+
+### Naming Convention
+| Type | Pattern | Example |
+|------|---------|---------|
+| System prompt | `{AGENT}_SYSTEM` | `STORY_TELLER_SYSTEM` |
+| User template | `{FUNCTION}_USER_TEMPLATE` | `STORY_DRAFT_USER_TEMPLATE` |
+
+### Template Registry
+
+| name | Mô tả | Variables |
+|------|-------|-----------|
+| `STORY_TELLER_SYSTEM` | System prompt - Story Teller agent | *(none)* |
+| `STORY_DRAFT_USER_TEMPLATE` | User prompt - tạo story draft | `story_idea`, `story_types`, `audience`, `length`, `art_style_description`, `language`, `spreads`, `words_per_spread`, `categories_text`, `locations_text` |
+| `ART_DIRECTOR_P1_SYSTEM` | System prompt - Art Director Phase 1 | *(none)* |
+| `VISUAL_PLAN_USER_TEMPLATE` | User prompt - tạo visual plan | `title`, `target_audience`, `art_style_description`, `language`, `docs_text`, `characters_text`, `props_text`, `stages_text`, `spreads_text` |
+| `WORD_SMITH_SYSTEM` | System prompt - Word Smith | *(none)* |
+| `TEXT_REFINEMENT_USER_TEMPLATE` | User prompt - refine text | `title`, `audience`, `language`, `manuscript_content`, `spreads_text` |
+| `ART_DIRECTOR_P2_SYSTEM` | System prompt - Art Director Phase 2 | *(none)* |
+| `COMPOSITION_USER_TEMPLATE` | User prompt - spread composition | `title`, `target_audience`, `book_type`, `dimension`, `spreads_data` |
+| `TESTER_SYSTEM` | System prompt - Quality Check | *(none)* |
+| `QUALITY_CHECK_USER_TEMPLATE` | User prompt - quality check | `title`, `target_audience`, `art_style_description`, `target_core_value`, `docs_text`, `characters_json`, `props_json`, `stages_json`, `spreads_json` |
+| `VISUAL_DESC_CHARACTER_SYSTEM` | System prompt - Visual Description Character | *(none)* |
+| `VISUAL_DESC_CHARACTER_USER_TEMPLATE` | User prompt - character visual description | `name`, `key`, `description`, `gender`, `age`, `category_name`, `category_description`, `role`, `personality_text`, `appearance_text`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `existing_visual_descriptions`, `target_length`, `language` |
+| `VISUAL_DESC_PROP_SYSTEM` | System prompt - Visual Description Prop | *(none)* |
+| `VISUAL_DESC_PROP_USER_TEMPLATE` | User prompt - prop visual description | `name`, `key`, `current_description`, `category_name`, `category_description`, `type`, `sounds_text`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `existing_visual_descriptions`, `target_length`, `language` |
+| `VISUAL_DESC_STAGE_SYSTEM` | System prompt - Visual Description Stage | *(none)* |
+| `VISUAL_DESC_STAGE_USER_TEMPLATE` | User prompt - stage visual description | `name`, `key`, `current_description`, `location_name`, `location_description`, `location_image_references`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `era_name`, `era_description`, `story_location_name`, `story_location_description`, `existing_visual_descriptions`, `target_length`, `language` |
+| `VISUAL_DESC_SPREAD_SYSTEM` | System prompt - Visual Description Spread | *(none)* |
+| `VISUAL_DESC_SPREAD_USER_TEMPLATE` | User prompt - spread visual description | `spread_number`, `left_page_number`, `right_page_number`, `left_page_type`, `right_page_type`, `images_text`, `textboxes_text`, `characters_in_scene`, `stage_info`, `props_in_scene`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `total_spreads`, `previous_spread_description`, `target_length`, `language` |
+| `TRANSLATOR_SYSTEM` | System prompt - Translator | *(none)* |
+| `TRANSLATE_CONTENT_USER_TEMPLATE` | User prompt - translate content | `source_language`, `target_language`, `title`, `target_audience`, `genre`, `character_name_mappings`, `content_type`, `content`, `preserve_formatting` |
+
+### Code Usage
+
+```python
+# 1. Query prompt từ DB
+template = supabase.table("prompt_templates").select("content").eq("name", "STORY_DRAFT_USER_TEMPLATE").single()
+
+# 2. Render với variables
+import re
+def render_template(template: str, variables: dict) -> str:
+    def replacer(match):
+        key = match.group(1)
+        return str(variables.get(key, f"{{%{key}%}}"))
+    return re.sub(r'\{%(\w+)%\}', replacer, template)
+
+# 3. Build prompt
+prompt = render_template(template["content"], {
+    "story_idea": story_idea,
+    "categories_text": _format_categories(categories),
+    "language": "vi",
+    ...
+})
+```
+
+### Content Example
+
+```
+Analyze the following story idea and create a complete story framework:
+
+## STORY IDEA
+{%story_idea%}
+
+## ATTRIBUTES
+- Story Types: {%story_types%}
+- Target Audience: {%audience%}
+- Length: {%length%}
+- Art Style Reference: {%art_style_desc%}
+- Language: {%language%}
+
+## OUTPUT FORMAT
+Return ONLY valid JSON:
+{
+  "metadata": {
+    "title": "Story title",
+    "summary": "Brief summary"
+  }
+}
+```
 
 ---
 

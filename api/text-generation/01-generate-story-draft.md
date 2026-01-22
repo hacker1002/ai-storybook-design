@@ -65,6 +65,10 @@ interface DocItem {
 
 ## Prompt
 
+> **DB Template Names:**
+> - System: `STORY_TELLER_SYSTEM`
+> - User: `STORY_DRAFT_USER_TEMPLATE`
+
 ### System Prompt
 ```
 You are an expert Story Teller specializing in children's picture books. Your role is to deeply analyze story ideas and create comprehensive story frameworks.
@@ -84,25 +88,32 @@ You output structured JSON that can be directly used by the system.
 Analyze the following story idea and create a complete story framework:
 
 ## STORY IDEA
-{storyIdea}
+{%story_idea%}
 
 ## ATTRIBUTES
-- Story Types: {storyType}
-- Target Audience: {audience}
-- Length: {length}
-- Art Style Reference: {artStyleDescription}
-- Language: {language}
-
-## LENGTH SPECIFICATIONS
-{lengthSpec based on attributes.length}
+- Story Types: {%story_types%}
+- Target Audience: {%audience%}
+- Length: {%length%}
+- Art Style Reference: {%art_style_description%}
+- Language: {%language%}
+- Number of Spreads: {%spreads%}
+- Words per Spread: {%words_per_spread%}
 
 ## RESOURCES TABLE
 
-### asset_categories:
+### asset_categories
 { // list from DB as below:
 - uuid: id, name: "Abc", type: "human", description: ""
 - ...
 }
+{%categories_text%}
+
+### locations
+{ // list from DB as below:
+- uuid: id, name: "Abc", description: ""
+- ...
+}
+{%locations_text%}
 
 ---
 
@@ -255,19 +266,25 @@ Mỗi character là một object:
 ## Flow
 ```
 1. Validate input parameters
-2. Lấy art_style description từ DB (bảng art_styles)
-3. Lấy danh sách asset_categories từ DB (để cung cấp context cho LLM)
-4. Lấy danh sách locations từ DB (để cung cấp context cho LLM)
-5. Call LLM với story idea, attributes, và danh sách categories/locations có sẵn
-6. Parse JSON response
-7. Tạo Story record trong DB với step = 1 (manuscript), target_audience, artstyle_id
-8. Tạo Snapshot record ban đầu
-9. Lưu vào snapshot:
-   - docs[] (4 documents: manuscript, story_structure, artistic_imagery, moral_lesson)
-   - characters[] (basic info với category_id → FK asset_categories, personality, appearance - chưa có visual_description)
-   - props[] (name, key, category_id → FK asset_categories, type - chưa có visual_description)
-   - stages[] (name, key, location_id → FK locations - chưa có visual_description)
-   - spreads[] (number, left_page, right_page, manuscript, textboxes - chưa có images[])
-10. Update story metadata (title, summary, target_core_value)
-11. Return { storyId, snapshotId, data }
+2. Lấy prompt templates từ DB:
+   - Query `prompt_templates` với name = "STORY_TELLER_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "STORY_DRAFT_USER_TEMPLATE" → user prompt template
+3. Lấy art_style description từ DB (bảng art_styles)
+4. Lấy danh sách asset_categories từ DB (để cung cấp context cho LLM)
+5. Lấy danh sách locations từ DB (để cung cấp context cho LLM)
+6. Render user prompt template với variables:
+   - story_idea, story_types, audience, length, art_style_description
+   - language, spreads, words_per_spread, categories_text, locations_text
+7. Call LLM với system prompt và rendered user prompt
+8. Parse JSON response
+9. Tạo Story record trong DB với step = 1 (manuscript), target_audience, artstyle_id
+10. Tạo Snapshot record ban đầu
+11. Lưu vào snapshot:
+    - docs[] (4 documents: manuscript, story_structure, artistic_imagery, moral_lesson)
+    - characters[] (basic info với category_id → FK asset_categories, personality, appearance - chưa có visual_description)
+    - props[] (name, key, category_id → FK asset_categories, type - chưa có visual_description)
+    - stages[] (name, key, location_id → FK locations - chưa có visual_description)
+    - spreads[] (number, left_page, right_page, manuscript, textboxes - chưa có images[])
+12. Update story metadata (title, summary, target_core_value)
+13. Return { storyId, snapshotId, data }
 ```

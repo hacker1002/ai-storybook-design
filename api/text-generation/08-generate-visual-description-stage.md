@@ -38,6 +38,10 @@ Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh stage/background.
 
 ## Prompt
 
+> **DB Template Names:**
+> - System: `VISUAL_DESC_STAGE_SYSTEM`
+> - User: `VISUAL_DESC_STAGE_USER_TEMPLATE`
+
 ### System Prompt
 ```
 You are a visual description writer for children's picture book illustrations.
@@ -58,47 +62,43 @@ Rules:
 Generate a visual description for a stage/background with the following information:
 
 ## Basic Information
-**Name:** {{name}}
-**Mention Name:** @{{key}}
-
-{{#if visual_description}}
-**Current Description:** {{visual_description}}
-{{/if}}
+**Name:** {%name%}
+**Mention Name:** @{%key%}
+**Current Description:** {%current_description%}
 
 ## Stage/Setting Details
-- Location: {{locationInfo.title}} - {{locationInfo.description}}
-  (Lấy từ location_id → query bảng locations)
-{{#if locationInfo.image_references}}
+- Location: {%location_name%} - {%location_description%}
+  { // Lấy từ location_id → query bảng locations }
 - Location Image References:
-  {{#each locationInfo.image_references}}
-  - {{this.title}}: {{this.media_url}}
-  {{/each}}
-{{/if}}
+  { // from location.image_references[]:
+  - title: "...", media_url: "..."
+  }
+  {%location_image_references%}
 
 ## Art Style
-**Style Reference:** {{artStyleDescription}}
-(Lấy từ story.artstyle_id → art_styles.description)
+**Style Reference:** {%art_style_description%}
+{ // Lấy từ story.artstyle_id → art_styles.description }
 
 ## Story Context
-- Title: {{storyContext.title}}
-- Genre: {{storyContext.genre}}
-- Target Age: {{storyContext.target_audience}}
-- Core Value: {{storyContext.target_core_value}}
-- Era: {{eraInfo.title}} - {{eraInfo.description}}
-  (Lấy từ story.era_id → query bảng eras)
-- Story Location Setting: {{storyLocationInfo.title}} - {{storyLocationInfo.description}}
-  (Lấy từ story.location_id → query bảng locations)
+- Title: {%title%}
+- Genre: {%genre%}
+- Target Age: {%target_audience%}
+- Core Value: {%target_core_value%}
+- Era: {%era_name%} - {%era_description%}
+  { // Lấy từ story.era_id → query bảng eras }
+- Story Location Setting: {%story_location_name%} - {%story_location_description%}
+  { // Lấy từ story.location_id → query bảng locations }
 
-{{#if storyContext.existingVisualDescriptions}}
 ### Existing Descriptions (for consistency)
-{{#each storyContext.existingVisualDescriptions}}
-- {{this.name}}: {{this.visualDescription}}
-{{/each}}
-{{/if}}
+{ // visual_description của các stages khác trong story:
+- @other_stage_key: "..."
+- ...
+}
+{%existing_visual_descriptions%}
 
 ## Output Requirements
-- **Length:** {{targetLength}}
-- **Language:** {{language}}
+- **Length:** {%target_length%}
+- **Language:** {%language%}
 
 ---
 
@@ -120,16 +120,24 @@ Respond in JSON format:
 ## Flow
 ```
 1. Validate input parameters (storyId, mentionName, targetLength, language)
-2. Lấy story info từ DB (artstyle_id, original_language, target_audience, genre, target_core_value, era_id, location_id)
-3. Lấy stage info từ snapshot.stages[] bằng mentionName
-4. Lấy location info từ bảng locations bằng stage.location_id
-   → Lấy title, description, image_references của location
-5. Lấy era info từ bảng eras bằng story.era_id
-   → Lấy title, description, image_references của era
-6. Lấy story location info từ bảng locations bằng story.location_id
-   → Lấy title, description của story location setting
-7. Lấy art_style description từ bảng art_styles
-8. Lấy existing visual descriptions của các stages khác để đảm bảo consistency
-9. Call LLM
-10. Return result
+2. Lấy prompt templates từ DB:
+   - Query `prompt_templates` với name = "VISUAL_DESC_STAGE_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "VISUAL_DESC_STAGE_USER_TEMPLATE" → user prompt template
+3. Lấy story info từ DB (artstyle_id, original_language, target_audience, genre, target_core_value, era_id, location_id)
+4. Lấy stage info từ snapshot.stages[] bằng mentionName
+5. Lấy location info từ bảng locations bằng stage.location_id
+   → Lấy name, description, image_references của location
+6. Lấy era info từ bảng eras bằng story.era_id
+   → Lấy name, description, image_references của era
+7. Lấy story location info từ bảng locations bằng story.location_id
+   → Lấy name, description của story location setting
+8. Lấy art_style description từ bảng art_styles
+9. Lấy existing visual descriptions của các stages khác để đảm bảo consistency
+10. Render user prompt template với variables:
+    - name, key, current_description, location_name, location_description, location_image_references
+    - art_style_description, title, genre, target_audience, target_core_value
+    - era_name, era_description, story_location_name, story_location_description
+    - existing_visual_descriptions, target_length, language
+11. Call LLM với system prompt và rendered user prompt
+12. Return result
 ```

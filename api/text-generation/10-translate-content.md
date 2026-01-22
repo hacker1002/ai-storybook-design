@@ -44,6 +44,10 @@ interface TranslateContentResult {
 
 ## Prompt
 
+> **DB Template Names:**
+> - System: `TRANSLATOR_SYSTEM`
+> - User: `TRANSLATE_CONTENT_USER_TEMPLATE`
+
 ### System Prompt
 ```
 You are a professional translator specializing in children's literature.
@@ -63,40 +67,32 @@ Rules:
 
 ### User Prompt Template
 ```
-Translate the following content from {{sourceLanguage}} to {{targetLanguage}}:
+Translate the following content from {%source_language%} to {%target_language%}:
 
 ## Context
-- Story Title: {{storyContext.title}}
-- Target Age: {{storyContext.target_audience}}
-- Genre: {{storyContext.genre}}
+- Story Title: {%title%}
+- Target Age: {%target_audience%}
+- Genre: {%genre%}
 
-{{#if context.characterNames}}
 ## Character Name Mappings
-{{#each context.characterNames}}
-- {{@key}} → {{this}}
-{{/each}}
-{{/if}}
+{ // from request context.characterNames (optional):
+- original_name → translated_name
+}
+{%character_name_mappings%}
 
 ## Content Type
-{{contentType}}
+{%content_type%}
 
 ## Content to Translate
-{{#if contentIsArray}}
-{{#each content}}
-### Item {{this.id}}
-{{this.text}}
-
----
-{{/each}}
-{{else}}
-{{content}}
-{{/if}}
+{ // single string or array of { id, text }:
+}
+{%content%}
 
 ## Requirements
-- Preserve formatting: {{preserveFormatting}}
+- Preserve formatting: {%preserve_formatting%}
 - Do NOT translate @key (e.g., @miu_cat, @forest_stage)
 - Keep the same emotional tone
-- Use vocabulary appropriate for {{storyContext.target_audience}}
+- Use vocabulary appropriate for {%target_audience%}
 
 ---
 
@@ -115,9 +111,15 @@ Respond in JSON format:
 ## Flow
 ```
 1. Validate input parameters (storyId, content, targetLanguage, contentType)
-2. Lấy story info từ DB (original_language, target_audience, genre, title)
-3. Nếu sourceLanguage không truyền, dùng story.original_language
-4. Call LLM
-5. Return translations
+2. Lấy prompt templates từ DB:
+   - Query `prompt_templates` với name = "TRANSLATOR_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "TRANSLATE_CONTENT_USER_TEMPLATE" → user prompt template
+3. Lấy story info từ DB (original_language, target_audience, genre, title)
+4. Nếu sourceLanguage không truyền, dùng story.original_language
+5. Render user prompt template với variables:
+   - source_language, target_language, title, target_audience, genre
+   - character_name_mappings, content_type, content, preserve_formatting
+6. Call LLM với system prompt và rendered user prompt
+7. Return translations
 ```
 

@@ -135,6 +135,10 @@ Kiểm tra nội dung phù hợp với độ tuổi target.
 
 ## Prompt
 
+> **DB Template Names:**
+> - System: `TESTER_SYSTEM`
+> - User: `QUALITY_CHECK_USER_TEMPLATE`
+
 ### System Prompt
 ```
 You are a team of quality assurance testers for children's picture books. You evaluate content from multiple perspectives to ensure the highest quality.
@@ -153,29 +157,47 @@ Your evaluation is thorough but constructive. You identify issues and provide ac
 Evaluate the following picture book manuscript:
 
 ## STORY METADATA
-- Title: {title}
-- Target Audience: {audience}
-- Art Style: {artStyleDescription}
-- Core Values: {targetCoreValue}
+- Title: {%title%}
+- Target Audience: {%target_audience%}
+- Art Style: {%art_style_description%}
+- Core Values: {%target_core_value%}
 
 ## DOCUMENTS
-{characterBible}
-{propBible}
-{stageBible}
-{literaryAnalysis}
-{spreadOutline}
+{ // from snapshot.docs[]:
+- type: "manuscript", content: "..."
+- type: "story_structure", content: "..."
+- type: "artistic_imagery", content: "..."
+- type: "moral_lesson", content: "..."
+}
+{%docs_text%}
 
 ## CHARACTERS
-{characters JSON with visual_description}
+{ // from snapshot.characters[] with visual_description:
+- key: "@miu_cat", name: "Miu", visual_description: "...", basic_info: {...}, personality: {...}
+- ...
+}
+{%characters_json%}
 
 ## PROPS
-{props JSON with visual_description}
+{ // from snapshot.props[] with visual_description:
+- key: "@red_bow", name: "Chiếc nơ đỏ", visual_description: "...", type: "narrative"
+- ...
+}
+{%props_json%}
 
 ## STAGES
-{stages JSON with visual_description}
+{ // from snapshot.stages[] with visual_description:
+- key: "@forest_1", name: "Khu rừng", visual_description: "..."
+- ...
+}
+{%stages_json%}
 
 ## SPREADS
-{spreads JSON with images[]}
+{ // from snapshot.spreads[] with images[]:
+- number: 1, manuscript: "...", images: [...], textboxes: [...]
+- ...
+}
+{%spreads_json%}
 
 ---
 
@@ -305,11 +327,18 @@ Suggestion: [Actionable recommendation to fix the issue]
 ## Flow
 ```
 1. Validate input parameters (storyId, snapshotId)
-2. Lấy full snapshot data từ DB (docs, characters, props, stages, spreads)
-3. Call LLM với all three tester prompts
-4. Parse JSON response
-5. Lưu flags[] vào DB (bảng flags)
-6. Return test results
+2. Lấy prompt templates từ DB:
+   - Query `prompt_templates` với name = "TESTER_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "QUALITY_CHECK_USER_TEMPLATE" → user prompt template
+3. Lấy full snapshot data từ DB (docs, characters, props, stages, spreads)
+4. Lấy story metadata (title, target_audience, target_core_value, artstyle_id → art_styles.description)
+5. Render user prompt template với variables:
+   - title, target_audience, art_style_description, target_core_value
+   - docs_text, characters_json, props_json, stages_json, spreads_json
+6. Call LLM với system prompt và rendered user prompt
+7. Parse JSON response
+8. Lưu flags[] vào DB (bảng flags)
+9. Return test results
 ```
 
 

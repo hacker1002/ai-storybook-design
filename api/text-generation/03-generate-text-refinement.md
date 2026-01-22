@@ -46,6 +46,10 @@ interface GenerateTextRefinementResult {
 
 ## Prompt
 
+> **DB Template Names:**
+> - System: `WORD_SMITH_SYSTEM`
+> - User: `TEXT_REFINEMENT_USER_TEMPLATE`
+
 ### System Prompt
 ```
 You are an expert Word Smith specializing in children's picture book text. Your role is to refine and polish text content for maximum impact and readability.
@@ -73,15 +77,23 @@ You do NOT handle text placement or visual design - only the words themselves.
 Refine the text content for this children's picture book:
 
 ## STORY CONTEXT
-- Title: {title}
-- Target Audience: {audience}
-- Language: {language}
+- Title: {%title%}
+- Target Audience: {%audience%}
+- Language: {%language%}
 
 ## MANUSCRIPT REFERENCE
-{docs[type="manuscript"].content}
+{ // from snapshot.docs[] where type = "manuscript":
+- content: "Full manuscript content..."
+}
+{%manuscript_content%}
 
 ## CURRENT SPREADS TEXT
-{For each spread, show current textboxes[].language[].text}
+{ // for each spread, show current textboxes[].language[].text:
+- spread 1: textbox 1: "...", textbox 2: "..."
+- spread 2: textbox 1: "..."
+- ...
+}
+{%spreads_text%}
 
 ---
 
@@ -159,12 +171,17 @@ Return JSON with:
 ## Flow
 ```
 1. Validate input parameters (storyId, snapshotId)
-2. Lấy snapshot data từ DB (docs, spreads)
-3. Lấy story metadata (target_audience, original_language)
-4. Call LLM với manuscript context và current text
-5. Parse JSON response
-6. Update snapshot.spreads[].textboxes[].language[].text
-7. Return result với summary
+2. Lấy prompt templates từ DB:
+   - Query `prompt_templates` với name = "WORD_SMITH_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "TEXT_REFINEMENT_USER_TEMPLATE" → user prompt template
+3. Lấy snapshot data từ DB (docs, spreads)
+4. Lấy story metadata (target_audience, original_language)
+5. Render user prompt template với variables:
+   - title, audience, language, manuscript_content, spreads_text
+6. Call LLM với system prompt và rendered user prompt
+7. Parse JSON response
+8. Update snapshot.spreads[].textboxes[].language[].text
+9. Return result với summary
 ```
 
 ## Error Handling

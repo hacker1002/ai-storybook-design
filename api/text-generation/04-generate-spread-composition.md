@@ -69,6 +69,10 @@ interface ComposedTextbox {
 
 ## Prompt
 
+> **DB Template Names:**
+> - System: `ART_DIRECTOR_P2_SYSTEM`
+> - User: `COMPOSITION_USER_TEMPLATE`
+
 ### System Prompt
 ```
 You are an expert Art Director specializing in picture book composition and layout. Your role is to design how images and text work together on each spread.
@@ -94,16 +98,17 @@ Your principles:
 Design the composition for each spread, placing images and text:
 
 ## STORY CONTEXT
-- Title: {title}
-- Target Audience: {audience}
-- Book Type: {book_type}
-- Dimension: {dimension}
+- Title: {%title%}
+- Target Audience: {%target_audience%}
+- Book Type: {%book_type%}
+- Dimension: {%dimension%}
 
 ## SPREAD DATA
-{For each spread, show:
+{ // for each spread, show:
   - images[] (title, visual_description, actions, emotional.mood)
   - textboxes[] (order, text content, estimated word count)
 }
+{%spreads_data%}
 
 ---
 
@@ -202,17 +207,22 @@ For each spread, return:
 ## Flow
 ```
 1. Validate input parameters (storyId, snapshotId)
-2. Lấy snapshot data từ DB (spreads với images[] và textboxes[])
-3. Lấy story metadata (book_type, dimension)
-4. Call LLM với spread data
-5. Parse JSON response
-6. Update snapshot:
+2. Lấy prompt templates từ DB:
+   - Query `prompt_templates` với name = "ART_DIRECTOR_P2_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "COMPOSITION_USER_TEMPLATE" → user prompt template
+3. Lấy snapshot data từ DB (spreads với images[] và textboxes[])
+4. Lấy story metadata (book_type, dimension)
+5. Render user prompt template với variables:
+   - title, target_audience, book_type, dimension, spreads_data
+6. Call LLM với system prompt và rendered user prompt
+7. Parse JSON response
+8. Update snapshot:
    - spreads[].images[].geometry
    - spreads[].images[].visual_description (append text zone notes)
    - spreads[].images[].text_zone
    - spreads[].images[].composition_notes
    - spreads[].textboxes[].language[].geometry
-7. Return result
+9. Return result
 ```
 
 ## Error Handling

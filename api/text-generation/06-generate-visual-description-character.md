@@ -41,6 +41,10 @@ Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh character.
 
 ## Prompt
 
+> **DB Template Names:**
+> - System: `VISUAL_DESC_CHARACTER_SYSTEM`
+> - User: `VISUAL_DESC_CHARACTER_USER_TEMPLATE`
+
 ### System Prompt
 ```
 You are a visual description writer for children's picture book illustrations.
@@ -61,66 +65,51 @@ Rules:
 Generate a visual description for a character with the following information:
 
 ## Basic Information
-{{#if basicInfo.name}}
-**Name:** {{basicInfo.name}}
-{{/if}}
-
-{{#if basicInfo.description}}
-**Description:** {{basicInfo.description}}
-{{/if}}
+**Name:** {%name%}
+**Mention Name:** @{%key%}
+**Description:** {%description%}
 
 ## Character Details
 
-{{#if basicInfo}}
 ### Basic Info
-- Gender: {{basicInfo.gender}}
-- Age: {{basicInfo.age}}
-- Category: {{categoryInfo.name}} - {{categoryInfo.description}}
-  (Lấy từ basicInfo.category_id → query bảng asset_categories)
-- Role: {{basicInfo.role}}
-{{/if}}
+- Gender: {%gender%}
+- Age: {%age%}
+- Category: {%category_name%} - {%category_description%}
+  { // Lấy từ basicInfo.category_id → query bảng asset_categories }
+- Role: {%role%}
 
-{{#if personality}}
 ### Personality (for expression/pose guidance)
-- Core Essence: {{personality.core_essence}}
-- Flaws: {{personality.flaws}}
-- Emotions: {{personality.emotions}}
-- Reactions: {{personality.reactions}}
-- Desires: {{personality.desires}}
-- Likes: {{personality.likes}}
-- Fears: {{personality.fears}}
-- Contradictions: {{personality.contradictions}}
-{{/if}}
+{ // from character.personality:
+- core_essence, flaws, emotions, reactions, desires, likes, fears, contradictions
+}
+{%personality_text%}
 
-{{#if appearance}}
 ### Appearance
-- Height: {{appearance.height}}
-- Hair: {{appearance.hair}}
-- Eyes: {{appearance.eyes}}
-- Face: {{appearance.face}}
-- Build: {{appearance.build}}
-{{/if}}
+{ // from character.appearance:
+- height, hair, eyes, face, build
+}
+{%appearance_text%}
 
 ## Art Style
-**Style Reference:** {{artStyleDescription}}
-(Lấy từ story.artstyle_id → art_styles.description)
+**Style Reference:** {%art_style_description%}
+{ // Lấy từ story.artstyle_id → art_styles.description }
 
 ## Story Context
-- Title: {{storyContext.title}}
-- Genre: {{storyContext.genre}}
-- Target Age: {{storyContext.target_audience}}
-- Core Value: {{storyContext.target_core_value}}
+- Title: {%title%}
+- Genre: {%genre%}
+- Target Age: {%target_audience%}
+- Core Value: {%target_core_value%}
 
-{{#if storyContext.existingVisualDescriptions}}
 ### Existing Descriptions (for consistency)
-{{#each storyContext.existingVisualDescriptions}}
-- {{this.name}}: {{this.visualDescription}}
-{{/each}}
-{{/if}}
+{ // visual_description của các characters khác trong story:
+- @other_character_key: "..."
+- ...
+}
+{%existing_visual_descriptions%}
 
 ## Output Requirements
-- **Length:** {{targetLength}}
-- **Language:** {{language}}
+- **Length:** {%target_length%}
+- **Language:** {%language%}
 
 ---
 
@@ -142,13 +131,21 @@ Respond in JSON format:
 ## Flow
 ```
 1. Validate input parameters (storyId, mentionName, targetLength, language)
-2. Lấy story info từ DB (artstyle_id, original_language, target_audience, genre, target_core_value)
-3. Lấy character info từ snapshot.characters[] bằng mentionName
-4. Lấy category info từ bảng asset_categories bằng character.basic_info.category_id
+2. Lấy prompt templates từ DB:
+   - Query `prompt_templates` với name = "VISUAL_DESC_CHARACTER_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "VISUAL_DESC_CHARACTER_USER_TEMPLATE" → user prompt template
+3. Lấy story info từ DB (artstyle_id, original_language, target_audience, genre, target_core_value)
+4. Lấy character info từ snapshot.characters[] bằng mentionName
+5. Lấy category info từ bảng asset_categories bằng character.basic_info.category_id
    → Lấy name, type, description của category
-5. Lấy art_style description từ bảng art_styles
-6. Lấy existing visual descriptions của các characters khác để đảm bảo consistency
-7. Call LLM
-8. Return result
+6. Lấy art_style description từ bảng art_styles
+7. Lấy existing visual descriptions của các characters khác để đảm bảo consistency
+8. Render user prompt template với variables:
+   - name, key, description, gender, age, category_name, category_description, role
+   - personality_text, appearance_text, art_style_description
+   - title, genre, target_audience, target_core_value
+   - existing_visual_descriptions, target_length, language
+9. Call LLM với system prompt và rendered user prompt
+10. Return result
 ```
 

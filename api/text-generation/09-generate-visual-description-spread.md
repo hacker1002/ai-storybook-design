@@ -41,6 +41,10 @@ Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh spread (scene compos
 
 ## Prompt
 
+> **DB Template Names:**
+> - System: `VISUAL_DESC_SPREAD_SYSTEM`
+> - User: `VISUAL_DESC_SPREAD_USER_TEMPLATE`
+
 ### System Prompt
 ```
 You are a visual description writer for children's picture book illustrations.
@@ -62,87 +66,65 @@ Rules:
 Generate a visual description for a spread with the following information:
 
 ## Spread Info
-**Spread Number:** {{number}}
-**Pages:** {{left_page.number}}, {{right_page.number}}
-**Page Types:** {{left_page.type}}, {{right_page.type}}
+**Spread Number:** {%spread_number%}
+**Left Page:** {%left_page_number%} (type: {%left_page_type%})
+**Right Page:** {%right_page_number%} (type: {%right_page_type%})
 
 ## Scene Composition
 
 ### Image Details
-{{#each images}}
-**Image: {{this.title}}**
-- Current Visual Description: {{this.visual_description}}
-- Geometry: x={{this.geometry.x}}, y={{this.geometry.y}}, w={{this.geometry.w}}, h={{this.geometry.h}}, rotation={{this.geometry.rotation}}
-
-#### Scene Context
-- Stage: @{{this.stage}}
-- Actions: {{this.actions}}
-
-#### Temporal Settings
-- Era: {{this.temporal.era}}
-- Season: {{this.temporal.season}}
-- Weather: {{this.temporal.weather}}
-- Time of Day: {{this.temporal.time_of_day}}
-- Duration: {{this.temporal.duration}}
-
-#### Sensory Details
-- Atmosphere: {{this.sensory.atmosphere}}
-- Soundscape: {{this.sensory.soundscape}}
-- Lighting: {{this.sensory.lighting}}
-- Color Palette: {{this.sensory.color_palette}}
-
-#### Emotional
-- Mood: {{this.emotional.mood}}
-
----
-{{/each}}
+{ // from spread.images[]:
+- title, visual_description, geometry, stage, actions
+- temporal: { era, season, weather, time_of_day, duration }
+- sensory: { atmosphere, soundscape, lighting, color_palette }
+- emotional: { mood }
+}
+{%images_text%}
 
 ### Text Content (for context)
-{{#each textboxes}}
-- {{this.language[0].text}}
-{{/each}}
+{ // from spread.textboxes[].language[].text:
+- "Text content 1..."
+- "Text content 2..."
+}
+{%textboxes_text%}
 
 ### Characters in Scene
-(Lấy từ snapshot.characters[] dựa trên @mentions trong images[].actions)
-{{#each charactersInScene}}
-- **{{this.name}}** (@{{this.key}}):
-  - Visual Description: {{this.visual_description}}
-{{/each}}
+{ // Lấy từ snapshot.characters[] dựa trên @mentions trong images[].actions:
+- @character_key: name, visual_description
+}
+{%characters_in_scene%}
 
 ### Stage/Background
-(Lấy từ snapshot.stages[] dựa trên @stage trong images[])
-{{#if stage}}
-- **{{stage.name}}** (@{{stage.key}})
-- Visual Description: {{stage.visual_description}}
-- Location: {{stageLocationInfo.title}} - {{stageLocationInfo.description}}
-  (Lấy từ stage.location_id → query bảng locations)
-{{/if}}
+{ // Lấy từ snapshot.stages[] dựa trên @stage trong images[]:
+- @stage_key: name, visual_description, location info
+}
+{%stage_info%}
 
 ### Props in Scene
-(Lấy từ snapshot.props[] dựa trên @mentions)
-{{#each propsInScene}}
-- **{{this.name}}** (@{{this.key}}): {{this.visual_description}}
-{{/each}}
+{ // Lấy từ snapshot.props[] dựa trên @mentions:
+- @prop_key: name, visual_description
+}
+{%props_in_scene%}
 
 ## Art Style
-**Style Reference:** {{artStyleDescription}}
-(Lấy từ story.artstyle_id → art_styles.description)
+**Style Reference:** {%art_style_description%}
+{ // Lấy từ story.artstyle_id → art_styles.description }
 
 ## Story Context
-- Title: {{storyContext.title}}
-- Genre: {{storyContext.genre}}
-- Target Age: {{storyContext.target_audience}}
-- Core Value: {{storyContext.target_core_value}}
-- Spread Position: {{spreadNumber}} of {{storyContext.totalSpreads}}
+- Title: {%title%}
+- Genre: {%genre%}
+- Target Age: {%target_audience%}
+- Core Value: {%target_core_value%}
+- Spread Position: {%spread_number%} of {%total_spreads%}
 
-{{#if storyContext.previousSpreadDescription}}
 ### Previous Spread (for continuity)
-{{storyContext.previousSpreadDescription}}
-{{/if}}
+{ // visual_description của spread trước (nếu có):
+}
+{%previous_spread_description%}
 
 ## Output Requirements
-- **Length:** {{targetLength}}
-- **Language:** {{language}}
+- **Length:** {%target_length%}
+- **Language:** {%language%}
 
 ---
 
@@ -164,15 +146,23 @@ Respond in JSON format:
 ## Flow
 ```
 1. Validate input parameters (storyId, spreadNumber, targetLength, language)
-2. Lấy story info từ DB (artstyle_id, original_language, target_audience, genre, target_core_value)
-3. Lấy spread info từ snapshot.spreads[] bằng spreadNumber
-4. Parse @mentions trong images[].stage và images[].actions
+2. Lấy prompt templates từ DB:
+   - Query `prompt_templates` với name = "VISUAL_DESC_SPREAD_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "VISUAL_DESC_SPREAD_USER_TEMPLATE" → user prompt template
+3. Lấy story info từ DB (artstyle_id, original_language, target_audience, genre, target_core_value)
+4. Lấy spread info từ snapshot.spreads[] bằng spreadNumber
+5. Parse @mentions trong images[].stage và images[].actions
    → Lấy danh sách characters, props, stages liên quan
-5. Lấy visual descriptions của các entities liên quan từ snapshot
-6. Với mỗi stage liên quan, lấy location info từ bảng locations bằng stage.location_id
-   → Lấy title, description của location
-7. Lấy art_style description từ bảng art_styles
-8. Lấy previous spread description nếu có (để đảm bảo continuity)
-9. Call LLM
-10. Return result
+6. Lấy visual descriptions của các entities liên quan từ snapshot
+7. Với mỗi stage liên quan, lấy location info từ bảng locations bằng stage.location_id
+   → Lấy name, description của location
+8. Lấy art_style description từ bảng art_styles
+9. Lấy previous spread description nếu có (để đảm bảo continuity)
+10. Render user prompt template với variables:
+    - spread_number, left_page_number, right_page_number, left_page_type, right_page_type
+    - images_text, textboxes_text, characters_in_scene, stage_info, props_in_scene
+    - art_style_description, title, genre, target_audience, target_core_value
+    - total_spreads, previous_spread_description, target_length, language
+11. Call LLM với system prompt và rendered user prompt
+12. Return result
 ```
