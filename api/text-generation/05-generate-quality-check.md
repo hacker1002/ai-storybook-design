@@ -1,4 +1,4 @@
-# 4. generate-quality-check
+# generate-quality-check
 
 ## Description
 **Tester Agents** - Kiểm tra chất lượng nội dung qua nhiều góc nhìn: Story Consistency, Plot, và Age Appropriateness.

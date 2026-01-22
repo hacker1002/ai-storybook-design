@@ -1,4 +1,4 @@
-# 2. generate-spread-visual-plan
+# generate-spread-visual-plan
 
 ## Description
 **Art Director Agent - Phase 1** - Tạo visual design cho characters, props, stages và kịch bản hình ảnh cơ bản cho từng spread. Chưa xử lý composition/bố cục cho text.

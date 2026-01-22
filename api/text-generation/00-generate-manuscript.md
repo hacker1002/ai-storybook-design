@@ -1,4 +1,4 @@
-# 0. generate-manuscript
+# generate-manuscript
 
 ## Description
 **Orchestrator function** - Điều phối việc tạo manuscript hoàn chỉnh qua 5 bước tuần tự. Function này gọi lần lượt các step functions và quản lý flow tổng thể.

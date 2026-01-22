@@ -457,35 +457,51 @@ Lưu lịch sử thay đổi của prompt templates. **Auto-populated** bởi tr
 
 ---
 
-## Quy tắc khi implement Edge Functions
+## Quy tắc khi thiết kế API
 
-### 1. Language Fallback
+### Language Fallback
 - Nếu `language` không được truyền vào parameter, **luôn lấy** `story.original_language`
 - Áp dụng cho tất cả các generate-visual-description functions và translate-content
 
-### 2. Art Style
+### Art Style
 - **KHÔNG** truyền `artStyleId` vào parameter
 - Art style được lấy từ `story.artstyle_id` → query bảng `art_styles` để lấy description
 - Sử dụng art style description trong prompt để đảm bảo consistency
 
-### 3. Negative Prompt (Text Generation)
+### Negative Prompt (Text Generation)
 - Áp dụng cho các function `generate-visual-description-*` (Text Generation)
 - **Luôn trả về** `negativePrompt` trong kết quả
 - Không cần parameter `includeNegativePrompt`
 - **Lưu ý:** Quy tắc này KHÔNG áp dụng cho các function Image Generation
 
-### 4. Consistency
+### Consistency
 - Khi generate visual description cho một entity, **nên lấy** visual descriptions của các entities cùng loại khác trong story
 - Điều này đảm bảo style và tone nhất quán giữa các characters, props, stages
 
-### 5. Mention Name Convention
+### Mention Name Convention
 - Format: lowercase, underscore separated cho `key` prop (@key)
 - Ví dụ: `@miu_cat`, `@red_bow`, `@forest_1`
 - **KHÔNG** translate @key trong bất kỳ trường hợp nào
 
-### 6. Image Generation Model
+### Image Generation Model
 - Model AI cho image generation được **fix cứng trong code**
 - Không cần parameter `optimizeFor`
+
+### Documentation Standards
+- **No code in design docs** except: JSON structures, TypeScript interfaces, mapping constants
+- Keep docs focused on specifications, not implementation details
+- Định nghĩa TypeScript interfaces rõ ràng cho input/output
+
+### Error Handling
+- Trả về error messages rõ ràng
+- Log errors để debug
+- Không expose sensitive information trong error messages
+
+### Naming Convention
+- Edge Functions: `kebab-case` (ví dụ: `generate-visual-description-character`)
+- Variables/Functions: `camelCase`
+- Types/Interfaces: `PascalCase`
+- Constants: `UPPER_SNAKE_CASE`
 
 ---
 
@@ -516,39 +532,14 @@ Lưu lịch sử thay đổi của prompt templates. **Auto-populated** bởi tr
 | `COMPOSITION_USER_TEMPLATE` | User prompt - spread composition | `title`, `target_audience`, `book_type`, `dimension`, `spreads_data` |
 | `TESTER_SYSTEM` | System prompt - Quality Check | *(none)* |
 | `QUALITY_CHECK_USER_TEMPLATE` | User prompt - quality check | `title`, `target_audience`, `art_style_description`, `target_core_value`, `docs_text`, `characters_json`, `props_json`, `stages_json`, `spreads_json` |
-| `VISUAL_DESC_CHARACTER_SYSTEM` | System prompt - Visual Description Character | *(none)* |
-| `VISUAL_DESC_CHARACTER_USER_TEMPLATE` | User prompt - character visual description | `name`, `key`, `description`, `gender`, `age`, `category_name`, `category_description`, `role`, `personality_text`, `appearance_text`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `existing_visual_descriptions`, `target_length`, `language` |
-| `VISUAL_DESC_PROP_SYSTEM` | System prompt - Visual Description Prop | *(none)* |
-| `VISUAL_DESC_PROP_USER_TEMPLATE` | User prompt - prop visual description | `name`, `key`, `current_description`, `category_name`, `category_description`, `type`, `sounds_text`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `existing_visual_descriptions`, `target_length`, `language` |
-| `VISUAL_DESC_STAGE_SYSTEM` | System prompt - Visual Description Stage | *(none)* |
-| `VISUAL_DESC_STAGE_USER_TEMPLATE` | User prompt - stage visual description | `name`, `key`, `current_description`, `location_name`, `location_description`, `location_image_references`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `era_name`, `era_description`, `story_location_name`, `story_location_description`, `existing_visual_descriptions`, `target_length`, `language` |
-| `VISUAL_DESC_SPREAD_SYSTEM` | System prompt - Visual Description Spread | *(none)* |
-| `VISUAL_DESC_SPREAD_USER_TEMPLATE` | User prompt - spread visual description | `spread_number`, `left_page_number`, `right_page_number`, `left_page_type`, `right_page_type`, `images_text`, `textboxes_text`, `characters_in_scene`, `stage_info`, `props_in_scene`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `total_spreads`, `previous_spread_description`, `target_length`, `language` |
+| `VISUAL_DESCRIPTOR_SYSTEM` | System prompt - Visual Descriptor (shared for character, prop, stage, spread) | *(none)* |
+| `VISUAL_DESC_CHARACTER_USER_TEMPLATE` | User prompt - character visual description | `name`, `key`, `description`, `gender`, `age`, `category_name`, `category_type`, `category_description`, `role`, `personality_text`, `appearance_text`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `existing_visual_descriptions`, `target_length`, `language` |
+| `VISUAL_DESC_PROP_USER_TEMPLATE` | User prompt - prop visual description | `name`, `key`, `current_description`, `category_name`, `category_type`, `category_description`, `type`, `sounds_text`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `existing_visual_descriptions`, `target_length`, `language` |
+| `VISUAL_DESC_STAGE_USER_TEMPLATE` | User prompt - stage visual description | `name`, `key`, `current_description`, `location_name`, `location_description`, `location_nation`, `location_city`, `location_type`, `location_image_references`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `era_name`, `era_description`, `story_location_name`, `story_location_description`, `existing_visual_descriptions`, `target_length`, `language` |
+| `VISUAL_DESC_SPREAD_USER_TEMPLATE` | User prompt - spread visual description | `spread_number`, `total_spreads`, `left_page_number`, `right_page_number`, `left_page_type`, `right_page_type`, `images_text`, `textboxes_text`, `characters_in_scene`, `stage_info`, `props_in_scene`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `previous_spread_description`, `target_length`, `language` |
 | `TRANSLATOR_SYSTEM` | System prompt - Translator | *(none)* |
-| `TRANSLATE_CONTENT_USER_TEMPLATE` | User prompt - translate content | `source_language`, `target_language`, `title`, `target_audience`, `genre`, `character_name_mappings`, `content_type`, `content`, `preserve_formatting` |
-
-### Code Usage
-
-```python
-# 1. Query prompt từ DB
-template = supabase.table("prompt_templates").select("content").eq("name", "STORY_DRAFT_USER_TEMPLATE").single()
-
-# 2. Render với variables
-import re
-def render_template(template: str, variables: dict) -> str:
-    def replacer(match):
-        key = match.group(1)
-        return str(variables.get(key, f"{{%{key}%}}"))
-    return re.sub(r'\{%(\w+)%\}', replacer, template)
-
-# 3. Build prompt
-prompt = render_template(template["content"], {
-    "story_idea": story_idea,
-    "categories_text": _format_categories(categories),
-    "language": "vi",
-    ...
-})
-```
+| `TRANSLATOR_USER_TEMPLATE` | User prompt - translate content | `source_language`, `target_language`, `title`, `target_audience`, `genre`, `character_name_mappings`, `content_type`, `content`, `preserve_formatting` |
+| `POETRY_GENERATION_USER_TEMPLATE` | User prompt - generate poetry | `title`, `audience`, `language`, `scope`, `poetry_type`, `poetry_type_description`, `source_content`, `custom_instructions` |
 
 ### Content Example
 
@@ -574,26 +565,6 @@ Return ONLY valid JSON:
   }
 }
 ```
-
----
-
-## Coding Standards
-
-### TypeScript
-- Sử dụng TypeScript cho tất cả Edge Functions
-- Định nghĩa interfaces rõ ràng cho input/output
-- Sử dụng Zod hoặc tương tự để validate input
-
-### Error Handling
-- Trả về error messages rõ ràng
-- Log errors để debug
-- Không expose sensitive information trong error messages
-
-### Naming Convention
-- Edge Functions: `kebab-case` (ví dụ: `generate-visual-description-character`)
-- Variables/Functions: `camelCase`
-- Types/Interfaces: `PascalCase`
-- Constants: `UPPER_SNAKE_CASE`
 
 ---
 

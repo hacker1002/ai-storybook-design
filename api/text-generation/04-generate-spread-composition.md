@@ -1,4 +1,4 @@
-# 4. generate-spread-composition
+# generate-spread-composition
 
 ## Description
 **Art Director Agent - Phase 2 (Composition)** - Thiết kế bố cục cho mỗi spread: xác định geometry cho images và textboxes, đồng thời cập nhật visual_description của images với ghi chú về vùng để trống cho text.

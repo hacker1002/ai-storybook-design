@@ -1,4 +1,4 @@
-# 2. generate-story-draft
+# generate-story-draft
 
 ## Description
 **Story Teller Agent** - Phân tích ý tưởng và tạo khung truyện ban đầu bao gồm: character bible, prop bible, stage bible, phân tích nghệ thuật, và phân chia nội dung từng spread. Function này cũng tạo Story và Snapshot record trong DB.

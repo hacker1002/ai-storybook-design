@@ -1,4 +1,4 @@
-# 3. generate-text-refinement
+# generate-text-refinement
 
 ## Description
 **Word Smith Agent** - Biên tập và tinh chỉnh nội dung text trong textboxes[] của mỗi spread. Agent này tập trung vào chất lượng ngôn ngữ, rhythm, và sự phù hợp với target audience. KHÔNG xử lý vị trí/geometry.

@@ -1,12 +1,14 @@
-# 6. generate-visual-description-prop
+# generate-visual-description-prop
+
+> **Note:** Function này có thể được sử dụng độc lập hoặc được gọi bởi Step 2 (generate-spread-visual-plan) để tối ưu visual description.
 
 ## Description
-Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh prop.
+**Visual Descriptor Agent** - Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh prop.
 
 ## DB Schema Dependencies
 
 ### Tables Used
-- `stories`: artstyle_id, original_language, target_audience, genre, target_core_value
+- `stories`: artstyle_id, original_language, target_audience, genre, target_core_value, title
 - `snapshots`: props[]
 - `asset_categories`: id, name, type, description
 - `art_styles`: id, name, description, image_references[]
@@ -17,98 +19,79 @@ Tối ưu mô tả hình ảnh chi tiết cho AI sinh ảnh prop.
   - category_id
   - visual_description
   - type: "narrative" | "anchor"
+    - narrative: đồ vật dẫn chuyện, tương tác với character
+    - anchor: đồ vật nằm trong stages, tạo sự nhất quán
   - sketch[], illustration[], image_references[]
   - sounds[]: [{ title, media_url }]
 
 ## Parameters
-```
-- storyId: string                // ID của story trong DB
-- mentionName: string            // Prop key, dùng để lấy thông tin prop từ DB
-- targetLength: "short" | "medium" | "detailed"  // Số lượng từ cho mô tả
-- language?: string              // Ngôn ngữ output - nếu không truyền, lấy từ story.original_language
+```typescript
+interface GenerateVisualDescriptionPropParams {
+  storyId: string;         // ID của story trong DB
+  snapshotId: string;      // ID của snapshot trong DB
+  key: string;             // Prop key (e.g., "red_bow"), dùng để lấy thông tin từ snapshot.props[]
+  targetLength: "short" | "medium" | "detailed";  // short: 50-80, medium: 80-120, detailed: 120-200 words
+  language?: string;       // Ngôn ngữ output - fallback: story.original_language
+}
 ```
 
 ## Result
-```
-- visualDescription: string      // Mô tả chính đã tối ưu cho image generation
-- keywords: string[]             // Tags cho search/tagging (5-10 từ khóa)
-- negativePrompt: string         // Những gì cần tránh (luôn trả về)
-- suggestedReferences: string[]  // Gợi ý tìm ảnh reference (2-3 gợi ý)
+```typescript
+interface GenerateVisualDescriptionPropResult {
+  success: boolean;
+  visualDescription: string;      // Mô tả đã tối ưu cho image generation
+  keywords: string[];             // Tags cho search/tagging (5-10 từ khóa)
+  negativePrompt: string;         // Những gì cần tránh (luôn trả về)
+  suggestedReferences: string[];  // Gợi ý tìm ảnh reference (2-3 gợi ý)
+}
 ```
 
 ## Prompt
 
 > **DB Template Names:**
-> - System: `VISUAL_DESC_PROP_SYSTEM`
+> - System: `VISUAL_DESCRIPTOR_SYSTEM` (shared across all visual description functions)
 > - User: `VISUAL_DESC_PROP_USER_TEMPLATE`
 
 ### System Prompt
-```
-You are a visual description writer for children's picture book illustrations.
-Transform basic entity information into vivid descriptions optimized for AI image generation.
+*(Reuse `VISUAL_DESCRIPTOR_SYSTEM` - shared với character, stage, spread)*
 
-Rules:
-- Write in continuous prose with comma-separated descriptive phrases
-- Be specific: avoid vague terms like "beautiful", "nice"
-- Include: colors, textures, proportions, materials, lighting
-- Keep child-friendly (ages 2-8)
-- Consider how the prop interacts with characters
-- Describe at appropriate scale for picture book illustration
-- Always provide a negative prompt to avoid unwanted elements
+### User Prompt Template (VISUAL_DESC_PROP_USER_TEMPLATE)
 ```
+Generate a visual description for a prop:
 
-### User Prompt Template
-```
-Generate a visual description for a prop with the following information:
-
-## Basic Information
+## Prop Information
 **Name:** {%name%}
-**Mention Name:** @{%key%}
+**Key:** @{%key%}
 **Current Description:** {%current_description%}
 
-## Prop Details
-- Category: {%category_name%} - {%category_description%}
-  { // Lấy từ category_id → query bảng asset_categories }
+### Details
+- Category: {%category_name%} ({%category_type%}) - {%category_description%}
 - Type: {%type%}
-  (narrative: đồ vật dẫn chuyện, tương tác với character)
-  (anchor: đồ vật nằm trong stages, tạo ra sự nhất quán)
+  - narrative: item that drives story, interacts with characters
+  - anchor: item in stages, creates consistency
 
 ### Associated Sounds
-{ // from prop.sounds[]:
-- title: "...", media_url: "..."
-}
 {%sounds_text%}
 
 ## Art Style
 **Style Reference:** {%art_style_description%}
-{ // Lấy từ story.artstyle_id → art_styles.description }
 
 ## Story Context
 - Title: {%title%}
 - Genre: {%genre%}
-- Target Age: {%target_audience%}
+- Target Audience: {%target_audience%}
 - Core Value: {%target_core_value%}
 
-### Existing Descriptions (for consistency)
-{ // visual_description của các props khác trong story:
-- @other_prop_key: "..."
-- ...
-}
+### Existing Prop Descriptions (for consistency)
 {%existing_visual_descriptions%}
 
 ## Output Requirements
-- **Length:** {%target_length%}
+- **Target Length:** {%target_length%}
 - **Language:** {%language%}
 
 ---
 
-Please generate:
-1. A visual description optimized for AI image generation
-2. 5-10 relevant keywords
-3. A negative prompt listing what to avoid
-4. 2-3 suggested reference search terms
-
-Respond in JSON format:
+Generate JSON response:
 {
   "visualDescription": "...",
   "keywords": ["...", "..."],
@@ -119,22 +102,30 @@ Respond in JSON format:
 
 ## Flow
 ```
-1. Validate input parameters (storyId, mentionName, targetLength, language)
+1. Validate input parameters (storyId, snapshotId, key, targetLength)
 2. Lấy prompt templates từ DB:
-   - Query `prompt_templates` với name = "VISUAL_DESC_PROP_SYSTEM" → system prompt
-   - Query `prompt_templates` với name = "VISUAL_DESC_PROP_USER_TEMPLATE" → user prompt template
-3. Lấy story info từ DB (artstyle_id, original_language, target_audience, genre, target_core_value)
-4. Lấy prop info từ snapshot.props[] bằng mentionName
-5. Lấy category info từ bảng asset_categories bằng prop.category_id
-   → Lấy name, type, description của category
-6. Lấy art_style description từ bảng art_styles
-7. Lấy existing visual descriptions của các props khác để đảm bảo consistency
-8. Render user prompt template với variables:
-   - name, key, current_description, category_name, category_description, type
-   - sounds_text, art_style_description
-   - title, genre, target_audience, target_core_value
-   - existing_visual_descriptions, target_length, language
-9. Call LLM với system prompt và rendered user prompt
-10. Return result
+   - Query `prompt_templates` với name = "VISUAL_DESCRIPTOR_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "VISUAL_DESC_PROP_USER_TEMPLATE" → user prompt
+3. Lấy story info từ DB:
+   - SELECT artstyle_id, original_language, target_audience, genre, target_core_value, title
+   - FROM stories WHERE id = storyId
+4. Lấy prop từ snapshot.props[] WHERE key = params.key
+5. Lấy category từ asset_categories WHERE id = prop.category_id
+   → name, type, description
+6. Lấy art_style từ art_styles WHERE id = story.artstyle_id
+   → description
+7. Format sounds_text từ prop.sounds[]
+8. Lấy existing visual descriptions từ các props khác trong snapshot
+   → Để đảm bảo consistency
+9. Determine language: params.language || story.original_language
+10. Render user prompt template với variables
+11. Call LLM với system prompt và rendered user prompt
+12. Parse JSON response
+13. Return result
 ```
 
+## Error Handling
+- Nếu story/snapshot không tồn tại → Return error
+- Nếu prop với key không tìm thấy → Return error với available keys
+- Nếu category_id invalid → Log warning, tiếp tục với empty category info
+- Nếu art_style không tìm thấy → Return error (art_style bắt buộc)
