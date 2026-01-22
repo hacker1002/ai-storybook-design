@@ -23,3 +23,6 @@
 
   * **Translation**
     * [10 - Translate Content](api/text-generation/10-translate-content.md)
+
+  * **Poetry Generation**
+    * [11 - Generate Poetry](api/text-generation/11-generate-poetry.md)
