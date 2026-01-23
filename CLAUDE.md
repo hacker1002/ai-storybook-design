@@ -313,6 +313,30 @@ Lưu lịch sử thay đổi của prompt templates. **Auto-populated** bởi tr
 | `status` | SMALLINT | Trạng thái |
 | `params` | JSON | Tham số |
 
+#### ai_conversations
+Chat sessions giữa user và AI assistants.
+
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | FK → auth.users |
+| `story_id` | UUID | FK → stories (nullable) |
+| `step` | VARCHAR(50) | `brainstorming`, `story_editing`, `complete`, etc. |
+| `created_at` | TIMESTAMPTZ | Thời điểm tạo |
+| `updated_at` | TIMESTAMPTZ | Thời điểm cập nhật |
+| `deleted_at` | TIMESTAMPTZ | Soft delete |
+
+#### ai_messages
+Messages trong conversation.
+
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `conversation_id` | UUID | FK → ai_conversations (CASCADE) |
+| `role` | VARCHAR(20) | `user`, `assistant`, `system` |
+| `content` | TEXT | Nội dung message |
+| `created_at` | TIMESTAMPTZ | Thời điểm tạo |
+
 ### Chi tiết JSONB structures
 
 #### docs[] structure

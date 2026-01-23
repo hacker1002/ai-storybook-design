@@ -3,11 +3,15 @@
 ## Description
 Tính năng chat với AI để brainstorm ý tưởng truyện. User trao đổi qua lại với AI để phát triển ý tưởng, AI tự động trích xuất các parameters từ cuộc hội thoại, sau đó tạo manuscript và chuyển sang Editor.
 
+**Conversation được persist trong DB:**
+- `ai_conversations`: Lưu session với `step = "brainstorming"`
+- `ai_messages`: Lưu từng message (user + assistant)
+
 ## Flow Overview
 ```
 ┌─────────────────┐
-│  Brainstorming  │ ←→ User-AI conversation
-│   (multi-turn)  │    AI extracts params if mentioned
+│  Brainstorming  │ ←→ User-AI conversation (persist to DB)
+│   (multi-turn)  │    AI extracts params, saved in message content
 └────────┬────────┘
          │ user confirms or requests "create story"
          ▼
@@ -68,28 +72,56 @@ Chuyển sang Phase 2 khi:
 
 ### State Management
 ```typescript
+// Frontend state - sync với DB
 interface BrainstormingState {
-  messages: ChatMessage[];
-  storyIdea: string;              // Accumulated story concept
-  extractedParams: {
-    dimension?: 1 | 2 | 3;
-    targetAudience?: 1 | 2 | 3;
-    genre?: 1 | 2 | 3 | 4 | 5;
-    writingStyle?: 1 | 2 | 3;
-    eraId?: string;               // UUID
-    locationId?: string;          // UUID
-    artstyleId?: string;          // UUID
-  };
+  conversationId: string | null;  // null = chưa có conversation
+  messages: ChatMessage[];        // Load từ ai_messages
+  storyIdea: string;              // Parse từ assistant message cuối
+  extractedParams: ExtractedParams; // Merge từ tất cả assistant messages
   status: "active" | "completed";
 }
 
+// Message hiển thị trên UI
 interface ChatMessage {
   id: string;
   role: "user" | "assistant";
-  content: string;
+  content: string;                // Với assistant: chỉ hiển thị field "message" từ JSON
   timestamp: Date;
-  extractedParams?: Partial<ExtractedParams>;  // Params extracted from this message
+  extractedParams?: ExtractedParams;  // Parse từ JSON content (assistant only)
 }
+
+interface ExtractedParams {
+  dimension?: 1 | 2 | 3;
+  targetAudience?: 1 | 2 | 3;
+  genre?: 1 | 2 | 3 | 4 | 5;
+  writingStyle?: 1 | 2 | 3;
+  eraId?: string;
+  locationId?: string;
+  artstyleId?: string;
+}
+```
+
+### Data Flow
+```
+1. User gửi message
+   ↓
+2. Call API: POST /api/chat/story-brainstorming
+   - conversationId: state.conversationId
+   - userMessage: input
+   - availableOptions: { eras, locations, artStyles }
+   ↓
+3. API tự động:
+   - Create/verify conversation trong ai_conversations
+   - Save user message vào ai_messages
+   - Load history, call LLM
+   - Save assistant response vào ai_messages
+   ↓
+4. Response trả về:
+   - conversationId (lưu vào state nếu mới)
+   - message (hiển thị)
+   - extractedParams (merge vào state)
+   - storyIdea (cập nhật state)
+   - shouldEndBrainstorming (check để chuyển phase)
 ```
 
 ---
@@ -115,9 +147,9 @@ Tất cả parameters đều required cho `generate-manuscript`:
 interface ClarificationQuestion {
   paramKey: string;
   question: string;
-  options?: SelectOption[];       // Nếu có options từ DB
+  options?: SelectOption[];
   allowSkip: boolean;
-  defaultValue?: any;             // Value nếu user skip
+  defaultValue?: any;
 }
 
 interface SelectOption {
@@ -165,7 +197,7 @@ interface ClarificationState {
   missingParams: string[];
   currentQuestion: ClarificationQuestion | null;
   answeredParams: Record<string, any>;
-  skippedParams: string[];        // Params được skip → auto-fill
+  skippedParams: string[];
   status: "asking" | "completed";
 }
 ```
@@ -249,7 +281,6 @@ interface SuccessResponse {
   storyId: string;
   snapshotId: string;
   status: "completed" | "partial";
-  // ... other fields from generate-manuscript result
 }
 
 // Error
@@ -258,6 +289,19 @@ interface ErrorResponse {
   code: string;
   details?: any;
 }
+```
+
+### Post-Success Actions
+```typescript
+// Update conversation khi tạo story thành công
+await supabase
+  .from('ai_conversations')
+  .update({
+    story_id: storyId,
+    step: 'complete',
+    updated_at: new Date()
+  })
+  .eq('id', conversationId);
 ```
 
 ### Loading State
@@ -288,6 +332,7 @@ router.push(`/editor/${storyId}`);
 ### ChatInterface
 ```typescript
 interface ChatInterfaceProps {
+  conversationId: string | null;
   messages: ChatMessage[];
   onSendMessage: (content: string) => void;
   isLoading: boolean;
@@ -343,7 +388,7 @@ User prompt template:
 
 ### 2. User wants to start over
 - Trigger phrases: "Làm lại", "Bắt đầu lại", "Reset"
-- Confirm before clearing
+- Tạo conversation mới (không xóa conversation cũ)
 
 ### 3. User mentions unrecognized era/location/artstyle
 - AI: "Mình chưa có phong cách 'X' trong thư viện. Bạn có thể chọn từ: [list options]"
@@ -352,16 +397,38 @@ User prompt template:
 - Periodically summarize extracted params
 - Max 20 turns trước khi suggest kết thúc
 
+### 5. Resume previous conversation
+- Load messages từ ai_messages WHERE conversation_id = X
+- Parse tất cả assistant messages để rebuild extractedParams
+
 ---
 
 ## Dependencies
 
 ### Supabase Queries
+
+**Fetch options:**
 ```typescript
-// Fetch options for brainstorming & clarification
 supabase.from('eras').select('id, name, description')
 supabase.from('locations').select('id, name, description, nation, city')
 supabase.from('art_styles').select('id, name, description')
+```
+
+**Load conversation history (resume):**
+```typescript
+// Get conversation
+const { data: conversation } = await supabase
+  .from('ai_conversations')
+  .select('*')
+  .eq('id', conversationId)
+  .single();
+
+// Get messages
+const { data: messages } = await supabase
+  .from('ai_messages')
+  .select('*')
+  .eq('conversation_id', conversationId)
+  .order('created_at', { ascending: true });
 ```
 
 ### API Endpoints
@@ -369,8 +436,10 @@ supabase.from('art_styles').select('id, name, description')
 - `POST /api/text-generation/generate-manuscript` - Create story
 
 ### DB Tables
-- `eras`: Query for era options (Supabase)
-- `locations`: Query for location options (Supabase)
-- `art_styles`: Query for art style options (Supabase)
+- `ai_conversations`: Store chat sessions
+- `ai_messages`: Store messages
+- `eras`: Query for era options
+- `locations`: Query for location options
+- `art_styles`: Query for art style options
 - `story`: Created by generate-manuscript
 - `snapshot`: Created by generate-manuscript
