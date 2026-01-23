@@ -36,19 +36,6 @@ interface StoryBrainstormingParams {
 
   // User's new message
   userMessage: string;
-
-  // Options from DB (frontend fetch từ Supabase)
-  availableOptions: {
-    eras: OptionItem[];
-    locations: OptionItem[];
-    artStyles: OptionItem[];
-  };
-}
-
-interface OptionItem {
-  id: string;
-  name: string;
-  description?: string;
 }
 ```
 
@@ -209,7 +196,6 @@ Return ONLY valid JSON:
 ```
 1. Validate input:
    - userMessage không được rỗng
-   - availableOptions phải có eras, locations, artStyles
 
 2. Handle conversation:
    IF conversationId is null:
@@ -223,10 +209,9 @@ Return ONLY valid JSON:
 
 4. Load conversation history:
    - SELECT messages FROM ai_messages WHERE conversation_id = conversationId ORDER BY created_at
-   - Parse assistant messages để lấy accumulated extractedParams
 
 5. Build current_params:
-   - Merge tất cả extractedParams từ các assistant messages trước đó
+   - Lấy extractedParams từ assistant message cuối cùng
 
 6. Lấy prompt templates từ DB:
    - Query prompt_templates với name = "STORY_CONSULTANT_SYSTEM"
@@ -236,10 +221,10 @@ Return ONLY valid JSON:
    - Convert messages thành text: "User: ...\nAssistant: ..."
    - Với assistant messages, chỉ lấy field "message" từ JSON content
 
-8. Format available options:
-   - eras → "- {id}: {name} - {description}"
-   - locations → "- {id}: {name} ({nation}, {city})"
-   - artStyles → "- {id}: {name} - {description}"
+8. Fetch và format available options từ DB:
+   - Query bảng `eras` → format: "- {id}: {name} - {description}"
+   - Query bảng `locations` → format: "- {id}: {name} ({nation}, {city})"
+   - Query bảng `art_styles` → format: "- {id}: {name} - {description}"
 
 9. Render user prompt template với variables
 
@@ -253,7 +238,7 @@ Return ONLY valid JSON:
 13. Return result:
     - conversationId
     - message: llmResponse.message
-    - extractedParams: merge(current_params, llmResponse.extractedParams)
+    - extractedParams: llmResponse.extractedParams
     - storyIdea: llmResponse.storyIdea
     - shouldEndBrainstorming: llmResponse.shouldEndBrainstorming
     - turnNumber: count user messages
@@ -266,7 +251,6 @@ Return ONLY valid JSON:
 | Error | Code | Message |
 |-------|------|---------|
 | Empty userMessage | 400 | "User message is required" |
-| Invalid availableOptions | 400 | "Invalid availableOptions format" |
 | Conversation not found | 404 | "Conversation not found" |
 | Wrong conversation step | 400 | "Conversation is not in brainstorming step" |
 | LLM call failed | 500 | "AI service unavailable" |
@@ -280,19 +264,7 @@ Return ONLY valid JSON:
 ```json
 {
   "conversationId": null,
-  "userMessage": "Mình muốn viết truyện về một chú mèo con đi phiêu lưu",
-  "availableOptions": {
-    "eras": [
-      { "id": "era-1", "name": "Hiện đại", "description": "Thời đại hiện tại" },
-      { "id": "era-2", "name": "Cổ tích", "description": "Thời xưa, không xác định" }
-    ],
-    "locations": [
-      { "id": "loc-1", "name": "Việt Nam", "description": "Đất nước Việt Nam" }
-    ],
-    "artStyles": [
-      { "id": "art-1", "name": "Màu nước", "description": "Phong cách tranh màu nước" }
-    ]
-  }
+  "userMessage": "Mình muốn viết truyện về một chú mèo con đi phiêu lưu"
 }
 ```
 
@@ -312,8 +284,7 @@ Return ONLY valid JSON:
 ```json
 {
   "conversationId": "conv-uuid-123",
-  "userMessage": "Trong rừng nhé, cho bé 4 tuổi đọc, kiểu fantasy",
-  "availableOptions": { ... }
+  "userMessage": "Trong rừng nhé, cho bé 4 tuổi đọc, kiểu fantasy"
 }
 ```
 
