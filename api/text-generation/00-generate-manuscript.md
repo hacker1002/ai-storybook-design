@@ -6,12 +6,21 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `story`: Lưu thông tin story được tạo (title, summary, target_core_value, step, artstyle_id, target_audience)
+- `story`: Lưu thông tin story (title, summary, target_core_value, step, dimension, target_audience, genre, writing_style, era_id, location_id, artstyle_id)
 - `snapshot`: Lưu version đầu tiên của story
 - `art_styles`: Truy vấn description để truyền vào các step functions
+- `eras`: Truy vấn era description cho context
+- `locations`: Truy vấn location description cho context
 
 ### Fields Used
 - `story.id`: UUID của story
+- `story.dimension`: SMALLINT (1: Square, 2: A4 Landscape, 3: A4 Portrait)
+- `story.target_audience`: SMALLINT (1: preschool, 2: primary, 3: 9-10)
+- `story.target_core_value`: VARCHAR(255)
+- `story.genre`: SMALLINT (1-5)
+- `story.writing_style`: SMALLINT (1-3)
+- `story.era_id`: FK → eras
+- `story.location_id`: FK → locations
 - `story.artstyle_id`: FK → art_styles
 - `snapshot.id`: UUID của snapshot
 - `snapshot.story_id`: FK → story
@@ -21,10 +30,17 @@
 interface GenerateManuscriptParams {
   storyIdea: string;              // "Một chú mèo con tên Miu lạc đường..."
   attributes: {
-    storyType: string[];          // ["adventure", "drama"]
-    audience: string;             // "kids-3-6" | "kids-7-12" | "teens"
-    length: "short" | "medium" | "long";
-    artstyleId: string;           // UUID của artstyle trong DB
+    // General settings
+    dimension: 1 | 2 | 3;         // 1: Square (20x20cm), 2: A4 Landscape (29.7x21cm), 3: A4 Portrait (21x29.7cm)
+    targetAudience: 1 | 2 | 3;    // 1: preschool (2-5), 2: primary (6-8), 3: (9-10)
+    targetCoreValue: string;      // Đạo đức, Trí tuệ, Nghị lực (varchar 255)
+
+    // Creative settings
+    genre: 1 | 2 | 3 | 4 | 5;     // 1: fantasy, 2: scifi, 3: mystery, 4: romance, 5: horror
+    writingStyle: 1 | 2 | 3;      // 1: Narrative, 2: Rhyming/Rhyme, 3: Humorous Fiction
+    eraId: string;                // UUID → eras table
+    locationId: string;           // UUID → locations table
+    artstyleId: string;           // UUID → art_styles table
   };
   language?: string;              // "vi" | "en" - nếu không truyền, dùng "vi"
   options?: {

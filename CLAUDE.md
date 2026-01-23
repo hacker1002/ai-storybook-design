@@ -523,7 +523,7 @@ Lưu lịch sử thay đổi của prompt templates. **Auto-populated** bởi tr
 | name | Mô tả | Variables |
 |------|-------|-----------|
 | `STORY_TELLER_SYSTEM` | System prompt - Story Teller agent | *(none)* |
-| `STORY_DRAFT_USER_TEMPLATE` | User prompt - tạo story draft | `story_idea`, `story_types`, `audience`, `length`, `art_style_description`, `language`, `spreads`, `words_per_spread`, `categories_text`, `locations_text` |
+| `STORY_DRAFT_USER_TEMPLATE` | User prompt - tạo story draft | `story_idea`, `dimension`, `target_audience`, `target_core_value`, `genre`, `writing_style`, `era_name`, `era_description`, `location_name`, `location_description`, `art_style_name`, `art_style_description`, `language`, `spreads`, `words_per_spread`, `categories_text`, `locations_text` |
 | `ART_DIRECTOR_P1_SYSTEM` | System prompt - Art Director Phase 1 | *(none)* |
 | `VISUAL_PLAN_USER_TEMPLATE` | User prompt - tạo visual plan | `title`, `target_audience`, `art_style_description`, `language`, `docs_text`, `characters_text`, `props_text`, `stages_text`, `spreads_text` |
 | `WORD_SMITH_SYSTEM` | System prompt - Word Smith | *(none)* |

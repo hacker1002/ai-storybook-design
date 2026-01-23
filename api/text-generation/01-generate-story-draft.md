@@ -6,32 +6,71 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `story`: Tạo record mới với metadata (title, summary, target_core_value, step, artstyle_id, target_audience, original_language)
+- `story`: Tạo record mới với metadata (title, summary, target_core_value, step, dimension, target_audience, genre, writing_style, era_id, location_id, artstyle_id, original_language)
 - `snapshot`: Tạo snapshot đầu tiên chứa docs[], characters[], props[], stages[], spreads[]
 - `art_styles`: Truy vấn description để đưa vào prompt
+- `eras`: Truy vấn era description cho context
+- `locations`: Truy vấn location description cho context và để LLM chọn location_id cho stages
 - `asset_categories`: Truy vấn danh sách categories để LLM chọn category_id phù hợp cho characters/props
-- `locations`: Truy vấn danh sách locations để LLM chọn location_id phù hợp cho stages
 
 ### Fields Used
-- `story.id`, `story.title`, `story.description`, `story.step`, `story.target_audience`, `story.artstyle_id`, `story.original_language`, `story.target_core_value`
+- `story.id`, `story.title`, `story.description`, `story.step`, `story.dimension`, `story.target_audience`, `story.target_core_value`, `story.genre`, `story.writing_style`, `story.era_id`, `story.location_id`, `story.artstyle_id`, `story.original_language`
 - `snapshot.id`, `snapshot.story_id`, `snapshot.docs[]`, `snapshot.characters[]`, `snapshot.props[]`, `snapshot.stages[]`, `snapshot.spreads[]`
-- `art_styles.id`, `art_styles.description`
+- `art_styles.id`, `art_styles.name`, `art_styles.description`
+- `eras.id`, `eras.name`, `eras.description`
+- `locations.id`, `locations.name`, `locations.description`, `locations.nation`, `locations.city`
 - `asset_categories.id`, `asset_categories.name`, `asset_categories.type`, `asset_categories.description`
-- `locations.id`, `locations.name`, `locations.description`
 
 ## Parameters
 ```typescript
 interface GenerateStoryAnalysisParams {
   storyIdea: string;              // "Một chú mèo con tên Miu lạc đường..."
   attributes: {
-    storyType: string[];          // ["adventure", "drama"]
-    audience: string;             // "kids-3-6" | "kids-7-12" | "teens"
-    length: "short" | "medium" | "long";
-    artstyleId: string;           // UUID của artstyle trong DB
+    // General settings
+    dimension: 1 | 2 | 3;         // 1: Square (20x20cm), 2: A4 Landscape (29.7x21cm), 3: A4 Portrait (21x29.7cm)
+    targetAudience: 1 | 2 | 3;    // 1: preschool (2-5), 2: primary (6-8), 3: (9-10)
+    targetCoreValue: string;      // Đạo đức, Trí tuệ, Nghị lực (varchar 255)
+
+    // Creative settings
+    genre: 1 | 2 | 3 | 4 | 5;     // 1: fantasy, 2: scifi, 3: mystery, 4: romance, 5: horror
+    writingStyle: 1 | 2 | 3;      // 1: Narrative, 2: Rhyming/Rhyme, 3: Humorous Fiction
+    eraId: string;                // UUID → eras table
+    locationId: string;           // UUID → locations table
+    artstyleId: string;           // UUID → art_styles table
   };
   language?: string;              // "vi" | "en" - nếu không truyền, dùng "vi"
 }
 ```
+
+### Dimension Mapping
+| Value | Size | Spreads | Words/Spread |
+|-------|------|---------|--------------|
+| 1 | Square (20x20cm) | 12 | 30-50 |
+| 2 | A4 Landscape (29.7x21cm) | 16 | 40-60 |
+| 3 | A4 Portrait (21x29.7cm) | 20 | 50-80 |
+
+### Target Audience Mapping
+| Value | Name | Age Range | Reading Level |
+|-------|------|-----------|---------------|
+| 1 | Preschool | 2-5 tuổi | Từ đơn giản, câu ngắn |
+| 2 | Primary | 6-8 tuổi | Câu phức, từ vựng đa dạng |
+| 3 | Upper Primary | 9-10 tuổi | Nội dung phức tạp, đa chủ đề |
+
+### Genre Mapping
+| Value | Name (EN) | Name (VI) |
+|-------|-----------|-----------|
+| 1 | Fantasy | Kỳ ảo |
+| 2 | Sci-Fi | Khoa học viễn tưởng |
+| 3 | Mystery | Bí ẩn |
+| 4 | Romance | Lãng mạn |
+| 5 | Horror | Kinh dị |
+
+### Writing Style Mapping
+| Value | Name (EN) | Name (VI) | Description |
+|-------|-----------|-----------|-------------|
+| 1 | Narrative | Văn xuôi | Kể chuyện truyền thống |
+| 2 | Rhyming | Thơ/Vần điệu | Có vần, nhịp điệu |
+| 3 | Humorous Fiction | Hài hước | Phong cách hài, vui nhộn |
 
 ## Result
 ```typescript
@@ -47,9 +86,8 @@ interface LLMOutput {
   metadata: {
     title: string;
     summary: string;
-    targetCoreValue: string[];
   };
-  docs: DocItem[];                // 3 documents: structure, imagery, lesson
+  docs: DocItem[];                // 4 documents: manuscript, structure, imagery, lesson
   characters: CharacterItem[];
   props: PropItem[];
   stages: StageItem[];
@@ -90,11 +128,21 @@ Analyze the following story idea and create a complete story framework:
 ## STORY IDEA
 {%story_idea%}
 
-## ATTRIBUTES
-- Story Types: {%story_types%}
-- Target Audience: {%audience%}
-- Length: {%length%}
-- Art Style Reference: {%art_style_description%}
+## STORY SETTINGS
+
+### General Settings
+- Dimension: {%dimension%}              // Định dạng sách
+- Target Audience: {%target_audience%}  // Đối tượng độc giả
+- Target Core Value: {%target_core_value%}  // Giá trị cốt lõi (Đạo đức, Trí tuệ, Nghị lực)
+
+### Creative Settings
+- Genre: {%genre%}                      // Thể loại truyện
+- Writing Style: {%writing_style%}      // Phong cách viết
+- Era: {%era_name%} - {%era_description%}      // Thời đại
+- Location: {%location_name%} - {%location_description%}  // Bối cảnh địa lý chính
+- Art Style: {%art_style_name%} - {%art_style_description%}  // Phong cách minh họa
+
+### Format
 - Language: {%language%}
 - Number of Spreads: {%spreads%}
 - Words per Spread: {%words_per_spread%}
@@ -108,9 +156,9 @@ Analyze the following story idea and create a complete story framework:
 }
 {%categories_text%}
 
-### locations
+### locations (for stages)
 { // list from DB as below:
-- uuid: id, name: "Abc", description: ""
+- uuid: id, name: "Abc", description: "", nation: "", city: ""
 - ...
 }
 {%locations_text%}
@@ -124,8 +172,7 @@ Return a JSON object with the following structure:
 {
   "metadata": {
     "title": "...",
-    "summary": "...",
-    "targetCoreValue": ["..."]
+    "summary": "..."
   },
   "docs": [...],
   "characters": [...],
@@ -141,7 +188,6 @@ Return a JSON object with the following structure:
 ### 1. metadata
 - **title**: Tiêu đề truyện
 - **summary**: Tóm tắt 2-3 câu về nội dung và bài học
-- **targetCoreValue**: Mảng các giá trị cốt lõi (ví dụ: ["kindness", "courage", "friendship"])
 
 ### 2. docs[] - 4 documents
 Mỗi document là một object với cấu trúc:
@@ -266,25 +312,53 @@ Mỗi character là một object:
 ## Flow
 ```
 1. Validate input parameters
+
 2. Lấy prompt templates từ DB:
    - Query `prompt_templates` với name = "STORY_TELLER_SYSTEM" → system prompt
    - Query `prompt_templates` với name = "STORY_DRAFT_USER_TEMPLATE" → user prompt template
-3. Lấy art_style description từ DB (bảng art_styles)
-4. Lấy danh sách asset_categories từ DB (để cung cấp context cho LLM)
-5. Lấy danh sách locations từ DB (để cung cấp context cho LLM)
+
+3. Lấy reference data từ DB:
+   - Query `art_styles` với id = artstyleId → art_style_name, art_style_description
+   - Query `eras` với id = eraId → era_name, era_description
+   - Query `locations` với id = locationId → location_name, location_description
+
+4. Lấy resource lists từ DB:
+   - Query `asset_categories` → categories_text (cho LLM chọn category_id)
+   - Query `locations` → locations_text (cho LLM chọn location_id cho stages)
+
+5. Map input values to display text:
+   - dimension → dimension_text (theo Dimension Mapping table)
+   - targetAudience → target_audience_text (theo Target Audience Mapping table)
+   - genre → genre_text (theo Genre Mapping table)
+   - writingStyle → writing_style_text (theo Writing Style Mapping table)
+   - Calculate spreads, words_per_spread dựa trên dimension
+
 6. Render user prompt template với variables:
-   - story_idea, story_types, audience, length, art_style_description
+   - story_idea, dimension, target_audience, target_core_value
+   - genre, writing_style, era_name, era_description
+   - location_name, location_description, art_style_name, art_style_description
    - language, spreads, words_per_spread, categories_text, locations_text
+
 7. Call LLM với system prompt và rendered user prompt
+
 8. Parse JSON response
-9. Tạo Story record trong DB với step = 1 (manuscript), target_audience, artstyle_id
+
+9. Tạo Story record trong DB với:
+   - step = 1 (manuscript)
+   - dimension, target_audience, target_core_value
+   - genre, writing_style, era_id, location_id, artstyle_id
+   - original_language
+
 10. Tạo Snapshot record ban đầu
+
 11. Lưu vào snapshot:
     - docs[] (4 documents: manuscript, story_structure, artistic_imagery, moral_lesson)
     - characters[] (basic info với category_id → FK asset_categories, personality, appearance - chưa có visual_description)
     - props[] (name, key, category_id → FK asset_categories, type - chưa có visual_description)
     - stages[] (name, key, location_id → FK locations - chưa có visual_description)
     - spreads[] (number, left_page, right_page, manuscript, textboxes - chưa có images[])
-12. Update story metadata (title, summary, target_core_value)
+
+12. Update story metadata (title, summary từ LLM output)
+
 13. Return { storyId, snapshotId, data }
 ```
