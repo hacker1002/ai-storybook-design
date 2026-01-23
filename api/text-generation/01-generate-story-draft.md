@@ -28,7 +28,7 @@ interface GenerateStoryAnalysisParams {
   attributes: {
     // General settings
     dimension: 1 | 2 | 3;         // 1: Square (20x20cm), 2: A4 Landscape (29.7x21cm), 3: A4 Portrait (21x29.7cm)
-    targetAudience: 1 | 2 | 3;    // 1: preschool (2-5), 2: primary (6-8), 3: (9-10)
+    targetAudience: 1 | 2 | 3;    // 1: preschool (2-5), 2: primary (6-8), 3: tweens (9-10)
     targetCoreValue: string;      // Đạo đức, Trí tuệ, Nghị lực (varchar 255)
 
     // Creative settings
@@ -54,7 +54,7 @@ interface GenerateStoryAnalysisParams {
 |-------|------|-----------|---------------|
 | 1 | Preschool | 2-5 tuổi | Từ đơn giản, câu ngắn |
 | 2 | Primary | 6-8 tuổi | Câu phức, từ vựng đa dạng |
-| 3 | Upper Primary | 9-10 tuổi | Nội dung phức tạp, đa chủ đề |
+| 3 | Tweens | 9-10 tuổi | Nội dung phức tạp, đa chủ đề |
 
 ### Genre Mapping
 | Value | Name (EN) | Name (VI) |

@@ -101,20 +101,20 @@ Refine the text content for this children's picture book:
 
 ### For Target Audience: {audience}
 
-**kids-3-6 (Preschool):**
+**1 - Preschool (2-5 tuổi):**
 - Simple sentences (5-10 words max)
 - Repetition and rhythm (great for read-aloud)
 - Familiar vocabulary
 - Onomatopoeia encouraged
 - Total per spread: 20-40 words max
 
-**kids-7-12 (Primary):**
+**2 - Primary (6-8 tuổi):**
 - Varied sentence structure
 - Richer vocabulary (with context clues)
 - Can handle compound sentences
 - Total per spread: 40-80 words max
 
-**teens:**
+**3 - Tweens (9-10 tuổi):**
 - Complex sentences allowed
 - Sophisticated vocabulary
 - Subtext and nuance

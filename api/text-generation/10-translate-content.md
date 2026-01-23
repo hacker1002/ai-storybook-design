@@ -13,7 +13,7 @@
 - `stories.id` (UUID) - Primary key
 - `stories.title` (VARCHAR) - Tiêu đề truyện, dùng làm context
 - `stories.original_language` (VARCHAR) - Ngôn ngữ gốc (vi, en), fallback cho sourceLanguage
-- `stories.target_audience` (SMALLINT) - Nhóm tuổi: 0=preschool (2-5), 1=primary (6-8), 2=tweens (9-10)
+- `stories.target_audience` (SMALLINT) - Nhóm tuổi: 1=preschool (2-5), 2=primary (6-8), 3=tweens (9-10)
 - `stories.genre` (SMALLINT) - Thể loại: 1=fantasy, 2=scifi, 3=mystery, 4=romance, 5=horror
 
 ## Parameters

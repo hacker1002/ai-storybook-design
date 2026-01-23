@@ -48,7 +48,7 @@ Cuộc hội thoại nhiều lượt giữa User và AI để phát triển ý t
 | Parameter | Type | DB Field | Description |
 |-----------|------|----------|-------------|
 | `dimension` | SMALLINT | `story.dimension` | 1: Square (20x20cm), 2: A4 Landscape, 3: A4 Portrait |
-| `targetAudience` | SMALLINT | `story.target_audience` | 1: preschool (2-5), 2: primary (6-8), 3: (9-10) |
+| `targetAudience` | SMALLINT | `story.target_audience` | 1: preschool (2-5), 2: primary (6-8), 3: tweens (9-10) |
 | `genre` | SMALLINT | `story.genre` | 1: fantasy, 2: scifi, 3: mystery, 4: romance, 5: horror |
 | `writingStyle` | SMALLINT | `story.writing_style` | 1: Narrative, 2: Rhyming, 3: Humorous Fiction |
 | `eraId` | UUID | `story.era_id` | FK → eras table |

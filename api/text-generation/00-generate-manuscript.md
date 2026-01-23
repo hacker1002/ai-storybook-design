@@ -15,7 +15,7 @@
 ### Fields Used
 - `story.id`: UUID của story
 - `story.dimension`: SMALLINT (1: Square, 2: A4 Landscape, 3: A4 Portrait)
-- `story.target_audience`: SMALLINT (1: preschool, 2: primary, 3: 9-10)
+- `story.target_audience`: SMALLINT (1: preschool, 2: primary, 3: tweens)
 - `story.target_core_value`: VARCHAR(255)
 - `story.genre`: SMALLINT (1-5)
 - `story.writing_style`: SMALLINT (1-3)
@@ -32,7 +32,7 @@ interface GenerateManuscriptParams {
   attributes: {
     // General settings
     dimension: 1 | 2 | 3;         // 1: Square (20x20cm), 2: A4 Landscape (29.7x21cm), 3: A4 Portrait (21x29.7cm)
-    targetAudience: 1 | 2 | 3;    // 1: preschool (2-5), 2: primary (6-8), 3: (9-10)
+    targetAudience: 1 | 2 | 3;    // 1: preschool (2-5), 2: primary (6-8), 3: tweens (9-10)
     targetCoreValue: string;      // Đạo đức, Trí tuệ, Nghị lực (varchar 255)
 
     // Creative settings

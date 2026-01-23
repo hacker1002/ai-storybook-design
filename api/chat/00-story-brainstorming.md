@@ -64,7 +64,7 @@ interface OptionItem {
 |-------|-----------|---------------------|
 | 1 | Preschool (2-5 tuổi) | "bé 3 tuổi", "mẫu giáo", "trẻ nhỏ" |
 | 2 | Primary (6-8 tuổi) | "bé 7 tuổi", "tiểu học", "lớp 1-2" |
-| 3 | Upper Primary (9-10 tuổi) | "bé 10 tuổi", "lớp 4-5" |
+| 3 | Tweens (9-10 tuổi) | "bé 10 tuổi", "lớp 4-5" |
 
 ### Genre Mapping
 | Value | Name | User Input Examples |
@@ -167,7 +167,7 @@ You output structured JSON that includes both your reply and extracted informati
 
 ### Numeric Params (match user input to value)
 - dimension: 1=square/vuông, 2=landscape/ngang, 3=portrait/dọc
-- targetAudience: 1=preschool/2-5 tuổi, 2=primary/6-8 tuổi, 3=upper/9-10 tuổi
+- targetAudience: 1=preschool/2-5 tuổi, 2=primary/6-8 tuổi, 3=tweens/9-10 tuổi
 - genre: 1=fantasy, 2=scifi, 3=mystery, 4=romance, 5=horror
 - writingStyle: 1=narrative, 2=rhyming/thơ, 3=humorous
 

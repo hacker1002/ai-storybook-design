@@ -58,11 +58,11 @@ ai-storybook-design/
 | `current_content` | JSONB | Autosave content (ghi đè mỗi khi user dừng 1p) |
 | `cover` | JSONB | Thông tin bìa: `{ thumbnail_url, normal_url }` |
 | `book_type` | SMALLINT | Sách tranh/Truyện chữ có hình/Comics/Manga *(required: general)* |
-| `dimension` | SMALLINT | Square (20cm x 20cm) *(required: general)* |
-| `target_audience` | SMALLINT | preschool (2-5), primary (6-8), (9-10) *(required: general)* |
+| `dimension` | SMALLINT | 1: Square (20x20cm), 2: A4 Landscape, 3: A4 Portrait *(required: general)* |
+| `target_audience` | SMALLINT | 1: preschool (2-5), 2: primary (6-8), 3: tweens (9-10) *(required: general)* |
 | `target_core_value` | VARCHAR | Đạo đức, Trí tuệ, Nghị lực *(required: general)* |
 | `genre` | SMALLINT | 1: fantasy, 2: scifi, 3: mystery, 4: romance, 5: horror *(required: creative)* |
-| `writing_style` | SMALLINT | Phong cách viết *(required: creative)* |
+| `writing_style` | SMALLINT | Phong cách viết 1: Narrative, 2: Rhyming, 3: Humorous Fiction *(required: creative)* |
 | `era_id` | UUID | FK → `eras` *(required: creative)* |
 | `location_id` | UUID | FK → `locations` *(required: creative)* |
 | `artstyle_id` | UUID | FK → `art_styles` *(required: creative)* |
@@ -152,8 +152,8 @@ Bảng lưu các vấn đề tồn đọng trong story.
 | `story_id` | UUID | Link đến Story |
 | `title` | VARCHAR | Tiêu đề vấn đề |
 | `content` | TEXT | Mô tả chi tiết vấn đề |
-| `type` | SMALLINT | Loại vấn đề |
-| `status` | SMALLINT | Trạng thái |
+| `type` | SMALLINT | 0: consistency, 1: plot, 2: age_inappropriate, 3: other |
+| `status` | SMALLINT | 0: open, 1: in_progress, 2: resolved, 3: ignored |
 
 ### Bảng Users & Profiles
 

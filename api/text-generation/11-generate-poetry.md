@@ -12,7 +12,7 @@
 ### Fields Used
 - `stories.id` (UUID) - Primary key
 - `stories.title` (VARCHAR) - Tiêu đề truyện
-- `stories.target_audience` (SMALLINT) - Nhóm tuổi: 0=preschool, 1=primary, 2=tweens
+- `stories.target_audience` (SMALLINT) - Nhóm tuổi: 1=preschool (2-5), 2=primary (6-8), 3=tweens (9-10)
 - `stories.original_language` (VARCHAR) - Ngôn ngữ gốc (vi, en)
 - `snapshots.docs[]` (JSONB) - Manuscript context
 - `snapshots.spreads[].manuscript` (TEXT) - Cốt truyện spread
