@@ -4,10 +4,17 @@
 
 * [📊 Database Schema](CLAUDE.md)
 
-* **API Functions**
-  * [📚 Overview](api/text-generation/README.md)
+* **App Features**
+  * **AI Assistant**
+    * [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
 
-  * **Manuscript Generation**
+* **API**
+  * [📚 Overview](api/README.md)
+
+  * **Chat**
+    * [00 - Story Brainstorming](api/chat/00-story-brainstorming.md)
+
+  * **Text Generation**
     * [00 - Generate Manuscript](api/text-generation/00-generate-manuscript.md)
     * [01 - Story Draft](api/text-generation/01-generate-story-draft.md)
     * [02 - Spread Visual Plan](api/text-generation/02-generate-spread-visual-plan.md)
@@ -21,8 +28,6 @@
     * [08 - Stage](api/text-generation/08-generate-visual-description-stage.md)
     * [09 - Spread](api/text-generation/09-generate-visual-description-spread.md)
 
-  * **Translation**
+  * **Translation & Poetry**
     * [10 - Translate Content](api/text-generation/10-translate-content.md)
-
-  * **Poetry Generation**
     * [11 - Generate Poetry](api/text-generation/11-generate-poetry.md)

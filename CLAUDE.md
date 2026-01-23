@@ -18,13 +18,26 @@ Hướng dẫn cho Claude AI khi làm việc với project này.
 ## Cấu trúc Files
 
 ```
-docs/
-├── README.md                    # Homepage (file này hiển thị trên docsify)
+ai-storybook-design/
+├── README.md                    # Homepage (docsify)
 ├── _sidebar.md                  # Navigation sidebar
 ├── CLAUDE.md                    # Database Schema & Guidelines
 ├── index.html                   # Docsify config
 │
-└── api/text-generation/         # API Text Generation Documentation
+├── api/
+│   ├── chat/                    # Chat API
+│   │   └── 00-story-brainstorming.md
+│   └── text-generation/         # Text Generation API
+│       ├── 00-generate-manuscript.md
+│       └── ...
+│
+├── app/                         # App Features Design
+│   └── ai-assistant/
+│       └── story-idea-brainstorming.md
+│
+└── template-design/             # Design Templates
+    ├── api-template.md          # Template cho API endpoint
+    └── app-template.md          # Template cho App feature
 ```
 
 ---
@@ -457,6 +470,27 @@ Lưu lịch sử thay đổi của prompt templates. **Auto-populated** bởi tr
 
 ---
 
+## Design Templates
+
+Khi thiết kế API endpoint hoặc App feature mới, **BẮT BUỘC** sử dụng template tương ứng.
+
+### API Endpoint
+```bash
+cp template-design/api-template.md api/{category}/{nn}-{endpoint-name}.md
+```
+- `{category}`: thư mục API (chat, text-generation, ...)
+- `{nn}`: số thứ tự 2 chữ số (00, 01, 02, ...)
+- `{endpoint-name}`: tên endpoint (kebab-case)
+
+### App Feature
+```bash
+cp template-design/app-template.md app/{feature-group}/{feature-name}.md
+```
+- `{feature-group}`: nhóm tính năng (ai-assistant, editor, ...)
+- `{feature-name}`: tên tính năng (kebab-case)
+
+---
+
 ## Quy tắc khi thiết kế API
 
 ### Language Fallback
@@ -522,6 +556,8 @@ Lưu lịch sử thay đổi của prompt templates. **Auto-populated** bởi tr
 
 | name | Mô tả | Variables |
 |------|-------|-----------|
+| `STORY_CONSULTANT_SYSTEM` | System prompt - Story Consultant (brainstorming) | *(none)* |
+| `STORY_CONSULTANT_USER_TEMPLATE` | User prompt - brainstorming chat | `conversation_history`, `current_params`, `available_eras`, `available_locations`, `available_art_styles` |
 | `STORY_TELLER_SYSTEM` | System prompt - Story Teller agent | *(none)* |
 | `STORY_DRAFT_USER_TEMPLATE` | User prompt - tạo story draft | `story_idea`, `dimension`, `target_audience`, `target_core_value`, `genre`, `writing_style`, `era_name`, `era_description`, `location_name`, `location_description`, `art_style_name`, `art_style_description`, `language`, `spreads`, `words_per_spread`, `categories_text`, `locations_text` |
 | `ART_DIRECTOR_P1_SYSTEM` | System prompt - Art Director Phase 1 | *(none)* |
@@ -584,3 +620,6 @@ python3 -c "import pandas as pd; xl = pd.ExcelFile('CoreDB.xlsx'); print(xl.shee
 
 - Database Schema: `CoreDB.xlsx`
 - Edge Functions Old Spec: `EDGE-FUNCTIONS-SPEC(OLD).md`
+- Design Templates: `template-design/`
+- App Features: `app/`
+- API: `api/`
