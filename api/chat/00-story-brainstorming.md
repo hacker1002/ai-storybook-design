@@ -36,6 +36,9 @@ interface StoryBrainstormingParams {
 
   // User's new message
   userMessage: string;
+
+  // Finalization flag - when true, AI will fill all null params with smart defaults
+  isFinalize?: boolean;
 }
 ```
 
@@ -83,6 +86,7 @@ interface StoryBrainstormingResult {
   extractedParams: ExtractedParams;
   storyIdea: string;
   shouldEndBrainstorming: boolean;
+  isFinalize: boolean;             // Indicates if this is a finalized response
 
   // Metadata
   turnNumber: number;              // Số lượt chat hiện tại
@@ -91,6 +95,7 @@ interface StoryBrainstormingResult {
 interface ExtractedParams {
   dimension?: 1 | 2 | 3;
   targetAudience?: 1 | 2 | 3;
+  targetCoreValue?: string;
   genre?: 1 | 2 | 3 | 4 | 5;
   writingStyle?: 1 | 2 | 3;
   eraId?: string;
@@ -143,12 +148,26 @@ You output structured JSON that includes both your reply and extracted informati
 
 ---
 
+## FINALIZATION MODE: {%is_finalize%}
+
+---
+
 ## YOUR TASK
 
 1. Respond naturally to continue the conversation
 2. Extract any story parameters mentioned (see mapping rules below)
-3. Summarize the current story idea
+3. Summarize the current story idea based on conversation
 4. Detect if user wants to finish brainstorming
+
+### IF FINALIZATION MODE = true:
+- This is the FINAL response - user wants to proceed with story creation
+- Write a compelling, complete story idea summary (2-3 sentences) synthesizing all discussed elements
+- **MUST fill ALL null params with smart defaults** based on:
+  - Context from conversation (preferred)
+  - If no context: dimension=2, targetAudience=1, genre=1, writingStyle=1
+  - For eraId/locationId/artstyleId: pick the most appropriate option from available list if not mentioned
+- Set shouldEndBrainstorming = true
+- Message should confirm the finalized story concept enthusiastically
 
 ## PARAMETER EXTRACTION RULES
 
@@ -158,15 +177,15 @@ You output structured JSON that includes both your reply and extracted informati
 - genre: 1=fantasy, 2=scifi, 3=mystery, 4=romance, 5=horror
 - writingStyle: 1=narrative, 2=rhyming/thơ, 3=humorous
 
-### UUID Params (match với available options)
-- eraId: Match user input với era name/description → return id
-- locationId: Match user input với location name → return id
-- artstyleId: Match user input với art style name → return id
+### UUID Params (match with available options)
+- eraId: Match user input with era name/description -> return id
+- locationId: Match user input with location name -> return id
+- artstyleId: Match user input with art style name -> return id
 
 ### End Detection Phrases
-- "OK tạo truyện", "tạo truyện đi", "create story"
-- "xong rồi", "done", "hoàn thành"
-- "mình thích ý này", "ý tưởng này được rồi"
+- "OK tao truyen", "tao truyen di", "create story"
+- "xong roi", "done", "hoan thanh"
+- "minh thich y nay", "y tuong nay duoc roi"
 
 ---
 
@@ -178,6 +197,7 @@ Return ONLY valid JSON:
   "extractedParams": {
     "dimension": null | 1 | 2 | 3,
     "targetAudience": null | 1 | 2 | 3,
+    "targetCoreValue": "The main lesson of the story (e.g., Bravery, Kindness...)",
     "genre": null | 1 | 2 | 3 | 4 | 5,
     "writingStyle": null | 1 | 2 | 3,
     "eraId": null | "uuid-string",
@@ -185,7 +205,8 @@ Return ONLY valid JSON:
     "artstyleId": null | "uuid-string"
   },
   "storyIdea": "Current accumulated story concept",
-  "shouldEndBrainstorming": false | true
+  "shouldEndBrainstorming": false | true,
+  "isFinalize": false | true
 }
 ```
 
@@ -276,6 +297,7 @@ Return ONLY valid JSON:
   "extractedParams": {},
   "storyIdea": "Chú mèo con đi phiêu lưu",
   "shouldEndBrainstorming": false,
+  "isFinalize": false,
   "turnNumber": 1
 }
 ```
@@ -284,7 +306,7 @@ Return ONLY valid JSON:
 ```json
 {
   "conversationId": "conv-uuid-123",
-  "userMessage": "Trong rừng nhé, cho bé 4 tuổi đọc, kiểu fantasy"
+  "userMessage": "Trong rừng nhé, cho bé 4 tuổi đọc, kiểu fantasy. Mình muốn dạy bé về tình bạn"
 }
 ```
 
@@ -292,14 +314,47 @@ Return ONLY valid JSON:
 ```json
 {
   "conversationId": "conv-uuid-123",
-  "message": "Tuyệt vời! Truyện fantasy về chú mèo phiêu lưu trong rừng cho bé 4 tuổi - rất phù hợp! Chú mèo có tên gì không?",
+  "message": "Tuyệt vời! Truyện fantasy về chú mèo phiêu lưu trong rừng cho bé 4 tuổi với thông điệp về tình bạn - rất phù hợp! Chú mèo có tên gì không?",
   "extractedParams": {
     "targetAudience": 1,
+    "targetCoreValue": "Tình bạn",
     "genre": 1
   },
   "storyIdea": "Chú mèo con phiêu lưu trong rừng, gặp gỡ các bạn thú. Truyện fantasy dành cho bé 4 tuổi.",
   "shouldEndBrainstorming": false,
+  "isFinalize": false,
   "turnNumber": 2
+}
+```
+
+### Request (Finalization)
+```json
+{
+  "conversationId": "conv-uuid-123",
+  "userMessage": "OK mình thích ý tưởng này rồi",
+  "isFinalize": true
+}
+```
+
+### Response (Finalized)
+```json
+{
+  "conversationId": "conv-uuid-123",
+  "message": "Tuyệt vời! Mình đã hoàn thiện ý tưởng truyện cho bạn. Câu chuyện về chú mèo Miu phiêu lưu trong khu rừng kỳ diệu, kết bạn với các loài thú và học được giá trị của tình bạn chân thành. Sẵn sàng để bắt đầu tạo truyện!",
+  "extractedParams": {
+    "dimension": 2,
+    "targetAudience": 1,
+    "targetCoreValue": "Tình bạn",
+    "genre": 1,
+    "writingStyle": 1,
+    "eraId": "era-uuid-modern",
+    "locationId": "location-uuid-forest",
+    "artstyleId": "artstyle-uuid-watercolor"
+  },
+  "storyIdea": "Chú mèo con tên Miu lạc vào khu rừng kỳ diệu, nơi mèo gặp gỡ và kết bạn với các loài thú như thỏ, sóc và cú. Qua những cuộc phiêu lưu đầy màu sắc, Miu học được rằng tình bạn chân thành là kho báu quý giá nhất.",
+  "shouldEndBrainstorming": true,
+  "isFinalize": true,
+  "turnNumber": 3
 }
 ```
 

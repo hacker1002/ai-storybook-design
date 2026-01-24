@@ -49,6 +49,7 @@ Cuộc hội thoại nhiều lượt giữa User và AI để phát triển ý t
 |-----------|------|----------|-------------|
 | `dimension` | SMALLINT | `story.dimension` | 1: Square (20x20cm), 2: A4 Landscape, 3: A4 Portrait |
 | `targetAudience` | SMALLINT | `story.target_audience` | 1: preschool (2-5), 2: primary (6-8), 3: tweens (9-10) |
+| `targetCoreValue` | VARCHAR | `story.target_core_value` | Core value/lesson (e.g., "Tình bạn", "Sự dũng cảm") |
 | `genre` | SMALLINT | `story.genre` | 1: fantasy, 2: scifi, 3: mystery, 4: romance, 5: horror |
 | `writingStyle` | SMALLINT | `story.writing_style` | 1: Narrative, 2: Rhyming, 3: Humorous Fiction |
 | `eraId` | UUID | `story.era_id` | FK → eras table |
@@ -59,6 +60,7 @@ Cuộc hội thoại nhiều lượt giữa User và AI để phát triển ý t
 | User Input | Extracted |
 |------------|-----------|
 | "Truyện cho bé 3-4 tuổi" | `targetAudience: 1` |
+| "Mình muốn dạy bé về tình bạn" | `targetCoreValue: "Tình bạn"` |
 | "Truyện viễn tưởng về robot" | `genre: 2` (scifi) |
 | "Truyện thơ lục bát" | `writingStyle: 2` (rhyming) |
 | "Bối cảnh thời Hùng Vương" | AI queries `eras` → `eraId` |
@@ -93,6 +95,7 @@ interface ChatMessage {
 interface ExtractedParams {
   dimension?: 1 | 2 | 3;
   targetAudience?: 1 | 2 | 3;
+  targetCoreValue?: string;
   genre?: 1 | 2 | 3 | 4 | 5;
   writingStyle?: 1 | 2 | 3;
   eraId?: string;
@@ -135,7 +138,7 @@ AI kiểm tra các parameters còn thiếu và chỉ hỏi những thông tin ch
 Tất cả parameters đều required cho `generate-manuscript`:
 - `dimension` (required: general)
 - `targetAudience` (required: general)
-- `targetCoreValue` (required: general) - **không extract từ chat, hỏi riêng**
+- `targetCoreValue` (required: general)
 - `genre` (required: creative)
 - `writingStyle` (required: creative)
 - `eraId` (required: creative)
