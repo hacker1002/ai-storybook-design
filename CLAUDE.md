@@ -581,7 +581,7 @@ cp template-design/app-template.md app/{feature-group}/{feature-name}.md
 | name | Mô tả | Variables |
 |------|-------|-----------|
 | `STORY_CONSULTANT_SYSTEM` | System prompt - Story Consultant (brainstorming) | *(none)* |
-| `STORY_CONSULTANT_USER_TEMPLATE` | User prompt - brainstorming chat | `conversation_history`, `current_params`, `available_eras`, `available_locations`, `available_art_styles` |
+| `STORY_CONSULTANT_USER_TEMPLATE` | User prompt - brainstorming chat | `conversation_history`, `current_user_message`, `current_story_idea`, `current_params`, `available_eras`, `available_locations`, `available_art_styles`, `is_finalize` |
 | `STORY_TELLER_SYSTEM` | System prompt - Story Teller agent | *(none)* |
 | `STORY_DRAFT_USER_TEMPLATE` | User prompt - tạo story draft | `story_idea`, `dimension`, `target_audience`, `target_core_value`, `genre`, `writing_style`, `era_name`, `era_description`, `location_name`, `location_description`, `art_style_name`, `art_style_description`, `language`, `spreads`, `words_per_spread`, `categories_text`, `locations_text` |
 | `ART_DIRECTOR_P1_SYSTEM` | System prompt - Art Director Phase 1 | *(none)* |
