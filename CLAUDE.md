@@ -563,6 +563,59 @@ cp template-design/app-template.md app/{feature-group}/{feature-name}.md
 
 ---
 
+## Quy tắc khi thiết kế App Feature
+
+### Layers (Các tầng)
+
+| Layer | Trách nhiệm |
+|-------|-------------|
+| **CLIENT** | UI state, validation, user interaction, display data |
+| **DB** | Supabase - data storage, RLS policies, realtime subscriptions |
+| **API** | Business logic, build prompts, parse responses, background tasks |
+| **AI** | AI Provider (Gemini, OpenAI, etc.) - generate content |
+
+### Trách nhiệm chi tiết từng Layer
+
+#### CLIENT
+- Validate required fields trước khi gọi API/DB
+- Hiển thị form/UI để thu thập thông tin còn thiếu
+- Local state management (loading, error, success)
+- Display và format data
+- **CÓ THỂ** gọi trực tiếp DB (Supabase client) cho CRUD đơn giản
+- **KHÔNG** gọi trực tiếp AI Provider
+
+#### DB (Supabase)
+- Data storage và CRUD operations
+- RLS policies để authorize access
+- Realtime subscriptions
+- **Có thể gọi từ CLIENT** (qua Supabase client SDK)
+- **Có thể gọi từ API** (qua Supabase service role)
+
+#### API
+- Business logic phức tạp
+- Get extra context từ DB (story settings, related entities)
+- Build prompts từ template + context
+- Gọi AI Provider
+- Parse và validate AI response
+- Return formatted response cho client
+- **Background tasks:** async jobs, queues, long-running tasks (image gen, export)
+- **KHÔNG** chứa UI logic
+
+#### AI (AI Provider)
+- Receive prompt từ API
+- Generate content (text, image, audio)
+- Return raw response cho API
+- **Chỉ được gọi từ API layer**
+
+### Quy tắc chung
+- Mỗi phase trong feature design **BẮT BUỘC** ghi rõ flow pattern
+- **KHÔNG** mix responsibilities giữa các layers
+- Client **KHÔNG** gọi trực tiếp AI Provider - luôn qua API
+- Client **CÓ THỂ** gọi trực tiếp DB cho simple CRUD (RLS bảo vệ)
+- Background tasks **PHẢI** idempotent và có job status tracking
+
+---
+
 ## Prompt Template System
 
 ### Variable Syntax

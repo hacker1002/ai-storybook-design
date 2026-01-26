@@ -5,30 +5,45 @@
 
 ## Flow Overview
 ```
-┌─────────────────┐
-│   Phase 1       │ ←→ {description}
-│   {name}        │
-└────────┬────────┘
-         │ {transition condition}
-         ▼
-┌─────────────────┐
-│   Phase 2       │
-│   {name}        │
-└────────┬────────┘
-         │ {transition condition}
-         ▼
-┌─────────────────┐
-│   Phase N       │
-│   {name}        │
-└─────────────────┘
+┌─────────────────────────────────────┐
+│   Phase 1: {name}                   │  {description}
+│   [CLIENT]                          │
+└────────────────┬────────────────────┘
+                 │ {transition condition}
+                 ▼
+┌─────────────────────────────────────┐
+│   Phase 2: {name}                   │  {description}
+│   [CLIENT → DB]                     │
+└────────────────┬────────────────────┘
+                 │ {transition condition}
+                 ▼
+┌─────────────────────────────────────┐
+│   Phase 3: {name}                   │  {description}
+│   [CLIENT → API → AI]               │
+└────────────────┬────────────────────┘
+                 │ {transition condition}
+                 ▼
+┌─────────────────────────────────────┐
+│   Phase N: {name}                   │  {description}
+│   [API BACKGROUND]                  │
+└─────────────────────────────────────┘
 ```
 
 ---
 
 ## Phase 1: {Name}
 
+### Flow Pattern
+`[CLIENT]`
+
 ### Description
 {Detailed description of this phase}
+
+### Responsibilities
+**CLIENT:**
+- Validate required fields before calling DB/API
+- Display form/UI to collect missing info
+- Local state management
 
 ### User Actions
 | Action | Description |
@@ -47,14 +62,22 @@ interface Phase1State {
 
 ### Exit Conditions
 - {Condition to move to next phase}
-- {Alternative exit condition}
 
 ---
 
 ## Phase 2: {Name}
 
+### Flow Pattern
+`[CLIENT → DB]`
+
 ### Description
-{Detailed description of this phase}
+{Detailed description of this phase - simple CRUD via Supabase client}
+
+### Responsibilities
+**CLIENT:**
+- Build query params
+- Handle loading/error states
+- Display data from DB
 
 ### User Actions
 | Action | Description |
@@ -64,20 +87,85 @@ interface Phase1State {
 ### State Management
 ```typescript
 interface Phase2State {
-  status: "processing" | "completed";
-  // ...
+  status: "loading" | "success" | "error";
+  data: any[];
 }
 ```
 
 ---
 
-## UI Components
+## Phase 3: {Name}
 
-### {ComponentName}
+### Flow Pattern
+`[CLIENT → API → AI]`
+
+### Description
+{Detailed description of this phase - AI generation flow}
+
+### Responsibilities
+**CLIENT:**
+- Combine all params into request payload
+- Handle loading/error/streaming states
+- Parse and display AI response
+
+**API:**
+- Get extra context from DB (story settings, related entities)
+- Build prompt from template + context
+- Send to AI Provider
+- Parse AI response, validate structure
+- Return formatted response to client
+
+**AI:**
+- Generate content based on prompt
+
+### User Actions
+| Action | Description |
+|--------|-------------|
+| `{action}` | {what happens} |
+
+### State Management
 ```typescript
-interface {ComponentName}Props {
-  prop: string;
-  onAction: () => void;
+interface Phase3State {
+  status: "idle" | "generating" | "completed" | "error";
+  result?: any;
+}
+```
+
+---
+
+## Phase N: {Name} (Optional - Background Tasks)
+
+### Flow Pattern
+`[API BACKGROUND]`
+
+### Description
+{Detailed description of background processing phase}
+
+### Responsibilities
+**CLIENT:**
+- Trigger API to start job
+- Poll for job status OR listen to realtime updates
+- Display progress indicator
+- Handle completion/failure states
+
+**API:**
+- Validate request
+- Trigger background job/queue
+- Return job ID to client immediately
+
+**API (Background Worker):**
+- Execute long-running tasks (image generation, export, etc.)
+- Update job status in DB
+- Notify client when complete
+
+### State Management
+```typescript
+interface PhaseNState {
+  jobId: string;
+  status: "queued" | "processing" | "completed" | "failed";
+  progress?: number;
+  result?: any;
+  error?: string;
 }
 ```
 
@@ -105,11 +193,22 @@ interface ResponseBody {
 
 ---
 
+## DB Queries (Supabase)
+
+| Operation | Table | Description |
+|-----------|-------|-------------|
+| SELECT | `{table}` | {description} |
+| INSERT | `{table}` | {description} |
+
+---
+
 ## Error Handling
 
-| Error | Action |
-|-------|--------|
-| {error type} | {how to handle} |
+| Layer | Error | Action |
+|-------|-------|--------|
+| CLIENT | {error type} | {how to handle} |
+| API | {error type} | {how to handle} |
+| DB | {error type} | {how to handle} |
 
 ---
 
@@ -117,19 +216,6 @@ interface ResponseBody {
 
 ### 1. {Edge case name}
 - **Trigger**: {what causes this}
+- **Layer**: {which layer handles}
 - **Solution**: {how to handle}
 
----
-
-## Dependencies
-
-### Supabase Queries
-```typescript
-supabase.from('{table}').select('{fields}')
-```
-
-### API Endpoints
-- `{METHOD} {path}` - {description}
-
-### DB Tables
-- `{table}`: {how it's used}
