@@ -36,28 +36,8 @@ interface StoryBrainstormingParams {
 
   // User's new message
   userMessage: string;
-
-  // Finalization flag - when true, AI will fill all null params with smart defaults
-  // Client gửi sau khi Clarification phase hoàn tất
-  isFinalize?: boolean;
 }
 ```
-
-### isFinalize Flag Behavior
-
-| `isFinalize` | Behavior |
-|--------------|----------|
-| `false` / undefined | Normal brainstorming - AI responds, extracts params khi user đề cập |
-| `true` | **Finalization mode** - AI MUST fill ALL null params với smart defaults |
-
-**Khi `isFinalize = true`:**
-1. AI tổng hợp story idea hoàn chỉnh (2-3 sentences)
-2. AI fill tất cả params còn null dựa trên:
-   - Context từ conversation (ưu tiên)
-   - Nếu không có context: sử dụng defaults (dimension=2, targetAudience=1, genre=1, writingStyle=1)
-   - Với eraId/locationId/artstyleId: chọn option phù hợp nhất từ available list
-3. Response **PHẢI** có `isFinalize = true`
-4. Response **PHẢI** có tất cả params đã filled (không còn null)
 
 ### Dimension Mapping
 | Value | Size | User Input Examples |
@@ -96,17 +76,16 @@ interface StoryBrainstormingParams {
 ```typescript
 interface StoryBrainstormingResult {
   // Conversation
-  conversationId: string;          // ID của conversation (new hoặc existing)
+  conversationId: string;
 
   // AI response (parsed từ LLM JSON output)
-  message: string;                 // AI reply text
-  extractedParams: ExtractedParams;
-  storyIdea: string;
+  message: string;
+  storyIdea: string | null;           // null if not clear yet
+  extractedParams: ExtractedParams;   // only params explicitly mentioned
   shouldEndBrainstorming: boolean;
-  isFinalize?: boolean;             // true khi request có isFinalize=true
 
   // Metadata
-  turnNumber: number;              // Số lượt chat hiện tại
+  turnNumber: number;
 }
 
 interface ExtractedParams {
@@ -121,18 +100,7 @@ interface ExtractedParams {
 }
 ```
 
-### Response Variants
-
-**Normal Response (isFinalize = false/undefined):**
-- `extractedParams` có thể có null values
-- `shouldEndBrainstorming` = true/false dựa trên user intent
-- `isFinalize` không có hoặc = false
-
-**Finalized Response (isFinalize = true):**
-- `extractedParams` **PHẢI** có tất cả values filled (không null)
-- `shouldEndBrainstorming` = true
-- `isFinalize` = true
-- `storyIdea` = complete, compelling summary (2-3 sentences)
+**Note:** AI chỉ extract/update params khi user message đề cập. Params không được đề cập → giữ nguyên (undefined hoặc giá trị cũ). Default values được Client áp dụng trong Clarification phase (xem `app/ai-assistant/story-idea-brainstorming.md`).
 
 ---
 
@@ -184,36 +152,22 @@ You output structured JSON that includes both your reply and extracted informati
 
 ---
 
-## FINALIZATION MODE: {%is_finalize%}
-
----
-
 ## YOUR TASK
 
 1. Respond naturally to continue the conversation
-2. Extract any story parameters mentioned (see mapping rules below)
-3. Summarize the current story idea based on conversation
+2. Extract params ONLY when user mentions (keep current values if not mentioned)
+3. Update storyIdea based on conversation (null if not clear yet)
 4. Detect if user wants to finish brainstorming, set shouldEndBrainstorming = true
-
-### IF FINALIZATION MODE = true:
-- This is the FINAL response - user wants to proceed with story creation
-- Write a compelling, complete story idea summary (2-3 sentences) synthesizing all discussed elements
-- **MUST fill ALL null params with smart defaults** based on:
-  - Context from conversation (preferred)
-  - If no context: dimension=2, targetAudience=1, genre=1, writingStyle=1
-  - For eraId/locationId/artstyleId: pick the most appropriate option from available list if not mentioned
-  - Add isFinalize = true to response
 
 ## PARAMETER EXTRACTION RULES
 
 ### Special Rule: targetCoreValue
 **ONLY extract targetCoreValue when user EXPLICITLY states the lesson/moral.**
-- ✅ Extract when user says: "dạy bé về tình bạn", "bài học là sự dũng cảm", "thông điệp về lòng tốt"
-- ❌ DO NOT infer from story context: "truyện về bạn bè" → keep targetCoreValue = null
-- ❌ DO NOT guess based on characters/plot: "mèo giúp đỡ chó" → keep targetCoreValue = null
-- Let client ask user to explicitly confirm the core value later
+- Extract when user says: "dạy bé về tình bạn", "bài học là sự dũng cảm", "thông điệp về lòng tốt"
+- DO NOT infer from story context: "truyện về bạn bè" → keep current value
+- DO NOT guess based on characters/plot: "mèo giúp đỡ chó" → keep current value
 
-### Numeric Params (match user input to value)
+### Numeric Params (extract when user mentions)
 - dimension: 1=square/vuông, 2=landscape/ngang, 3=portrait/dọc
 - targetAudience: 1=preschool/2-5 tuổi, 2=primary/6-8 tuổi, 3=tweens/9-10 tuổi
 - genre: 1=fantasy, 2=scifi, 3=mystery, 4=romance, 5=horror
@@ -236,20 +190,21 @@ You output structured JSON that includes both your reply and extracted informati
 Return ONLY valid JSON:
 {
   "message": "Your conversational response to the user",
+  "storyIdea": "Current accumulated story concept" | null,
   "extractedParams": {
     "dimension": null | 1 | 2 | 3,
     "targetAudience": null | 1 | 2 | 3,
-    "targetCoreValue": "The main lesson of the story (e.g., Bravery, Kindness...)",
+    "targetCoreValue": null | "The main lesson of the story",
     "genre": null | 1 | 2 | 3 | 4 | 5,
     "writingStyle": null | 1 | 2 | 3,
     "eraId": null | "uuid-string",
     "locationId": null | "uuid-string",
     "artstyleId": null | "uuid-string"
   },
-  "storyIdea": "Current accumulated story concept",
-  "shouldEndBrainstorming": false | true,
-  "isFinalize": true (optional, only FINALIZATION MODE = true)
+  "shouldEndBrainstorming": false | true
 }
+
+**Note:** AI chỉ extract/update khi user message đề cập rõ ràng. Giữ giá trị cũ (hoặc null) nếu user chưa mention.
 ```
 
 ---
@@ -259,7 +214,6 @@ Return ONLY valid JSON:
 ```
 1. Validate input:
    - userMessage không được rỗng
-   - isFinalize (optional, default = false)
 
 2. Handle conversation:
    IF conversationId is null:
@@ -275,9 +229,9 @@ Return ONLY valid JSON:
    - INSERT vào ai_messages (role = "user", content = userMessage)
 
 5. Build context từ conversation history:
-   - current_params: extractedParams từ assistant message cuối cùng
-   - current_story_idea: storyIdea từ assistant message cuối cùng (hoặc "" nếu chưa có)
-   - current_user_message: userMessage từ request (tách riêng, không nằm trong history)
+   - current_params: extractedParams từ assistant message cuối cùng (hoặc {} nếu chưa có)
+   - current_story_idea: storyIdea từ assistant message cuối cùng (hoặc null nếu chưa có)
+   - current_user_message: userMessage từ request
 
 6. Lấy prompt templates từ DB:
    - Query prompt_templates với name = "STORY_CONSULTANT_SYSTEM"
@@ -292,27 +246,21 @@ Return ONLY valid JSON:
    - Query bảng `locations` → format: "- {id}: {name} ({nation}, {city})"
    - Query bảng `art_styles` → format: "- {id}: {name} - {description}"
 
-9. Render user prompt template với variables:
-   - Set {%is_finalize%} = "true" nếu isFinalize = true, "false" nếu không
+9. Render user prompt template với variables
 
 10. Call LLM với system prompt và rendered user prompt
 
 11. Parse JSON response từ LLM
 
-12. IF isFinalize = true:
-    - VERIFY tất cả extractedParams đã filled (không null)
-    - Nếu vẫn còn null → return error
-
-13. Save assistant message:
+12. Save assistant message:
     - INSERT vào ai_messages (role = "assistant", content = JSON.stringify(llmResponse))
 
-14. Return result:
+13. Return result:
     - conversationId
     - message: llmResponse.message
-    - extractedParams: llmResponse.extractedParams
     - storyIdea: llmResponse.storyIdea
+    - extractedParams: llmResponse.extractedParams
     - shouldEndBrainstorming: llmResponse.shouldEndBrainstorming
-    - isFinalize: llmResponse.isFinalize (nếu có)
     - turnNumber: count user messages
 ```
 
@@ -327,13 +275,12 @@ Return ONLY valid JSON:
 | Wrong conversation step | 400 | "Conversation is not in brainstorming step" |
 | LLM call failed | 500 | "AI service unavailable" |
 | Invalid LLM response | 500 | "Failed to parse AI response" |
-| Finalize incomplete | 500 | "Failed to finalize: some params are still null" |
 
 ---
 
 ## Example
 
-### Request (New Conversation)
+### Request (New Conversation - Phase 0)
 ```json
 {
   "conversationId": null,
@@ -346,14 +293,16 @@ Return ONLY valid JSON:
 {
   "conversationId": "conv-uuid-123",
   "message": "Ý tưởng hay đó! Chú mèo con này sẽ phiêu lưu ở đâu? Trong rừng, thành phố, hay một vương quốc kỳ diệu?",
-  "extractedParams": {},
   "storyIdea": "Chú mèo con đi phiêu lưu",
+  "extractedParams": {},
   "shouldEndBrainstorming": false,
   "turnNumber": 1
 }
 ```
 
-### Request (Continue Conversation)
+**Note:** User chưa mention params cụ thể → extractedParams rỗng. Client sẽ áp dụng defaults trong Clarification phase.
+
+### Request (Continue Conversation - Phase 3)
 ```json
 {
   "conversationId": "conv-uuid-123",
@@ -366,68 +315,41 @@ Return ONLY valid JSON:
 {
   "conversationId": "conv-uuid-123",
   "message": "Tuyệt vời! Truyện fantasy về chú mèo phiêu lưu trong rừng cho bé 4 tuổi với thông điệp về tình bạn - rất phù hợp! Chú mèo có tên gì không?",
+  "storyIdea": "Chú mèo con phiêu lưu trong rừng, gặp gỡ các bạn thú. Truyện fantasy dành cho bé 4 tuổi.",
   "extractedParams": {
     "targetAudience": 1,
     "targetCoreValue": "Tình bạn",
     "genre": 1
   },
-  "storyIdea": "Chú mèo con phiêu lưu trong rừng, gặp gỡ các bạn thú. Truyện fantasy dành cho bé 4 tuổi.",
   "shouldEndBrainstorming": false,
   "turnNumber": 2
 }
 ```
 
-### Request (Should End Brainstorming)
+**Note:** User mention "bé 4 tuổi" → targetAudience=1, "fantasy" → genre=1, "dạy bé về tình bạn" → targetCoreValue. Các params khác giữ null.
+
+### Request (End Brainstorming)
 ```json
 {
   "conversationId": "conv-uuid-123",
-  "userMessage": "OK mình thích ý tưởng này rồi",
+  "userMessage": "OK mình thích ý tưởng này rồi, tạo truyện đi"
 }
 ```
 
-### Response (Should End Brainstorming)
+### Response (shouldEndBrainstorming = true)
 ```json
 {
   "conversationId": "conv-uuid-123",
-  "message": "Tuyệt vời! Mình đã hoàn thiện ý tưởng truyện cho bạn. Câu chuyện về chú mèo Miu phiêu lưu trong khu rừng kỳ diệu, kết bạn với các loài thú và học được giá trị của tình bạn chân thành. Sẵn sàng để bắt đầu tạo truyện!",
+  "message": "Tuyệt vời! Mình đã hoàn thiện ý tưởng truyện cho bạn. Sẵn sàng để bắt đầu tạo truyện!",
+  "storyIdea": "Chú mèo con tên Miu lạc vào khu rừng kỳ diệu, nơi mèo gặp gỡ và kết bạn với các loài thú như thỏ, sóc và cú. Qua những cuộc phiêu lưu đầy màu sắc, Miu học được rằng tình bạn chân thành là kho báu quý giá nhất.",
   "extractedParams": {
     "targetAudience": 1,
     "targetCoreValue": "Tình bạn",
-    "genre": 1,
+    "genre": 1
   },
-  "storyIdea": "Chú mèo con tên Miu lạc vào khu rừng kỳ diệu, nơi mèo gặp gỡ và kết bạn với các loài thú như thỏ, sóc và cú. Qua những cuộc phiêu lưu đầy màu sắc, Miu học được rằng tình bạn chân thành là kho báu quý giá nhất.",
   "shouldEndBrainstorming": true,
   "turnNumber": 3
 }
 ```
 
-### Request (Finalization)
-```json
-{
-  "conversationId": "conv-uuid-123",
-  "userMessage": "<Các option còn lại>",
-  "isFinalize": true
-}
-```
-
-### Response (Finalized)
-```json
-{
-  "conversationId": "conv-uuid-123",
-  "message": "Tuyệt vời! Mình đã hoàn thiện ý tưởng truyện cho bạn. Câu chuyện về chú mèo Miu phiêu lưu trong khu rừng kỳ diệu, kết bạn với các loài thú và học được giá trị của tình bạn chân thành. Sẵn sàng để bắt đầu tạo truyện!",
-  "extractedParams": {
-    "dimension": 2,
-    "targetAudience": 1,
-    "targetCoreValue": "Tình bạn",
-    "genre": 1,
-    "writingStyle": 1,
-    "eraId": "era-uuid-modern",
-    "locationId": "location-uuid-forest",
-    "artstyleId": "artstyle-uuid-watercolor"
-  },
-  "storyIdea": "Chú mèo con tên Miu lạc vào khu rừng kỳ diệu, nơi mèo gặp gỡ và kết bạn với các loài thú như thỏ, sóc và cú. Qua những cuộc phiêu lưu đầy màu sắc, Miu học được rằng tình bạn chân thành là kho báu quý giá nhất.",
-  "shouldEndBrainstorming": true,
-  "isFinalize": true,
-  "turnNumber": 4
-}
-```
+**Note:** Khi `shouldEndBrainstorming = true`, client merge `extractedParams` với default values từ Clarification phase, rồi gọi `generate-manuscript` API.

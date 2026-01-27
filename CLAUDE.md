@@ -613,6 +613,9 @@ cp template-design/app-template.md app/{feature-group}/{feature-name}.md
 - Client **KHÔNG** gọi trực tiếp AI Provider - luôn qua API
 - Client **CÓ THỂ** gọi trực tiếp DB cho simple CRUD (RLS bảo vệ)
 - Background tasks **PHẢI** idempotent và có job status tracking
+- **No code in design docs** except: JSON structures, TypeScript interfaces, mapping constants
+- Keep docs focused on specifications, not implementation details
+- Định nghĩa TypeScript interfaces rõ ràng cho input/output
 
 ---
 
