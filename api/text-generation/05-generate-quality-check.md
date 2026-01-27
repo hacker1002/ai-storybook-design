@@ -328,14 +328,17 @@ Suggestion: [Actionable recommendation to fix the issue]
 ```
 1. Validate input parameters (storyId, snapshotId)
 2. Lấy prompt templates từ DB:
-   - Query `prompt_templates` với name = "TESTER_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "TESTER_SYSTEM" → system prompt + model
    - Query `prompt_templates` với name = "QUALITY_CHECK_USER_TEMPLATE" → user prompt template
 3. Lấy full snapshot data từ DB (docs, characters, props, stages, spreads)
 4. Lấy story metadata (title, target_audience, target_core_value, artstyle_id → art_styles.description)
 5. Render user prompt template với variables:
    - title, target_audience, art_style_description, target_core_value
    - docs_text, characters_json, props_json, stages_json, spreads_json
-6. Call LLM với system prompt và rendered user prompt
+6. Call LLM với:
+   - system prompt content
+   - rendered user prompt
+   - model từ prompt_templates (dynamic, không hardcode)
 7. Parse JSON response
 8. Lưu flags[] vào DB (bảng flags)
 9. Return test results

@@ -172,13 +172,16 @@ Return JSON with:
 ```
 1. Validate input parameters (storyId, snapshotId)
 2. Lấy prompt templates từ DB:
-   - Query `prompt_templates` với name = "WORD_SMITH_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "WORD_SMITH_SYSTEM" → system prompt + model
    - Query `prompt_templates` với name = "TEXT_REFINEMENT_USER_TEMPLATE" → user prompt template
 3. Lấy snapshot data từ DB (docs, spreads)
 4. Lấy story metadata (target_audience, original_language)
 5. Render user prompt template với variables:
    - title, audience, language, manuscript_content, spreads_text
-6. Call LLM với system prompt và rendered user prompt
+6. Call LLM với:
+   - system prompt content
+   - rendered user prompt
+   - model từ prompt_templates (dynamic, không hardcode)
 7. Parse JSON response
 8. Update snapshot.spreads[].textboxes[].language[].text
 9. Return result với summary

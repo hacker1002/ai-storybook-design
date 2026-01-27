@@ -237,14 +237,17 @@ Return JSON with:
 ```
 1. Validate input parameters (storyId, snapshotId)
 2. Lấy prompt templates từ DB:
-   - Query `prompt_templates` với name = "ART_DIRECTOR_P1_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "ART_DIRECTOR_P1_SYSTEM" → system prompt + model
    - Query `prompt_templates` với name = "VISUAL_PLAN_USER_TEMPLATE" → user prompt template
 3. Lấy snapshot data từ DB (docs, characters, props, stages, spreads từ Step 1)
 4. Lấy artstyle description từ story.artstyle_id
 5. Render user prompt template với variables:
    - title, target_audience, art_style_description, language
    - docs_text, characters_text, props_text, stages_text, spreads_text
-6. Call LLM với system prompt và rendered user prompt
+6. Call LLM với:
+   - system prompt content
+   - rendered user prompt
+   - model từ prompt_templates (dynamic, không hardcode)
 7. Parse JSON response
 8. Update snapshot:
    - characters[].visual_description

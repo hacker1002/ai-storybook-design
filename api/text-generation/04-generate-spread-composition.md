@@ -208,13 +208,16 @@ For each spread, return:
 ```
 1. Validate input parameters (storyId, snapshotId)
 2. Lấy prompt templates từ DB:
-   - Query `prompt_templates` với name = "ART_DIRECTOR_P2_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "ART_DIRECTOR_P2_SYSTEM" → system prompt + model
    - Query `prompt_templates` với name = "COMPOSITION_USER_TEMPLATE" → user prompt template
 3. Lấy snapshot data từ DB (spreads với images[] và textboxes[])
 4. Lấy story metadata (book_type, dimension)
 5. Render user prompt template với variables:
    - title, target_audience, book_type, dimension, spreads_data
-6. Call LLM với system prompt và rendered user prompt
+6. Call LLM với:
+   - system prompt content
+   - rendered user prompt
+   - model từ prompt_templates (dynamic, không hardcode)
 7. Parse JSON response
 8. Update snapshot:
    - spreads[].images[].geometry

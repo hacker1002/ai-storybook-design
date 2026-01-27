@@ -314,7 +314,7 @@ Mỗi character là một object:
 1. Validate input parameters
 
 2. Lấy prompt templates từ DB:
-   - Query `prompt_templates` với name = "STORY_TELLER_SYSTEM" → system prompt
+   - Query `prompt_templates` với name = "STORY_TELLER_SYSTEM" → system prompt + model
    - Query `prompt_templates` với name = "STORY_DRAFT_USER_TEMPLATE" → user prompt template
 
 3. Lấy reference data từ DB:
@@ -339,7 +339,10 @@ Mỗi character là một object:
    - location_name, location_description, art_style_name, art_style_description
    - language, spreads, words_per_spread, categories_text, locations_text
 
-7. Call LLM với system prompt và rendered user prompt
+7. Call LLM với:
+   - system prompt content
+   - rendered user prompt
+   - model từ prompt_templates (dynamic, không hardcode)
 
 8. Parse JSON response
 

@@ -234,7 +234,7 @@ Return ONLY valid JSON:
    - current_user_message: userMessage từ request
 
 6. Lấy prompt templates từ DB:
-   - Query prompt_templates với name = "STORY_CONSULTANT_SYSTEM"
+   - Query prompt_templates với name = "STORY_CONSULTANT_SYSTEM" → system prompt + model
    - Query prompt_templates với name = "STORY_CONSULTANT_USER_TEMPLATE"
 
 7. Format conversation history:
@@ -248,7 +248,10 @@ Return ONLY valid JSON:
 
 9. Render user prompt template với variables
 
-10. Call LLM với system prompt và rendered user prompt
+10. Call LLM với:
+    - system prompt content
+    - rendered user prompt
+    - model từ prompt_templates (dynamic, không hardcode)
 
 11. Parse JSON response từ LLM
 
