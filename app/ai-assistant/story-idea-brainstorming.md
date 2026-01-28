@@ -144,7 +144,7 @@ Hỏi tuần tự **CHỈ NẾU param còn thiếu**:
 
 | # | Param | Question | Options | Default | Next |
 |---|-------|----------|---------|---------|------|
-| 1 | `targetAudience` | "Dành cho độ tuổi nào?" | 1: 2-3, 2: 4-5, 3: 6-8 | **1** (2-3 tuổi) | ✅ |
+| 1 | `targetAudience` | "Dành cho độ tuổi nào?" | 1: 2-3, 2: 3-5, 3: 6-8, 4: 9+ | **1** (2-3 tuổi) | ✅ |
 | 2 | `targetCoreValue` | "Truyện này truyền tải bài học gì?" | Text | placeholder: "Ví dụ: Tình bạn, Sự dũng cảm" | ✅ |
 | 3 | `formatGenre` | "Thể loại sách?" | See Format Genre Options | **1** (Narrative) | ✅ |
 | 4 | `contentGenre` | "Thể loại nội dung?" | **Depends on formatGenre** | **first valid option** | ✅ |
@@ -165,10 +165,10 @@ Hỏi tuần tự **CHỈ NẾU param còn thiếu**:
 |-------------|---------------------------|
 | 1 (Narrative) | 1, 2, 3, 4, 5, 6, 7, 8 |
 | 2 (Lullaby) | 2, 3, 6 |
-| 3 (Concept) | 3, 7, 10 |
+| 3 (Concept) | 10 |
 | 4 (Non-fiction) | 9, 10, 11 |
-| 5 (Early Reader) | 1, 2, 3, 4, 5, 6, 7, 9, 10 |
-| 6 (Wordless) | 1, 2, 3, 5, 6, 7 |
+| 5 (Early Reader) | 3, 6, 7 |
+| 6 (Wordless) | 2, 3, 6, 7 |
 
 ### Content Genre Full List
 | Value | Name (EN) | Name (VI) |
@@ -190,10 +190,10 @@ Hỏi tuần tự **CHỈ NẾU param còn thiếu**:
 const CONTENT_GENRE_BY_FORMAT: Record<number, number[]> = {
   1: [1, 2, 3, 4, 5, 6, 7, 8],  // Narrative
   2: [2, 3, 6],                  // Lullaby
-  3: [3, 7, 10],                 // Concept
+  3: [10],                       // Concept
   4: [9, 10, 11],                // Non-fiction
-  5: [1, 2, 3, 4, 5, 6, 7, 9, 10], // Early Reader
-  6: [1, 2, 3, 5, 6, 7],        // Wordless
+  5: [3, 6, 7],                  // Early Reader
+  6: [2, 3, 6, 7],               // Wordless
 };
 
 function getContentGenreOptions(formatGenre: number): number[] {
@@ -300,7 +300,7 @@ interface BrainstormingResponse {
 
 interface StoryParams {
   // ExtractedParams (from Phase 0 + Clarification)
-  targetAudience: 1 | 2 | 3;
+  targetAudience: 1 | 2 | 3 | 4;
   targetCoreValue: string;
   formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre: number;
@@ -359,7 +359,7 @@ User click "Tạo truyện"
 ```typescript
 // Phase 0: Partial params (some may be null)
 interface ExtractedParams {
-  targetAudience?: 1 | 2 | 3;
+  targetAudience?: 1 | 2 | 3 | 4;
   targetCoreValue?: string;
   formatGenre?: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre?: number;
@@ -369,7 +369,7 @@ interface ExtractedParams {
 // Phase 2: Complete params (all required)
 interface StoryParams {
   // From Phase 0 + Clarification
-  targetAudience: 1 | 2 | 3;
+  targetAudience: 1 | 2 | 3 | 4;
   targetCoreValue: string;
   formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre: number;

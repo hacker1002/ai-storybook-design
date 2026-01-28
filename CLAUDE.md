@@ -58,12 +58,12 @@ ai-storybook-design/
 | `current_content` | JSONB | Autosave content (ghi đè mỗi khi user dừng 1p) |
 | `cover` | JSONB | Thông tin bìa: `{ thumbnail_url, normal_url }` |
 | `book_type` | SMALLINT | Sách tranh/Truyện chữ có hình/Comics/Manga *(required: general)* |
-| `dimension` | SMALLINT | 1: Square (20x20cm), 2: A4 Landscape, 3: A4 Portrait *(required: general)* |
-| `target_audience` | SMALLINT | 1: kindergarten (2-3), 2: preschool (4-5), 3: primary (6-8) *(required: general)* |
-| `target_core_value` | VARCHAR | Đạo đức, Trí tuệ, Nghị lực *(required: general)* |
+| `dimension` | SMALLINT | 1: Square 8.5x8.5 (216x216mm), 2: Portrait 8x10 (203x254mm), 3: Portrait 6x9 (152x229mm), 4: Portrait 8.5x11 (216x279mm), 5: Portrait A4 (210x297mm), 6: Square 8.25x8.25 (210x210mm), 7: Square 8x8 (203x203mm) *(required: general)* |
+| `target_audience` | SMALLINT | 1: kindergarten (2-3), 2: preschool (4-5), 3: primary (6-8), 4: middle grade (9+) *(required: general)* |
+| `target_core_value` | SMALLINT | 1: Dũng cảm, 2: Quan tâm, 3: Trung thực, 4: Kiên trì, 5: Biết ơn, 6: Bản lĩnh, 7: Thấu cảm, 8: Chính trực, 9: Vị tha, 10: Tự thức, 11: Tình bạn, 12: Hợp tác, 13: Chấp nhận sự khác biệt, 14: Tử tế, 15: Tò mò, 16: Tự lập, 17: Xử lý nỗi sợ, 18: Quản lý cảm xúc, 19: Chuyển giao, 20: Bảo vệ môi trường, 21: Trí tưởng tượng *(required: general)* |
 | `format_genre` | SMALLINT | 1: Narrative Picture Books, 2: Lullaby/Bedtime Books, 3: Concept Books, 4: Non-fiction Picture Books, 5: Early Reader, 6: Wordless Picture Books *(required: creative)* |
 | `content_genre` | SMALLINT | 1: Mystery, 2: Fantasy, 3: Realistic Fiction, 4: Historical Fiction, 5: Science Fiction, 6: Folklore/Fairy Tales, 7: Humor, 8: Horror/Scary, 9: Biography, 10: Informational, 11: Memoir *(required: creative)* |
-| `writing_style` | SMALLINT | Phong cách viết 1: Narrative, 2: Rhyming, 3: Humorous Fiction *(required: creative)* |
+| `writing_style` | SMALLINT | 1: Narrative, 2: Rhyming, 3: Humorous Fiction *(required: creative)* |
 | `era_id` | UUID | FK → `eras` *(required: creative)* |
 | `location_id` | UUID | FK → `locations` *(required: creative)* |
 | `artstyle_id` | UUID | FK → `art_styles` *(required: creative)* |
