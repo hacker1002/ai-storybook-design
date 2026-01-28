@@ -1,7 +1,7 @@
 # Story Idea Brainstorming
 
 ## Description
-Tính năng tạo truyện từ ý tưởng người dùng. User nhập prompt bất kỳ → AI extract thông tin → Client hỏi params còn thiếu qua Clarification → User tạo truyện ngay hoặc chat thêm với AI để phát triển ý tưởng.
+Tính năng tạo truyện từ ý tưởng người dùng. User nhập prompt bất kỳ → AI extract `storyIdea` + params → Client hỏi params còn thiếu qua Clarification → AI tạo 4 docs (manuscript, story_structure, artistic_imagery, moral_lesson) → User và AI brainstorm cho tới khi hài lòng → Tạo truyện.
 
 **Conversation persistence:**
 - `ai_conversations`: Session với `step = "brainstorming"` hoặc `step = "story_editing"`
@@ -13,38 +13,33 @@ Tính năng tạo truyện từ ý tưởng người dùng. User nhập prompt b
 │   Phase 0: INITIAL PROMPT                                                   │
 │   [CLIENT → API → AI]                                                       │
 │                                                                             │
-│   User nhập prompt → API tạo conversation + AI extract params               │
+│   User nhập prompt → API tạo conversation + AI extract storyIdea + params   │
 └────────────────────────────────┬────────────────────────────────────────────┘
-                                 │ API response với extractedParams
+                                 │ API response với storyIdea + extractedParams
                                  ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │   Phase 1: CLARIFICATION                                                    │
 │   [CLIENT ONLY]                                                             │
 │                                                                             │
 │   Hỏi tuần tự params còn thiếu (no API calls)                               │
+│   Content genre options phụ thuộc vào format genre đã chọn                  │
 └────────────────────────────────┬────────────────────────────────────────────┘
                                  │ all params collected
                                  ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│   Phase 2: SUMMARY                                                          │
-│   [CLIENT ONLY]                                                             │
+│   Phase 2: BRAINSTORMING                                                    │
+│   [CLIENT → API → AI]                                                       │
 │                                                                             │
-│   Display summary → User chọn [Tạo truyện] hoặc [Chỉnh sửa thêm]            │
-└───────────────────────┬─────────────────────────┬───────────────────────────┘
-          "Tạo truyện"  │                         │  "Chỉnh sửa thêm"
-                        ▼                         ▼
-┌───────────────────────────────┐   ┌─────────────────────────────────────────┐
-│   → generate-manuscript API   │   │   Phase 3: BRAINSTORMING                │
-│   → Navigate to EDITOR        │   │   [CLIENT → API → AI]                   │
-└───────────────────────────────┘   │                                         │
-                                    │   Multi-turn chat → shouldEndBrainstorming│
-                                    └────────────────────┬────────────────────┘
-                                                         │ shouldEndBrainstorming = true
-                                                         ▼
-                                    ┌─────────────────────────────────────────┐
-                                    │   → generate-manuscript API             │
-                                    │   → Navigate to EDITOR                  │
-                                    └─────────────────────────────────────────┘
+│   First call: Send params + storyIdea → AI tạo 4 docs (manuscript <500 từ,  │
+│               story_structure, artistic_imagery, moral_lesson)              │
+│     AI tự chọn writing_style, era_id, location_id nếu user không specify    │
+│   Next calls: User và AI brainstorm, AI update docs theo feedback           │
+└────────────────────────────────┬────────────────────────────────────────────┘
+                                 │ User click "Tạo truyện"
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                               End                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -55,7 +50,7 @@ Tính năng tạo truyện từ ý tưởng người dùng. User nhập prompt b
 `[CLIENT → API → AI]`
 
 ### Description
-User nhập prompt đầu tiên → API tạo conversation mới + AI phân tích extract story idea và params.
+User nhập prompt đầu tiên → API tạo conversation mới + AI phân tích extract params cơ bản.
 
 ### Responsibilities
 
@@ -67,14 +62,14 @@ User nhập prompt đầu tiên → API tạo conversation mới + AI phân tíc
 **API:**
 - Create conversation in DB
 - Build prompt with user message
-- Call AI to extract story idea + params
+- Call AI to extract params
 - Save messages to DB
 - Return extracted data
 
 **AI:**
 - Analyze user message
-- Extract story idea (nếu rõ ràng)
-- Extract any mentioned params (audience, style, etc.)
+- Extract `storyIdea` if user describes a specific story concept (null if only preferences)
+- Extract any mentioned params (audience, core value, format genre, content genre)
 
 ### User Actions
 | Action | Description |
@@ -90,21 +85,21 @@ interface InitialPromptRequest {
 interface InitialPromptResponse {
   conversationId: string;
   message: string;
-  storyIdea: string | null;
+  storyIdea: string | null;      // Extracted story idea (null if not specified)
   extractedParams: ExtractedParams;
-  turnNumber: 1;
+  turnNumber: number;
 }
 ```
 
 ### Extraction Examples
 | User Input | Extracted |
 |------------|-----------|
-| "Truyện cho bé 3-4 tuổi" | `targetAudience: 1` |
-| "Mình muốn dạy bé về tình bạn" | `targetCoreValue: "Tình bạn"` |
-| "Truyện viễn tưởng về robot" | `storyIdea: "Truyện về robot"`, `genre: 2` |
-| "Truyện thơ lục bát" | `writingStyle: 2` |
-| "Bối cảnh thời Hùng Vương" | AI queries `eras` → `eraId` |
-| "Phong cách tranh màu nước" | AI queries `art_styles` → `artstyleId` |
+| "Truyện cho bé 3 tuổi" | `targetAudience: 1`, `storyIdea: null` |
+| "Mình muốn dạy bé về tình bạn" | `targetCoreValue: "Tình bạn"`, `storyIdea: null` |
+| "Truyện cổ tích ru ngủ" | `formatGenre: 2`, `contentGenre: 6`, `storyIdea: null` |
+| "Truyện trinh thám cho bé tiểu học" | `targetAudience: 3`, `contentGenre: 1`, `storyIdea: null` |
+| "Kể về chú mèo Miu học cách chia sẻ đồ chơi" | `storyIdea: "Chú mèo Miu học cách chia sẻ đồ chơi"`, `targetCoreValue: "Chia sẻ"` |
+| "Câu chuyện về cậu bé đi lạc trong rừng và được thỏ giúp đỡ" | `storyIdea: "Cậu bé đi lạc trong rừng được thỏ giúp đỡ"` |
 
 ### State Management
 ```typescript
@@ -131,11 +126,14 @@ API response received → Transition to Phase 1 (Clarification)
 ### Description
 Client-side phase: hỏi các params còn thiếu theo thứ tự cố định. Không gọi API.
 
+**Lưu ý:** `contentGenre` options phụ thuộc vào `formatGenre` đã chọn.
+
 ### Responsibilities
 
 **CLIENT:**
 - Determine which params still missing
 - Display questions sequentially
+- Filter contentGenre options based on selected formatGenre
 - Handle skip/back navigation
 - Merge answers with extracted params
 
@@ -144,156 +142,197 @@ Hỏi tuần tự **CHỈ NẾU param còn thiếu**:
 
 | # | Param | Question | Options | Default | Skip |
 |---|-------|----------|---------|---------|------|
-| 1 | `storyIdea` | "Bạn muốn tạo truyện về chủ đề gì?" | Text | placeholder: "Ví dụ: Chú mèo con đi phiêu lưu" | ✅ |
+| 1 | `targetAudience` | "Dành cho độ tuổi nào?" | 1: 2-3, 2: 4-5, 3: 6-8 | **1** (2-3 tuổi) | ✅ |
 | 2 | `targetCoreValue` | "Truyện này truyền tải bài học gì?" | Text | placeholder: "Ví dụ: Tình bạn, Sự dũng cảm" | ✅ |
-| 3 | `targetAudience` | "Dành cho độ tuổi nào?" | 1: 2-5, 2: 6-8, 3: 9-10 | **1** (2-5 tuổi) | ✅ |
-| 4 | `dimension` | "Kích thước sách?" | 1: Vuông, 2: A4 ngang, 3: A4 dọc | **1** (Vuông) | ✅ |
-| 5 | `genre` | "Thể loại?" | 1-5: Fantasy/Sci-Fi/Mystery/Romance/Horror | **1** (Fantasy) | ✅ |
-| 6 | `writingStyle` | "Phong cách viết?" | 1: Kể chuyện, 2: Thơ vần, 3: Hài hước | **1** (Kể chuyện) | ✅ |
-| 7 | `eraId` | "Bối cảnh thời đại?" | Select from `eras` | **first item** | ✅ |
-| 8 | `locationId` | "Địa điểm?" | Select from `locations` | **first item** | ✅ |
-| 9 | `artstyleId` | "Phong cách vẽ?" | Select from `art_styles` | **first item** | ✅ |
+| 3 | `formatGenre` | "Thể loại sách?" | See Format Genre Options | **1** (Narrative) | ✅ |
+| 4 | `contentGenre` | "Thể loại nội dung?" | **Depends on formatGenre** | **first valid option** | ✅ |
 
-**Default Value Rules:**
-- **Selection options:** Luôn pre-select option đầu tiên làm default → tránh null
-- **Text fields:** Hiển thị placeholder gợi ý, không bắt buộc user nhập
-- **DB-driven options (era, location, artstyle):** Pre-select item đầu tiên từ query result
+### Format Genre Options
+| Value | Name (EN) | Name (VI) |
+|-------|-----------|-----------|
+| 1 | Narrative Picture Books | Sách tranh kể chuyện |
+| 2 | Lullaby/Bedtime Books | Sách ru ngủ |
+| 3 | Concept Books | Sách khái niệm |
+| 4 | Non-fiction Picture Books | Sách tranh phi hư cấu |
+| 5 | Early Reader | Sách tập đọc |
+| 6 | Wordless Picture Books | Sách tranh không chữ |
+
+### Content Genre Options (by Format Genre)
+
+| formatGenre | Valid contentGenre Values |
+|-------------|---------------------------|
+| 1 (Narrative) | 1, 2, 3, 4, 5, 6, 7, 8 |
+| 2 (Lullaby) | 2, 3, 6 |
+| 3 (Concept) | 3, 7, 10 |
+| 4 (Non-fiction) | 9, 10, 11 |
+| 5 (Early Reader) | 1, 2, 3, 4, 5, 6, 7, 9, 10 |
+| 6 (Wordless) | 1, 2, 3, 5, 6, 7 |
+
+### Content Genre Full List
+| Value | Name (EN) | Name (VI) |
+|-------|-----------|-----------|
+| 1 | Mystery | Bí ẩn |
+| 2 | Fantasy | Kỳ ảo |
+| 3 | Realistic Fiction | Đời thường |
+| 4 | Historical Fiction | Dã sử |
+| 5 | Science Fiction | Viễn tưởng |
+| 6 | Folklore/Fairy Tales | Dân gian |
+| 7 | Humor | Hài hước |
+| 8 | Horror/Scary | Kinh dị nhẹ |
+| 9 | Biography | Tiểu sử |
+| 10 | Informational | Kiến thức |
+| 11 | Memoir | Hồi ký |
+
+### Content Genre Filter Logic
+```typescript
+const CONTENT_GENRE_BY_FORMAT: Record<number, number[]> = {
+  1: [1, 2, 3, 4, 5, 6, 7, 8],  // Narrative
+  2: [2, 3, 6],                  // Lullaby
+  3: [3, 7, 10],                 // Concept
+  4: [9, 10, 11],                // Non-fiction
+  5: [1, 2, 3, 4, 5, 6, 7, 9, 10], // Early Reader
+  6: [1, 2, 3, 5, 6, 7],        // Wordless
+};
+
+function getContentGenreOptions(formatGenre: number): number[] {
+  return CONTENT_GENRE_BY_FORMAT[formatGenre] || [];
+}
+```
 
 ### User Actions
 | Action | Description |
 |--------|-------------|
 | Answer | Set param value, next question |
-| Skip | Giữ default value, next question (if allowSkip) |
+| Skip | Giữ default value, next question |
 | Back | Previous question |
 
 ### State Management
 ```typescript
 interface ClarificationState {
   conversationId: string;
-  storyIdea: string | null;
-  params: ExtractedParams;      // Initialized with default values
+  params: ExtractedParams;
   currentQuestionIndex: number;
   status: "asking" | "completed";
 }
 ```
 
 ### Exit Condition
-All params answered (với default hoặc user input) → Transition to Phase 2
-
-**Guaranteed:** Từ Phase 2 trở đi, tất cả params đều có giá trị (không null).
+All params answered (với default hoặc user input) → Transition to Phase 2 (Brainstorming)
 
 ---
 
-## Phase 2: Summary
-
-### Flow Pattern
-`[CLIENT ONLY]`
-
-### Description
-Hiển thị tổng hợp story idea + params. User chọn tạo truyện ngay hoặc vào Brainstorming.
-
-### Responsibilities
-
-**CLIENT:**
-- Display summary of all collected data (không có null values)
-- Handle user's choice
-
-### User Actions
-| Action | Description |
-|--------|-------------|
-| "Tạo truyện" | Call generate-manuscript → Navigate to Editor |
-| "Chỉnh sửa thêm" | Transition to Phase 3 (Brainstorming) |
-
-### State Management
-```typescript
-interface SummaryState {
-  conversationId: string;
-  storyIdea: string;
-  params: ExtractedParams;  // All params have values (no nulls)
-  status: "reviewing" | "creating" | "editing";
-}
-```
-
-### Exit Conditions
-- "Tạo truyện" → `POST /api/text-generation/generate-manuscript` → Editor
-- "Chỉnh sửa thêm" → Phase 3
-
----
-
-## Phase 3: Brainstorming
+## Phase 2: Brainstorming
 
 ### Flow Pattern
 `[CLIENT → API → AI]`
 
 ### Description
-Multi-turn chat với AI (Story Consultant) để phát triển ý tưởng. AI detects khi user muốn kết thúc → `shouldEndBrainstorming = true`.
+Multi-turn chat với AI để phát triển ý tưởng truyện.
 
-**Entry:** User click "Chỉnh sửa thêm" từ Summary.
+**First call:** AI nhận tất cả params + `storyIdea` → Tạo 4 loại docs (manuscript <500 từ, story_structure, artistic_imagery, moral_lesson). AI tự chọn `writing_style`, `era_id`, `location_id` nếu user không specify.
+
+**Next calls:** User và AI brainstorm. AI trả lời câu hỏi, update docs theo feedback của user.
+
+**Entry:** All params collected từ Clarification phase + storyIdea từ Phase 0.
 
 ### Responsibilities
 
 **CLIENT:**
 - Display chat interface
-- Show current storyIdea + params in sidebar
+- Show current docs (manuscript, story_structure, artistic_imagery, moral_lesson)
 - Send messages to API
-- Merge updated params from AI response
-- Handle shouldEndBrainstorming → trigger story creation
+- Update docs from AI response
+- Handle "Tạo truyện" button click
 
 **API:**
 - Load conversation history
-- Build prompt with context (story idea, params, history)
+- Build prompt with context (params, storyIdea, history, current docs)
 - Call AI
 - Save messages to DB
-- Return response with updated params
+- Return response with updated docs
 
 **AI:**
 - Act as Story Consultant
-- Help develop/refine story idea
-- Update params based on conversation
-- Detect end signals ("OK xong rồi", "Tạo truyện đi")
-- Return `shouldEndBrainstorming: true` when appropriate
+- First call: Generate 4 docs (manuscript <500 từ, story_structure, artistic_imagery, moral_lesson)
+- Auto-select: `writingStyle`, `eraId`, `locationId` based on story context
+- Help develop/refine docs based on user feedback
+- Answer user questions about the story
+- Update docs when user requests changes
 
-### Initial Message
-```
-"Bạn muốn chỉnh sửa thêm gì? Mình có thể giúp bạn:
-- Phát triển thêm cốt truyện
-- Thêm/sửa thông tin nhân vật
-- Đổi bối cảnh, thời đại
-- Thay đổi phong cách viết
-- Hoặc bất kỳ điều gì khác!"
-```
+### Initial Draft Generation
+Khi vào Phase 2, API call đầu tiên sẽ:
+1. Nhận tất cả params từ Clarification + `storyIdea` từ Phase 0
+2. AI generate 4 loại docs:
+   - `manuscript`: Draft truyện (<500 từ)
+   - `story_structure`: Cấu trúc 3 hồi, conflicts, pacing
+   - `artistic_imagery`: Metaphors, symbols, hình tượng nghệ thuật
+   - `moral_lesson`: Bài học đạo đức, themes, emotional journey
+3. AI tự chọn `writingStyle`, `eraId`, `locationId` phù hợp với story
+4. Return docs[] + auto-selected params cho client
 
 ### User Actions
 | Action | Description |
 |--------|-------------|
-| Send message | Chat với AI để refine story idea |
-| End signals | "OK xong rồi", "Tạo truyện đi" → AI returns shouldEnd |
+| Send message | Chat với AI để refine docs |
+| "Tạo truyện" | Kết thúc brainstorming, tạo truyện từ docs |
 
 ### Request/Response
 ```typescript
-interface BrainstormingRequest {
+// Unified request for both init and chat
+interface BrainstormingChatRequest {
   conversationId: string;
-  userMessage: string;
+  userMessage: string;           // First call: JSON.stringify(params + storyIdea)
 }
 
 interface BrainstormingResponse {
   conversationId: string;
   message: string;
-  extractedParams: ExtractedParams;
-  storyIdea: string;
-  shouldEndBrainstorming: boolean;
+  docs: StoryDoc[];              // 4 types of docs (see Shared Types)
+  params: StoryParams;           // All params (extracted + auto-selected)
   turnNumber: number;
 }
+
+interface StoryParams {
+  // ExtractedParams (from Phase 0 + Clarification)
+  targetAudience: 1 | 2 | 3;
+  targetCoreValue: string;
+  formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
+  contentGenre: number;
+  storyIdea: string | null;
+  // AutoSelectedParams (AI chooses based on story)
+  writingStyle: 1 | 2 | 3;
+  eraId: string;
+  locationId: string;
+}
 ```
+
+**First call userMessage format:**
+```json
+{
+  "targetAudience": 1,
+  "targetCoreValue": "Tình bạn",
+  "formatGenre": 1,
+  "contentGenre": 2,
+  "storyIdea": "Chú mèo Miu học cách chia sẻ đồ chơi"
+}
+```
+
+**Docs Structure:**
+| title | type | Mô tả |
+|-------|------|-------|
+| `manuscript` | 0 | Draft truyện (<500 từ) |
+| `story_structure` | 0 | Cấu trúc 3 hồi, conflicts, pacing |
+| `artistic_imagery` | 0 | Metaphors, symbols, hình tượng nghệ thuật |
+| `moral_lesson` | 0 | Bài học đạo đức, themes, emotional journey |
 
 ### State Management
 ```typescript
 interface BrainstormingState {
   conversationId: string;
   messages: ChatMessage[];
-  storyIdea: string;
-  extractedParams: ExtractedParams;
-  status: "active" | "ending" | "completed";
+  docs: StoryDoc[];              // 4 types of docs
+  params: StoryParams;           // All params (extracted + auto-selected)
+  status: "active" | "creating";
 }
 
 interface ChatMessage {
@@ -305,25 +344,43 @@ interface ChatMessage {
 ```
 
 ### Exit Condition
-`shouldEndBrainstorming = true` → Call generate-manuscript → Navigate to Editor
+User click "Tạo truyện"
 
 ---
 
 ## Shared Types
 
 ```typescript
+// Phase 0: Partial params (some may be null)
 interface ExtractedParams {
-  dimension?: 1 | 2 | 3;
   targetAudience?: 1 | 2 | 3;
   targetCoreValue?: string;
-  genre?: 1 | 2 | 3 | 4 | 5;
-  writingStyle?: 1 | 2 | 3;
-  eraId?: string;
-  locationId?: string;
-  artstyleId?: string;
+  formatGenre?: 1 | 2 | 3 | 4 | 5 | 6;
+  contentGenre?: number;
+  storyIdea?: string;
 }
 
-type CurrentPhase = "initial" | "clarification" | "summary" | "brainstorming";
+// Phase 2: Complete params (all required)
+interface StoryParams {
+  // From Phase 0 + Clarification
+  targetAudience: 1 | 2 | 3;
+  targetCoreValue: string;
+  formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
+  contentGenre: number;
+  storyIdea: string | null;
+  // AI auto-selected
+  writingStyle: 1 | 2 | 3;
+  eraId: string;
+  locationId: string;
+}
+
+interface StoryDoc {
+  type: 0 | 1 | 2;               // 0: system, 1: user edit, 2: user read-only
+  title: "manuscript" | "story_structure" | "artistic_imagery" | "moral_lesson";
+  content: string;
+}
+
+type CurrentPhase = "initial" | "clarification" | "brainstorming";
 ```
 
 ---
@@ -332,61 +389,58 @@ type CurrentPhase = "initial" | "clarification" | "summary" | "brainstorming";
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/chat/story-brainstorming` | Initial prompt (Phase 0) + Brainstorming chat (Phase 3) |
-| POST | `/api/text-generation/generate-manuscript` | Create story from final params |
+| POST | `/api/chat/story-brainstorming/initial` | Phase 0: Extract storyIdea + params |
+| POST | `/api/chat/story-brainstorming/draft` | Phase 2: Generate/refine docs |
 
-### POST /api/chat/story-brainstorming
+### POST /api/chat/story-brainstorming/initial
+Phase 0: Tạo conversation mới, AI extract `storyIdea` và params từ user prompt.
+
 ```typescript
-interface ChatRequest {
-  conversationId?: string;      // null = Phase 0, existing = Phase 3
+interface InitialPromptRequest {
   userMessage: string;
 }
 
-interface ChatResponse {
+interface InitialPromptResponse {
   conversationId: string;
   message: string;
   storyIdea: string | null;
   extractedParams: ExtractedParams;
-  shouldEndBrainstorming: boolean;
   turnNumber: number;
 }
 ```
 
-### POST /api/text-generation/generate-manuscript
+### POST /api/chat/story-brainstorming/draft
+Phase 2: Generate và refine docs. Unified interface cho cả init và chat.
+
 ```typescript
-interface GenerateManuscriptRequest {
-  storyIdea: string;
-  attributes: {
-    dimension: 1 | 2 | 3;           // Has default from Clarification
-    targetAudience: 1 | 2 | 3;      // Has default from Clarification
-    targetCoreValue: string;         // Has default from Clarification
-    genre: 1 | 2 | 3 | 4 | 5;       // Has default from Clarification
-    writingStyle: 1 | 2 | 3;        // Has default from Clarification
-    eraId: string;                   // Has default from Clarification
-    locationId: string;              // Has default from Clarification
-    artstyleId: string;              // Has default from Clarification
-  };
-  language?: string;                 // Default: "vi"
+interface BrainstormingChatRequest {
+  conversationId: string;
+  userMessage: string;           // First call: JSON.stringify(params + storyIdea)
 }
 
-interface GenerateManuscriptResponse {
-  storyId: string;
-  snapshotId: string;
-  status: "completed" | "partial";
+interface BrainstormingResponse {
+  conversationId: string;
+  message: string;
+  docs: StoryDoc[];
+  params: StoryParams;           // All params (extracted + auto-selected)
+  turnNumber: number;
 }
 ```
 
-**Note:** Tất cả params đều có giá trị (từ Clarification phase với default values).
+**First call userMessage:**
+```json
+{"targetAudience":1,"targetCoreValue":"Tình bạn","formatGenre":1,"contentGenre":2,"storyIdea":"Chú mèo Miu học cách chia sẻ"}
+```
 
+**Subsequent calls:** Regular chat message (string)
 ---
 
 ## DB Queries (Supabase)
 
 | Operation | Table | Description |
 |-----------|-------|-------------|
-| SELECT | `eras` | Fetch era options for Clarification |
-| SELECT | `locations` | Fetch location options for Clarification |
-| SELECT | `art_styles` | Fetch art style options for Clarification |
+| SELECT | `eras` | AI fetch để auto-select eraId |
+| SELECT | `locations` | AI fetch để auto-select locationId |
 | INSERT | `ai_conversations` | Create conversation (API - Phase 0) |
 | INSERT | `ai_messages` | Save messages (API) |
 | UPDATE | `ai_conversations` | Set `story_id`, `step = 'story_editing'` after creation |
@@ -401,33 +455,37 @@ interface GenerateManuscriptResponse {
 | CLIENT | Invalid input | Local validation before API call |
 | API | AI extraction failed | Return empty extractedParams, continue flow |
 | API | DB write failed | Return error, allow retry |
-| API | generate-manuscript failed | Return error, keep params for retry |
 
 ---
 
 ## Edge Cases
 
 ### 1. User provides complete info in first prompt
-- **Trigger:** "Tạo truyện về chú mèo dũng cảm cho bé 3 tuổi, phong cách màu nước"
+- **Trigger:** "Tạo truyện cổ tích về chú mèo học chia sẻ cho bé 3 tuổi"
 - **Layer:** API (Phase 0)
-- **Solution:** AI extracts all → Clarification skips already-extracted params
+- **Solution:** AI extracts storyIdea + all params → Clarification skips already-extracted params
 
 ### 2. User wants to start over
 - **Trigger:** "Làm lại", "Bắt đầu lại"
 - **Layer:** CLIENT (Clarification) or AI (Brainstorming)
-- **Solution:** Clarification: reset to Phase 0. Brainstorming: AI resets context in same conversation
+- **Solution:** Clarification: reset to Phase 0. Brainstorming: AI resets docs
 
-### 3. Conflicting params
-- **Trigger:** "Truyện horror cho bé 3 tuổi"
+### 3. Conflicting format/content genre
+- **Trigger:** User selects invalid contentGenre for formatGenre
+- **Layer:** CLIENT
+- **Solution:** Client filters contentGenre options based on formatGenre
+
+### 4. User wants to change auto-selected params
+- **Trigger:** "Đổi sang phong cách thơ vần" trong Brainstorming
 - **Layer:** AI
-- **Solution:** AI clarifies conflict in response
-
-### 4. Unrecognized era/location/artstyle
-- **Trigger:** User mentions unknown value
-- **Layer:** API + CLIENT
-- **Solution:** API returns null → Clarification shows available options
+- **Solution:** AI updates autoSelectedParams và adjust docs accordingly
 
 ### 5. User closes browser mid-flow
 - **Trigger:** Browser close/refresh
 - **Layer:** CLIENT
-- **Solution:** Phase 0+3 persist in DB (can resume). Clarification local state lost (restart from Phase 0)
+- **Solution:** Phase 0+2 persist in DB (can resume). Clarification local state lost (restart from Phase 0)
+
+### 6. User directly says "Tạo truyện" without brainstorming
+- **Trigger:** User satisfied with first docs
+- **Layer:** CLIENT
+- **Solution:** Allow immediate story creation from first docs
