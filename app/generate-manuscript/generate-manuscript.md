@@ -1,7 +1,7 @@
 # Generate Manuscript
 
 ## Description
-Tạo manuscript hoàn chỉnh sau khi user kết thúc brainstorming. User click "Tạo truyện" → API tạo story + snapshot + background job → Client hiển thị progress + modal chọn settings → Background job chạy 5 steps.
+Tạo manuscript hoàn chỉnh sau khi user kết thúc brainstorming. User click "Tạo truyện" → API tạo story + queue job → Job chạy song song với user chọn settings → Tạo snapshot.
 
 **Entry point:** User click "Tạo truyện" kết thúc flow `ai-assistant/story-idea-brainstorming.md`
 
@@ -11,9 +11,9 @@ Tạo manuscript hoàn chỉnh sau khi user kết thúc brainstorming. User clic
 │   Phase 1: TRIGGER                                                          │
 │   [CLIENT → API]                                                            │
 │                                                                             │
-│   User click "Tạo truyện" → API tạo story + snapshot + job → Return IDs     │
+│   User click "Tạo truyện" → API tạo story + queue job → Return IDs          │
 └────────────────────────────────┬────────────────────────────────────────────┘
-                                 │ storyId, snapshotId, jobId
+                                 │ storyId, jobId
                                  ▼
         ┌────────────────────────┴────────────────────────┐
         │                    PARALLEL                      │
@@ -44,7 +44,7 @@ Tạo manuscript hoàn chỉnh sau khi user kết thúc brainstorming. User clic
 ```typescript
 // From brainstorming
 interface StoryParams {
-  targetAudience: 1 | 2 | 3;
+  targetAudience: 1 | 2 | 3 | 4;
   targetCoreValue: string;
   formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre: number;
@@ -78,15 +78,14 @@ interface StepDetails {
 **CLIENT:**
 - Collect params + storyIdea + storyIdeaExplanation từ BrainstormingState
 - Send request, handle loading
-- Store IDs on success
+- Store storyId + jobId on success
 
 **API:**
 - Validate request
-- Create story (chưa có dimension, artstyle_id)
-- Create snapshot với storyIdea + storyIdeaExplanation
-- Create + queue background job
+- Create story với params (book_type = 1, original_language từ user settings, chưa có dimension, artstyle_id)
+- Create + queue background job (status = 'queued', params = {storyIdea, storyIdeaExplanation, ...StoryParams})
 - Update ai_conversation: story_id, step = 'generating'
-- Return IDs
+- Return storyId + jobId
 
 ### Request/Response
 ```typescript
@@ -100,7 +99,6 @@ interface Request {
 
 interface Response {
   storyId: string;
-  snapshotId: string;
   jobId: string;
 }
 ```
@@ -116,7 +114,7 @@ Response received → Phase 2 & 3 (parallel)
 `[CLIENT → DB]`
 
 ### Description
-Modal cho user chọn dimension và artstyle_id. Chạy song song với Phase 3.
+Modal cho user chọn dimension và artstyle_id. Chạy song song với Phase 3 (background job).
 
 ### Responsibilities
 
@@ -126,11 +124,15 @@ Modal cho user chọn dimension và artstyle_id. Chạy song song với Phase 3.
 - Validate và save to story table
 
 ### Dimension Options
-| Value | Name | Size | Spreads | Words/Spread |
-|-------|------|------|---------|--------------|
-| 1 | Square | 20x20cm | 12 | 30-50 |
-| 2 | A4 Landscape | 29.7x21cm | 16 | 40-60 |
-| 3 | A4 Portrait | 21x29.7cm | 20 | 50-80 |
+| Value | Name | Size |
+|-------|------|------|
+| 1 | Square 8.5x8.5 | 216x216mm |
+| 2 | Portrait 8x10 | 203x254mm |
+| 3 | Portrait 6x9 | 152x229mm |
+| 4 | Portrait 8.5x11 | 216x279mm |
+| 5 | Portrait A4 | 210x297mm |
+| 6 | Square 8.25x8.25 | 210x210mm |
+| 7 | Square 8x8 | 203x203mm |
 
 ### DB Operations
 | Operation | Table | Description |
@@ -149,16 +151,18 @@ User confirms → Settings saved
 `[API BACKGROUND]`
 
 ### Description
-Background job chạy 5 steps. Client subscribe/poll để hiển thị progress.
+Job chạy ngay sau Phase 1, song song với Phase 2 (settings). Job reads input từ `background_jobs.params`, chạy 5 steps, tạo snapshot. Client subscribe/poll để hiển thị progress.
 
 ### Job Steps
-| Step | Agent | Output |
-|------|-------|--------|
-| 1 | Story Teller | characters[], props[], stages[], spreads[] |
-| 2 | Art Director P1 | visual_description cho entities, images[] |
-| 3 | Word Smith | Refined spreads[].textboxes[].text |
-| 4 | Art Director P2 | geometry cho images[], textboxes[] |
-| 5 | Tester | flags[] (nếu có issues) |
+| Step | Agent | Input | Output |
+|------|-------|-------|--------|
+| 1 | Story Teller | job.params | characters[], props[], stages[], spreads[], docs[] |
+| 2 | Art Director P1 | Step 1 output | visual_description cho entities, images[] |
+| 3 | Word Smith | Step 1-2 output | Refined spreads[].textboxes[].text |
+| 4 | Art Director P2 | Step 1-3 output | geometry cho images[], textboxes[] |
+| 5 | Tester | Full snapshot | flags[] (nếu có issues) |
+
+**Note:** Step 2 generates visual_description without requiring art_style. Art style applied later during image generation.
 
 ### Job Table Schema
 ```sql
@@ -170,6 +174,7 @@ CREATE TABLE background_jobs (
   current_step SMALLINT DEFAULT 0,
   total_steps SMALLINT DEFAULT 5,
   step_details JSONB,
+  params JSONB,                        -- { storyIdea, storyIdeaExplanation, ...StoryParams }
   error_message TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -192,7 +197,7 @@ Job status = 'completed' | 'failed'
 
 ### Responsibilities
 - Cleanup subscriptions
-- Update ai_conversation: step = 'complete'
+- Update ai_conversation: step = 'story_editing'
 - Redirect to `/stories/{storyId}/editor`
 
 ### Completion Requirements
@@ -201,7 +206,7 @@ Job status = 'completed' | 'failed'
 | Job completed | ✓ |
 | Settings saved | ✓ |
 
-**Note:** Block redirect until both conditions met.
+**Note:** Block redirect until both conditions met (parallel flow).
 
 ---
 
@@ -209,7 +214,7 @@ Job status = 'completed' | 'failed'
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/manuscript/generate` | Trigger generation |
+| POST | `/api/manuscript/generate` | Phase 1: Create story + queue job |
 | GET | `/api/jobs/{jobId}` | Poll job status |
 
 ---
@@ -218,15 +223,14 @@ Job status = 'completed' | 'failed'
 
 | Phase | Operation | Table | Description |
 |-------|-----------|-------|-------------|
-| 1 | INSERT | `stories` | Create với params |
-| 1 | INSERT | `snapshots` | Create với storyIdea + storyIdeaExplanation |
-| 1 | INSERT | `background_jobs` | Create job |
-| 1 | UPDATE | `ai_conversations` | Set story_id, step |
+| 1 | INSERT | `stories` | Create với StoryParams, book_type=1, original_language từ user settings |
+| 1 | INSERT | `background_jobs` | Create job với params = {storyIdea, storyIdeaExplanation, ...StoryParams} |
+| 1 | UPDATE | `ai_conversations` | Set story_id, step = 'generating' |
 | 2 | SELECT | `art_styles` | Fetch options |
-| 2 | UPDATE | `stories` | Save settings |
+| 2 | UPDATE | `stories` | Save dimension, artstyle_id |
 | 3 | UPDATE | `background_jobs` | Progress (worker) |
-| 3 | UPDATE | `snapshots` | Content (worker) |
-| 4 | UPDATE | `ai_conversations` | Set step = 'complete' |
+| 3 | INSERT | `snapshots` | Create với AI-generated content |
+| 4 | UPDATE | `ai_conversations` | Set step = 'story_editing' |
 
 ---
 
@@ -238,14 +242,13 @@ interface GenerateManuscriptState {
   trigger: {
     status: "idle" | "loading" | "success" | "error";
     storyId: string | null;
-    snapshotId: string | null;
     jobId: string | null;
   };
 
   // Phase 2
   settings: {
     status: "selecting" | "saving" | "saved";
-    selectedDimension: 1 | 2 | 3 | null;
+    selectedDimension: 1 | 2 | 3 | 4 | 5 | 6 | 7 | null;
     selectedArtStyleId: string | null;
     artStyles: Array<{
       id: string;
@@ -295,10 +298,10 @@ interface GenerateManuscriptState {
 | Case | Solution |
 |------|----------|
 | Browser close during job | Job continues. On return, check for incomplete jobs |
-| Settings not saved, job done | Block redirect, show reminder |
+| Settings not saved, job done | Block redirect, show settings modal |
 | Partial job failure | Save partial result, offer "Continue" / "Restart" |
-| Duplicate "Tạo truyện" click | Return existing IDs, don't create duplicates |
-| art_styles empty | Show error, block creation |
+| Duplicate "Tạo truyện" click | Return existing storyId + jobId, don't create duplicates |
+| art_styles empty | Show error, block settings save |
 
 ---
 

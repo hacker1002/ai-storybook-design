@@ -4,7 +4,7 @@
 Tính năng tạo truyện từ ý tưởng người dùng. User nhập prompt bất kỳ → AI extract `storyIdea` + params → Client hỏi params còn thiếu qua Clarification → AI tạo/cải thiện `storyIdea` kèm `storyIdeaExplanation` (giải thích vì sao idea hay, dạy trẻ bài học gì, ...) → User và AI brainstorm cho tới khi hài lòng → Tạo truyện.
 
 **Conversation persistence:**
-- `ai_conversations`: Session với `step = "brainstorming"` hoặc `step = "story_editing"`
+- `ai_conversations`: Session với `step = "brainstorming"`
 - `ai_messages`: Messages (user + assistant)
 
 ## Flow Overview
@@ -87,8 +87,8 @@ interface InitialPromptRequest {
 interface InitialPromptResponse {
   conversationId: string;
   message: string;
-  storyIdea: string | null;      // Extracted story idea (null if not specified)
-  extractedParams: ExtractedParams;
+  storyIdea: string | null;      // Extracted story idea (null if only preferences given)
+  extractedParams: ExtractedParams;  // Uses SMALLINT enums for targetCoreValue
   turnNumber: number;
 }
 ```
@@ -97,11 +97,13 @@ interface InitialPromptResponse {
 | User Input | Extracted |
 |------------|-----------|
 | "Truyện cho bé 3 tuổi" | `targetAudience: 1`, `storyIdea: null` |
-| "Mình muốn dạy bé về tình bạn" | `targetCoreValue: "Tình bạn"`, `storyIdea: null` |
+| "Mình muốn dạy bé về tình bạn" | `targetCoreValue: 11`, `storyIdea: null` |
 | "Truyện cổ tích ru ngủ" | `formatGenre: 2`, `contentGenre: 6`, `storyIdea: null` |
 | "Truyện trinh thám cho bé tiểu học" | `targetAudience: 3`, `contentGenre: 1`, `storyIdea: null` |
-| "Kể về chú mèo Miu học cách chia sẻ đồ chơi" | `storyIdea: "Chú mèo Miu học cách chia sẻ đồ chơi"`, `targetCoreValue: "Chia sẻ"` |
+| "Kể về chú mèo Miu học cách chia sẻ đồ chơi" | `storyIdea: "Chú mèo Miu học cách chia sẻ đồ chơi"`, `targetCoreValue: 9` (Vị tha) |
 | "Câu chuyện về cậu bé đi lạc trong rừng và được thỏ giúp đỡ" | `storyIdea: "Cậu bé đi lạc trong rừng được thỏ giúp đỡ"` |
+
+**Note:** AI must map user's text description to `targetCoreValue` enum ID. If no exact match, choose closest or leave null for clarification.
 
 ### State Management
 ```typescript
@@ -145,9 +147,34 @@ Hỏi tuần tự **CHỈ NẾU param còn thiếu**:
 | # | Param | Question | Options | Default | Next |
 |---|-------|----------|---------|---------|------|
 | 1 | `targetAudience` | "Dành cho độ tuổi nào?" | 1: 2-3, 2: 3-5, 3: 6-8, 4: 9+ | **1** (2-3 tuổi) | ✅ |
-| 2 | `targetCoreValue` | "Truyện này truyền tải bài học gì?" | Text | placeholder: "Ví dụ: Tình bạn, Sự dũng cảm" | ✅ |
+| 2 | `targetCoreValue` | "Truyện này truyền tải bài học gì?" | See Core Value Options | **11** (Tình bạn) | ✅ |
 | 3 | `formatGenre` | "Thể loại sách?" | See Format Genre Options | **1** (Narrative) | ✅ |
 | 4 | `contentGenre` | "Thể loại nội dung?" | **Depends on formatGenre** | **first valid option** | ✅ |
+
+### Core Value Options
+| Value | Name (VI) |
+|-------|-----------|
+| 1 | Dũng cảm |
+| 2 | Quan tâm |
+| 3 | Trung thực |
+| 4 | Kiên trì |
+| 5 | Biết ơn |
+| 6 | Bản lĩnh |
+| 7 | Thấu cảm |
+| 8 | Chính trực |
+| 9 | Vị tha |
+| 10 | Tự thức |
+| 11 | Tình bạn |
+| 12 | Hợp tác |
+| 13 | Chấp nhận sự khác biệt |
+| 14 | Tử tế |
+| 15 | Tò mò |
+| 16 | Tự lập |
+| 17 | Xử lý nỗi sợ |
+| 18 | Quản lý cảm xúc |
+| 19 | Chuyển giao |
+| 20 | Bảo vệ môi trường |
+| 21 | Trí tưởng tượng |
 
 ### Format Genre Options
 | Value | Name (EN) | Name (VI) |
@@ -212,14 +239,43 @@ function getContentGenreOptions(formatGenre: number): number[] {
 ```typescript
 interface ClarificationState {
   conversationId: string;
+  storyIdea: string | null;       // From Phase 0 (can be null)
   params: ExtractedParams;
   currentQuestionIndex: number;
   status: "asking" | "completed";
 }
 ```
 
+### localStorage Persistence
+Persist state to recover from browser refresh:
+
+```typescript
+const STORAGE_KEY = "brainstorming_clarification_state";
+
+// Save on every param change
+function persistState(state: ClarificationState): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// Load on component mount
+function loadPersistedState(): ClarificationState | null {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  return saved ? JSON.parse(saved) : null;
+}
+
+// Clear on Phase 2 transition or explicit reset
+function clearPersistedState(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}
+```
+
+**Recovery flow:**
+1. On mount: check localStorage for saved state
+2. If found & `conversationId` matches current: restore state, resume from `currentQuestionIndex`
+3. If mismatch or not found: start fresh from Phase 0 response
+
 ### Exit Condition
-All params answered (với default hoặc user input) → Transition to Phase 2 (Brainstorming)
+All params answered (với default hoặc user input) → Clear localStorage → Transition to Phase 2 (Brainstorming)
 
 ---
 
@@ -253,14 +309,16 @@ Multi-turn chat với AI để phát triển ý tưởng truyện.
 - Build prompt with context (params, storyIdea, storyIdeaExplanation, history)
 - Call AI
 - Save messages to DB
-- Return response with updated `storyIdea` + `storyIdeaExplanation`
+- Return response with: 
+  - If answer only, (AI return only `message`) use old `storyIdea` + `storyIdeaExplanation`. 
+  - If user want update idea, (AI have `storyIdea` + `storyIdeaExplanation`), return new data from AI to client.
 
 **AI:**
 - Act as Story Consultant
 - First call: Generate `storyIdea` + `storyIdeaExplanation`
 - Auto-select: `writingStyle`, `eraId`, `locationId` based on story context
-- Answer user questions about the story (không update idea nếu user chỉ hỏi)
-- Update `storyIdea` + `storyIdeaExplanation` khi user đưa feedback muốn thay đổi
+- Answer user questions about the story (không trả về idea nếu user chỉ hỏi)
+- Update và trả về `storyIdea` + `storyIdeaExplanation` khi user đưa feedback muốn thay đổi
 
 ### Initial Idea Generation
 Khi vào Phase 2, API call đầu tiên sẽ:
@@ -283,44 +341,34 @@ Khi vào Phase 2, API call đầu tiên sẽ:
 
 ### Request/Response
 ```typescript
-// Unified request for both init and chat
 interface BrainstormingChatRequest {
   conversationId: string;
-  userMessage: string;           // First call: JSON.stringify(params + storyIdea)
+  userMessage: string;
+  isInitialBrainstorm: boolean;  // true = first call with params, false = regular chat
 }
 
 interface BrainstormingResponse {
   conversationId: string;
   message: string;
-  storyIdea: string;             // Ý tưởng truyện chi tiết
+  storyIdea: string;             // Ý tưởng truyện chi tiết (AI generates if null in request)
   storyIdeaExplanation: string;  // Giải thích vì sao idea hay
   params: StoryParams;           // All params (extracted + auto-selected)
   turnNumber: number;
 }
-
-interface StoryParams {
-  // ExtractedParams (from Phase 0 + Clarification)
-  targetAudience: 1 | 2 | 3 | 4;
-  targetCoreValue: string;
-  formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
-  contentGenre: number;
-  // AutoSelectedParams (AI chooses based on story)
-  writingStyle: 1 | 2 | 3;
-  eraId: string;
-  locationId: string;
-}
 ```
 
-**First call userMessage format:**
+**First call (`isInitialBrainstorm: true`) userMessage format:**
 ```json
 {
   "targetAudience": 1,
-  "targetCoreValue": "Tình bạn",
+  "targetCoreValue": 11,
   "formatGenre": 1,
   "contentGenre": 2,
   "storyIdea": "Chú mèo Miu học cách chia sẻ đồ chơi"
 }
 ```
+
+**Note:** `storyIdea` can be `null` if user only specified preferences in Phase 0. AI will generate a complete story idea based on params.
 
 **Response Example:**
 ```json
@@ -360,23 +408,26 @@ User click "Tạo truyện"
 // Phase 0: Partial params (some may be null)
 interface ExtractedParams {
   targetAudience?: 1 | 2 | 3 | 4;
-  targetCoreValue?: string;
+  targetCoreValue?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21;
   formatGenre?: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre?: number;
   storyIdea?: string;
 }
 
-// Phase 2: Complete params (all required)
+// Phase 2: Complete params (all required except AI auto-selected)
 interface StoryParams {
-  // From Phase 0 + Clarification
+  // From Phase 0 + Clarification (required)
   targetAudience: 1 | 2 | 3 | 4;
-  targetCoreValue: string;
+  targetCoreValue: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21;
   formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre: number;
-  // AI auto-selected
-  writingStyle: 1 | 2 | 3;
-  eraId: string;
-  locationId: string;
+  // AI auto-selected (nullable - set later when creating story)
+  writingStyle?: 1 | 2 | 3;
+  eraId?: string;
+  locationId?: string;
+  artStyleId?: string;
+  bookType?: 1 | 2 | 3 | 4;
+  dimension?: 1 | 2 | 3 | 4 | 5 | 6 | 7;
 }
 
 type CurrentPhase = "initial" | "clarification" | "brainstorming";
@@ -409,14 +460,15 @@ interface InitialPromptResponse {
 ```
 
 ### POST /api/chat/story-brainstorming
-Phase 2: Generate và refine storyIdea. Unified interface cho cả init và chat.
+Phase 2: Generate và refine storyIdea.
 
 **Lưu ý:** Nếu user chỉ hỏi câu hỏi (không yêu cầu update idea) → AI chỉ trả lời trong `message`, giữ nguyên `storyIdea` + `storyIdeaExplanation`.
 
 ```typescript
 interface BrainstormingChatRequest {
   conversationId: string;
-  userMessage: string;           // First call: JSON.stringify(params + storyIdea)
+  userMessage: string;
+  isInitialBrainstorm: boolean;  // true = first call with params, false = regular chat
 }
 
 interface BrainstormingResponse {
@@ -429,12 +481,13 @@ interface BrainstormingResponse {
 }
 ```
 
-**First call userMessage:**
+**First call (`isInitialBrainstorm: true`) userMessage:**
 ```json
-{"targetAudience":1,"targetCoreValue":"Tình bạn","formatGenre":1,"contentGenre":2,"storyIdea":"Chú mèo Miu học cách chia sẻ"}
+{"targetAudience":1,"targetCoreValue":11,"formatGenre":1,"contentGenre":2,"storyIdea":"Chú mèo Miu học cách chia sẻ"}
 ```
+*Note: `storyIdea` can be `null` - AI will generate based on params*
 
-**Subsequent calls:** Regular chat message (string)
+**Subsequent calls (`isInitialBrainstorm: false`):** Regular chat message (string)
 ---
 
 ## DB Queries (Supabase)
@@ -445,7 +498,6 @@ interface BrainstormingResponse {
 | SELECT | `locations` | AI fetch để auto-select locationId |
 | INSERT | `ai_conversations` | Create conversation (API - Phase 0) |
 | INSERT | `ai_messages` | Save messages (API) |
-| UPDATE | `ai_conversations` | Set `story_id`, `step = 'story_editing'` after creation |
 
 ---
 
@@ -485,7 +537,9 @@ interface BrainstormingResponse {
 ### 5. User closes browser mid-flow
 - **Trigger:** Browser close/refresh
 - **Layer:** CLIENT
-- **Solution:** Phase 0+2 persist in DB (can resume). Clarification local state lost (restart from Phase 0)
+- **Solution:**
+  - Phase 0+2: Persist in DB (can resume)
+  - Phase 1 (Clarification): Persist to localStorage, restore on reload if `conversationId` matches
 
 ### 6. User directly says "Tạo truyện" without brainstorming
 - **Trigger:** User satisfied with first storyIdea
