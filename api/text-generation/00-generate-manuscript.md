@@ -1,130 +1,188 @@
 # generate-manuscript
 
 ## Description
-**Orchestrator function** - Điều phối việc tạo manuscript hoàn chỉnh qua 5 bước tuần tự. Function này gọi lần lượt các step functions và quản lý flow tổng thể.
+**Orchestrator API** - Tạo story record và queue background job cho việc generate manuscript. Job chạy 5 steps tuần tự trong background.
+
+**Entry point:** POST `/api/manuscript/generate` - được gọi khi user click "Tạo truyện" từ brainstorming flow.
 
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `story`: Lưu thông tin story (title, summary, target_core_value, step, dimension, target_audience, genre, writing_style, era_id, location_id, artstyle_id)
-- `snapshot`: Lưu version đầu tiên của story
-- `art_styles`: Truy vấn description để truyền vào các step functions
-- `eras`: Truy vấn era description cho context
-- `locations`: Truy vấn location description cho context
+- `stories`: Tạo record mới với StoryParams (chưa có dimension, artstyle_id)
+- `background_jobs`: Tạo job record với params và track progress
+- `ai_conversations`: Update story_id và step
+- `eras`: Truy vấn era info
+- `locations`: Truy vấn location info
 
-### Fields Used
-- `story.id`: UUID của story
-- `story.dimension`: SMALLINT (1: Square, 2: A4 Landscape, 3: A4 Portrait)
-- `story.target_audience`: SMALLINT (1: preschool, 2: primary, 3: tweens)
-- `story.target_core_value`: VARCHAR(255)
-- `story.genre`: SMALLINT (1-5)
-- `story.writing_style`: SMALLINT (1-3)
-- `story.era_id`: FK → eras
-- `story.location_id`: FK → locations
-- `story.artstyle_id`: FK → art_styles
-- `snapshot.id`: UUID của snapshot
-- `snapshot.story_id`: FK → story
+### background_jobs Table
+```sql
+CREATE TABLE background_jobs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type VARCHAR(50) NOT NULL,           -- 'generate_manuscript'
+  story_id UUID REFERENCES stories(id),
+  status VARCHAR(20) NOT NULL,         -- 'queued', 'running', 'completed', 'failed'
+  current_step SMALLINT DEFAULT 0,
+  total_steps SMALLINT DEFAULT 5,
+  step_details JSONB,
+  params JSONB,                        -- { storyIdea, storyIdeaExplanation, ...StoryParams }
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+## Shared Types
+
+```typescript
+// From brainstorming
+interface StoryParams {
+  targetAudience: 1 | 2 | 3 | 4;       // 1: kindergarten, 2: preschool, 3: primary, 4: middle grade
+  targetCoreValue: number;              // 1-21: Dũng cảm, Quan tâm, etc. (see stories.target_core_value)
+  formatGenre: 1 | 2 | 3 | 4 | 5 | 6;  // Narrative, Lullaby, Concept, Non-fiction, Early Reader, Wordless
+  contentGenre: number;                 // 1-11: Mystery, Fantasy, etc.
+  writingStyle: 1 | 2 | 3;             // 1: Narrative, 2: Rhyming, 3: Humorous Fiction
+  eraId: string;                        // UUID → eras
+  locationId: string;                   // UUID → locations
+}
+
+// Job tracking
+type JobStatus = "queued" | "running" | "completed" | "failed";
+type StepStatus = "pending" | "running" | "completed" | "failed" | "skipped";
+
+interface StepDetails {
+  step1_storyDraft: StepStatus;
+  step2_visualPlan: StepStatus;
+  step3_textRefinement: StepStatus;
+  step4_composition: StepStatus;
+  step5_qualityCheck: StepStatus;
+}
+```
 
 ## Parameters
 ```typescript
-interface GenerateManuscriptParams {
-  storyIdea: string;              // "Một chú mèo con tên Miu lạc đường..."
-  attributes: {
-    // General settings
-    dimension: 1 | 2 | 3;         // 1: Square (20x20cm), 2: A4 Landscape (29.7x21cm), 3: A4 Portrait (21x29.7cm)
-    targetAudience: 1 | 2 | 3;    // 1: preschool (2-5), 2: primary (6-8), 3: tweens (9-10)
-    targetCoreValue: string;      // Đạo đức, Trí tuệ, Nghị lực (varchar 255)
-
-    // Creative settings
-    genre: 1 | 2 | 3 | 4 | 5;     // 1: fantasy, 2: scifi, 3: mystery, 4: romance, 5: horror
-    writingStyle: 1 | 2 | 3;      // 1: Narrative, 2: Rhyming/Rhyme, 3: Humorous Fiction
-    eraId: string;                // UUID → eras table
-    locationId: string;           // UUID → locations table
-    artstyleId: string;           // UUID → art_styles table
-  };
-  language?: string;              // "vi" | "en" - nếu không truyền, dùng "vi"
-  options?: {
-    skipArtDirection?: boolean;   // Bỏ qua Art Direction (Step 2,3,4) (default: false)
-    skipQualityCheck?: boolean;   // Bỏ qua Quality Check (Step 5) (default: false)
-  };
+// POST /api/manuscript/generate
+interface GenerateManuscriptRequest {
+  conversationId: string;               // AI conversation ID
+  params: StoryParams;
+  storyIdea: string;                    // "Một chú mèo con tên Miu lạc đường..."
+  storyIdeaExplanation: string;         // Chi tiết giải thích ý tưởng
 }
 ```
 
 ## Result
 ```typescript
-interface GenerateManuscriptResult {
-  storyId: string;                // UUID của story được tạo
-  snapshotId: string;             // UUID của snapshot được tạo
-  status: "completed" | "partial";
-  stepsCompleted: {
-    step1_storyDraft: boolean;           // Story Draft (Story Teller)
-    step2_spreadVisualPlan: boolean;     // Spread Visual Plan (Art Director)
-    step3_textRefinement: boolean;       // Text Refinement (Word Smith)
-    step4_spreadComposition: boolean;    // Spread Composition (Art Director)
-    step5_qualityCheck: boolean;         // Quality Check
-  };
-  summary: {
-    title: string;
-    spreadCount: number;
-    characterCount: number;
-    propCount: number;
-    stageCount: number;
-    flagCount: number;            // Số lượng issues từ Step 5
-  };
+interface GenerateManuscriptResponse {
+  storyId: string;                      // UUID của story được tạo
+  jobId: string;                        // UUID của background job
 }
 ```
 
-## Flow
+## Flow (Phase 1: Trigger)
+
 ```
 1. Validate input parameters
 
-2. Step 1: Story Draft
-   Gọi generate-story-draft (truyền storyIdea, attributes, language)
-   → Tạo Story + Snapshot trong DB
-   → Lưu: docs[], characters[], props[], stages[], spreads[] (với textboxes[])
+2. Create story record:
+   - book_type = 1 (sách tranh)
+   - original_language = user.settings.language
+   - target_audience, target_core_value, format_genre, content_genre
+   - writing_style, era_id, location_id
+   - dimension = NULL (chọn ở Phase 2)
+   - artstyle_id = NULL (chọn ở Phase 2)
 
-3. Nếu không skipArtDirection:
+3. Create background_jobs record:
+   - type = 'generate_manuscript'
+   - story_id = story.id
+   - status = 'queued'
+   - current_step = 0
+   - total_steps = 5
+   - step_details = { step1: 'pending', step2: 'pending', ... }
+   - params = { storyIdea, storyIdeaExplanation, ...StoryParams }
 
-   Step 2: Spread Visual Plan (Art Director - Phase 1)
-   Gọi generate-spread-visual-plan (truyền storyId, snapshotId)
-   → Update: characters[].visual_description, props[], stages[]
-   → Update: spreads[].images[] (basic, chưa có geometry)
+4. Update ai_conversations:
+   - story_id = story.id
+   - step = 'generating'
 
-   Step 3: Text Refinement (Word Smith)
-   Gọi generate-text-refinement (truyền storyId, snapshotId)
-   → Update: spreads[].textboxes[].language[].text (refined)
+5. Queue job for background processing
 
-   Step 4: Spread Composition (Art Director - Phase 2)
-   Gọi generate-spread-composition (truyền storyId, snapshotId)
-   → Update: spreads[].images[].geometry
-   → Update: spreads[].images[].visual_description (thêm text zone notes)
-   → Update: spreads[].images[].text_zone, composition_notes
-   → Update: spreads[].textboxes[].language[].geometry
+6. Return { storyId, jobId }
+```
 
-4. Nếu không skipQualityCheck:
-   Step 5: Quality Check
-   Gọi generate-quality-check (truyền storyId, snapshotId)
-   → Lưu: flags[] (nếu có issues)
+## Background Job Flow (Phase 3)
 
-5. Return result
+```
+Job Runner reads params from background_jobs.params
+
+Step 1: Story Draft (Story Teller)
+├─ Input: job.params (storyIdea, StoryParams)
+├─ Output: docs[], characters[], props[], stages[], spreads[]
+├─ Save to: snapshot
+└─ Note: Chưa có dimension, artstyle_id
+
+Step 2: Visual Plan (Art Director P1)
+├─ Input: snapshot từ Step 1
+├─ Output: visual_description cho entities, images[]
+└─ Note: Tạo visual_description KHÔNG cần art_style
+         Art style applied later during image generation
+
+Step 3: Text Refinement (Word Smith)
+├─ Input: snapshot từ Step 1-2
+├─ Output: Refined spreads[].textboxes[].text
+└─ Note: Dựa trên target_audience để adjust
+
+Step 4: Composition (Art Director P2)
+├─ Input: snapshot từ Step 1-3
+├─ Output: geometry cho images[], textboxes[]
+└─ Note: Uses default layout ratios, actual dimensions applied on render
+
+Step 5: Quality Check (Tester)
+├─ Input: Full snapshot
+├─ Output: flags[] (nếu có issues)
+└─ Note: Final validation
 ```
 
 ## Step Dependencies
 ```
 Step 1 (Story Draft)
     ↓
-Step 2 (Visual Plan) ─── phụ thuộc Step 1 (cần characters, props, stages, spreads)
+Step 2 (Visual Plan) ─── Không cần art_style
     ↓
-Step 3 (Text Refinement) ─── có thể chạy song song với Step 2, nhưng sequential cho đơn giản
+Step 3 (Text Refinement) ─── Cần target_audience
     ↓
-Step 4 (Composition) ─── phụ thuộc cả Step 2 (cần images[]) và Step 3 (cần refined text)
+Step 4 (Composition) ─── Uses default layout ratios
     ↓
-Step 5 (Quality Check) ─── phụ thuộc tất cả steps trước
+Step 5 (Quality Check) ─── Phụ thuộc tất cả steps trước
+```
+
+## Progress Tracking
+
+### Client Subscription
+- **Primary:** Supabase Realtime subscription on `background_jobs` table
+- **Fallback:** Polling GET `/api/jobs/{jobId}` every 3s
+
+### Job Status Response
+```typescript
+interface JobStatusResponse {
+  id: string;
+  status: JobStatus;
+  currentStep: number;
+  totalSteps: number;
+  stepDetails: StepDetails;
+  errorMessage?: string;
+}
 ```
 
 ## Error Handling
-- Nếu Step 1 fail → Return error, không tạo story
-- Nếu Step 2 fail → Return partial result, vẫn giữ Step 1 data
-- Nếu Step 3 fail → Return partial result, vẫn giữ Step 1 + 2 data
-- Nếu Step 4 fail → Return partial result, vẫn giữ Step 1 + 2 + 3 data
-- Nếu Step 5 fail → Return partial result, vẫn giữ tất cả data trước đó
+| Step | Error | Action |
+|------|-------|--------|
+| 1 | Story Draft fail | status = 'failed', không tạo snapshot |
+| 2 | Visual Plan fail | status = 'failed', giữ Step 1 data |
+| 3 | Text Refinement fail | status = 'failed', giữ Step 1-2 data |
+| 4 | Composition fail | status = 'failed', giữ Step 1-3 data |
+| 5 | QC fail | status = 'failed', giữ tất cả data |
+
+## Notes
+- `dimension` và `artstyle_id` được chọn ở Phase 2 (Settings), KHÔNG cần cho job processing
+- Step 4 (Composition) sử dụng layout ratios mặc định, actual dimensions applied on render
+- Step 2 tạo `visual_description` chung, art_style được apply khi generate image
+- Client cần block redirect until both: job completed + settings saved

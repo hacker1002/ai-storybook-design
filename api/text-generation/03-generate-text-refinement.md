@@ -6,18 +6,23 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `story`: Truy vấn target_audience, original_language
-- `snapshot`: Đọc docs[], spreads[] và UPDATE spreads[].textboxes[].language[].text
+- `stories`: Truy vấn target_audience, original_language, format_genre, writing_style
+- `snapshots`: Đọc docs[], spreads[] và UPDATE spreads[].textboxes[].language[].text
 
 ### Fields Used/Updated
-- `snapshot.docs[]` - READ (để hiểu context)
-- `snapshot.spreads[].textboxes[].language[].text` - READ & UPDATE
-- `story.target_audience` - READ
-- `story.original_language` - READ
+- `snapshots.docs[]` - READ (để hiểu context)
+- `snapshots.spreads[].textboxes[].language[0].text` - READ & UPDATE (only original_language)
+- `stories.title` - READ
+- `stories.target_audience` - READ
+- `stories.original_language` - READ (determines which language[0] to refine)
+- `stories.format_genre` - READ
+- `stories.writing_style` - READ
+
+**Note:** Only refines `original_language` (first in `language[]` array). Other languages handled by translation step (10-translate-content.md).
 
 ## Parameters
 ```typescript
-interface GenerateTextRefinementParams {
+interface GenerateTextRefinementInput {
   storyId: string;
   snapshotId: string;
 }
@@ -27,13 +32,14 @@ interface GenerateTextRefinementParams {
 ```typescript
 interface GenerateTextRefinementResult {
   success: boolean;
+  languageCode: string;                 // e.g., "vi", "en" - from stories.original_language
   updatedSpreads: {
     number: number;
     textboxes: {
       order: number;
       originalText: string;
       refinedText: string;
-      changes: string[];        // List of changes made
+      changes: string[];               // Reasons for changes, empty if unchanged
     }[];
   }[];
   summary: {
@@ -78,47 +84,76 @@ Refine the text content for this children's picture book:
 
 ## STORY CONTEXT
 - Title: {%title%}
-- Target Audience: {%audience%}
+- Target Audience: {%target_audience%}
+- Format Genre: {%format_genre%}
+- Writing Style: {%writing_style%}
 - Language: {%language%}
 
 ## MANUSCRIPT REFERENCE
-{ // from snapshot.docs[] where type = "manuscript":
-- content: "Full manuscript content..."
-}
 {%manuscript_content%}
 
 ## CURRENT SPREADS TEXT
-{ // for each spread, show current textboxes[].language[].text:
-- spread 1: textbox 1: "...", textbox 2: "..."
-- spread 2: textbox 1: "..."
-- ...
-}
 {%spreads_text%}
 
 ---
 
 ## REFINEMENT GUIDELINES
 
-### For Target Audience: {audience}
+### Writing Style Considerations
 
-**1 - Preschool (2-5 tuổi):**
+**1 - Narrative (Văn xuôi):**
+- Smooth prose flow
+- Natural sentence rhythm
+- Focus on clarity and engagement
+
+**2 - Rhyming (Thơ/Vần điệu):**
+- MUST preserve/enhance rhyme schemes
+- Maintain consistent meter
+- Prioritize rhythm over exact word count
+- Check end-rhyme and internal rhyme patterns
+
+**3 - Humorous Fiction (Hài hước):**
+- Preserve comedic timing
+- Maintain punchline effectiveness
+- Keep playful word choices
+- Ensure humor is age-appropriate
+
+### For Target Audience
+
+**1 - Kindergarten (2-3 tuổi):**
+- Very simple sentences (3-5 words max)
+- Heavy repetition and rhythm
+- Basic vocabulary only
+- Onomatopoeia highly encouraged
+- Total per spread: 10-20 words max
+
+**2 - Preschool (4-5 tuổi):**
 - Simple sentences (5-10 words max)
 - Repetition and rhythm (great for read-aloud)
 - Familiar vocabulary
 - Onomatopoeia encouraged
 - Total per spread: 20-40 words max
 
-**2 - Primary (6-8 tuổi):**
+**3 - Primary (6-8 tuổi):**
 - Varied sentence structure
 - Richer vocabulary (with context clues)
 - Can handle compound sentences
-- Total per spread: 40-80 words max
+- Total per spread: 40-60 words max
 
-**3 - Tweens (9-10 tuổi):**
+**4 - Middle Grade (9+ tuổi):**
 - Complex sentences allowed
 - Sophisticated vocabulary
 - Subtext and nuance
-- Total per spread: 60-100 words max
+- Total per spread: 50-80 words max
+
+### Format Genre Considerations
+
+**1 - Narrative Picture Books:** Focus on storytelling flow
+**2 - Lullaby/Bedtime Books:** Soothing rhythm, soft language
+**3 - Concept Books:** Clear, educational language
+**4 - Non-fiction Picture Books:** Accurate, engaging explanations
+**5 - Early Reader:** Controlled vocabulary, decodable words
+**6 - Wordless Picture Books:** Minimal or no text (skip refinement)
 
 ### Quality Checklist
 For each textbox, consider:
@@ -146,12 +181,9 @@ Return JSON with:
     "number": 1,
     "textboxes": [{
       "order": 1,
-      "originalText": "Ngày xửa ngày xưa, có một chú mèo con tên là Miu sống trong một ngôi nhà nhỏ.",
-      "refinedText": "Miu là một chú mèo con sống trong ngôi nhà nhỏ xinh.",
-      "changes": [
-        "Bỏ 'Ngày xửa ngày xưa' - cliché không cần thiết",
-        "Rút gọn câu cho phù hợp lứa tuổi 3-6"
-      ]
+      "originalText": "...",
+      "refinedText": "...",
+      "changes": ["Reason 1", "Reason 2"]
     }]
   }],
   "summary": {
@@ -171,23 +203,31 @@ Return JSON with:
 ## Flow
 ```
 1. Validate input parameters (storyId, snapshotId)
+
 2. Lấy prompt templates từ DB:
-   - Query `prompt_templates` với name = "WORD_SMITH_SYSTEM" → system prompt + model
-   - Query `prompt_templates` với name = "TEXT_REFINEMENT_USER_TEMPLATE" → user prompt template
+   - WORD_SMITH_SYSTEM → system prompt + model
+   - TEXT_REFINEMENT_USER_TEMPLATE → user prompt template
+
 3. Lấy snapshot data từ DB (docs, spreads)
-4. Lấy story metadata (target_audience, original_language)
+
+4. Lấy story metadata (title, target_audience, format_genre, writing_style, original_language)
+
 5. Render user prompt template với variables:
-   - title, audience, language, manuscript_content, spreads_text
-6. Call LLM với:
-   - system prompt content
-   - rendered user prompt
-   - model từ prompt_templates (dynamic, không hardcode)
+   - title, target_audience, format_genre, writing_style, language
+   - manuscript_content, spreads_text
+
+6. Call LLM
+
 7. Parse JSON response
-8. Update snapshot.spreads[].textboxes[].language[].text
-9. Return result với summary
+
+8. Update snapshot.spreads[].textboxes[].language[0].text
+   Note: Only updates first language entry (original_language)
+
+9. Return result với summary và languageCode
 ```
 
 ## Error Handling
-- Nếu snapshot không tồn tại → Return error
-- Nếu không có textboxes → Return success với empty changes
-- Nếu LLM không trả về đủ spreads → Log warning, giữ nguyên text chưa được refine
+- Snapshot không tồn tại → Return error
+- Không có textboxes → Return success với empty changes
+- LLM không trả về đủ spreads → Log warning, giữ nguyên text chưa được refine
+- Format genre = 6 (Wordless) → Skip refinement, return unchanged

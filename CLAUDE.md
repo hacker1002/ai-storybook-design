@@ -349,6 +349,36 @@ Messages trong conversation.
 | `content` | TEXT | Nội dung message |
 | `created_at` | TIMESTAMPTZ | Thời điểm tạo |
 
+#### background_jobs
+Background jobs cho các task chạy async (generate manuscript, export, etc.)
+
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `type` | VARCHAR(50) | Job type: `generate_manuscript`, `export_pdf`, etc. |
+| `story_id` | UUID | FK → stories (nullable) |
+| `user_id` | UUID | FK → auth.users |
+| `status` | VARCHAR(20) | `queued`, `running`, `completed`, `failed` |
+| `current_step` | SMALLINT | Current step number (default 0) |
+| `total_steps` | SMALLINT | Total steps in job |
+| `step_details` | JSONB | Detailed status per step |
+| `params` | JSONB | Job parameters |
+| `result` | JSONB | Job result data |
+| `error_message` | TEXT | Error message if failed |
+| `created_at` | TIMESTAMPTZ | Thời điểm tạo |
+| `updated_at` | TIMESTAMPTZ | Thời điểm cập nhật |
+
+**step_details structure:**
+```json
+{
+  "step1_storyDraft": "pending | running | completed | failed | skipped",
+  "step2_visualPlan": "pending",
+  "step3_textRefinement": "pending",
+  "step4_composition": "pending",
+  "step5_qualityCheck": "pending"
+}
+```
+
 ### Chi tiết JSONB structures
 
 #### docs[] structure
@@ -386,6 +416,7 @@ Messages trong conversation.
     "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
     "setting": "@stage_key/setting_key",
     "visual_description": "...",
+    "negative_prompt": "...",
     "image_references[]": [{ "title": "...", "media_url": "..." }],
     "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
@@ -461,6 +492,7 @@ Messages trong conversation.
       "build": "..."
     },
     "visual_description": "...",
+    "negative_prompt": "...",
     "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "image_references[]": [{ "title": "...", "media_url": "..." }]
@@ -496,6 +528,7 @@ Messages trong conversation.
     "key": "default",
     "type": 0,
     "visual_description": "...",
+    "negative_prompt": "...",
     "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "image_references[]": [{ "title": "...", "media_url": "..." }]
@@ -520,6 +553,7 @@ Messages trong conversation.
     "key": "default",
     "type": 0,
     "visual_description": "...",
+    "negative_prompt": "...",
     "temporal": {
       "era": "...",
       "season": "...",
@@ -698,15 +732,15 @@ cp template-design/app-template.md app/{feature-group}/{feature-name}.md
 | `STORY_CONSULTANT_SYSTEM` | System prompt - Story Consultant (brainstorming) | *(none)* |
 | `STORY_CONSULTANT_USER_TEMPLATE` | User prompt - brainstorming chat | `conversation_history`, `current_user_message`, `current_story_idea`, `current_params`, `available_eras`, `available_locations`, `available_art_styles`, `is_finalize` |
 | `STORY_TELLER_SYSTEM` | System prompt - Story Teller agent | *(none)* |
-| `STORY_DRAFT_USER_TEMPLATE` | User prompt - tạo story draft | `story_idea`, `dimension`, `target_audience`, `target_core_value`, `genre`, `writing_style`, `era_name`, `era_description`, `location_name`, `location_description`, `art_style_name`, `art_style_description`, `language`, `spreads`, `words_per_spread`, `categories_text`, `locations_text` |
+| `STORY_DRAFT_USER_TEMPLATE` | User prompt - tạo story draft | `story_idea`, `story_idea_explanation`, `target_audience`, `target_core_value`, `format_genre`, `content_genre`, `writing_style`, `era_name`, `era_description`, `location_name`, `location_description`, `language`, `spreads`, `words_per_spread`, `categories_text`, `locations_text` |
 | `ART_DIRECTOR_P1_SYSTEM` | System prompt - Art Director Phase 1 | *(none)* |
-| `VISUAL_PLAN_USER_TEMPLATE` | User prompt - tạo visual plan | `title`, `target_audience`, `art_style_description`, `language`, `docs_text`, `characters_text`, `props_text`, `stages_text`, `spreads_text` |
+| `VISUAL_PLAN_USER_TEMPLATE` | User prompt - tạo visual plan | `title`, `target_audience`, `format_genre`, `content_genre`, `language`, `docs_text`, `characters_text`, `props_text`, `stages_text`, `spreads_text` |
 | `WORD_SMITH_SYSTEM` | System prompt - Word Smith | *(none)* |
-| `TEXT_REFINEMENT_USER_TEMPLATE` | User prompt - refine text | `title`, `audience`, `language`, `manuscript_content`, `spreads_text` |
+| `TEXT_REFINEMENT_USER_TEMPLATE` | User prompt - refine text | `title`, `target_audience`, `format_genre`, `writing_style`, `language`, `manuscript_content`, `spreads_text` |
 | `ART_DIRECTOR_P2_SYSTEM` | System prompt - Art Director Phase 2 | *(none)* |
-| `COMPOSITION_USER_TEMPLATE` | User prompt - spread composition | `title`, `target_audience`, `book_type`, `dimension`, `spreads_data` |
+| `COMPOSITION_USER_TEMPLATE` | User prompt - spread composition | `title`, `target_audience`, `book_type`, `spreads_data` |
 | `TESTER_SYSTEM` | System prompt - Quality Check | *(none)* |
-| `QUALITY_CHECK_USER_TEMPLATE` | User prompt - quality check | `title`, `target_audience`, `art_style_description`, `target_core_value`, `docs_text`, `characters_json`, `props_json`, `stages_json`, `spreads_json` |
+| `QUALITY_CHECK_USER_TEMPLATE` | User prompt - quality check | `title`, `target_audience`, `target_core_value`, `docs_text`, `characters_json`, `props_json`, `stages_json`, `spreads_json` |
 | `VISUAL_DESCRIPTOR_SYSTEM` | System prompt - Visual Descriptor (shared for character, prop, stage, spread) | *(none)* |
 | `VISUAL_DESC_CHARACTER_USER_TEMPLATE` | User prompt - character visual description | `name`, `key`, `description`, `gender`, `age`, `category_name`, `category_type`, `category_description`, `role`, `personality_text`, `appearance_text`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `existing_visual_descriptions`, `target_length`, `language` |
 | `VISUAL_DESC_PROP_USER_TEMPLATE` | User prompt - prop visual description | `name`, `key`, `current_description`, `category_name`, `category_type`, `category_description`, `type`, `sounds_text`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `existing_visual_descriptions`, `target_length`, `language` |

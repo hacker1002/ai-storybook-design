@@ -6,14 +6,15 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `story`: Đọc metadata (title, target_audience, target_core_value, artstyle_id)
-- `snapshot`: Đọc toàn bộ docs[], characters[], props[], stages[], spreads[]
+- `stories`: Đọc metadata (title, target_audience, target_core_value)
+- `snapshots`: Đọc toàn bộ docs[], characters[], props[], stages[], spreads[]
 - `flags`: TẠO MỚI các flag records cho issues tìm thấy
-- `art_styles`: Đọc description
 
 ### Fields Used
 - `flags.id`, `flags.user_id`, `flags.story_id`, `flags.title`, `flags.content`, `flags.type`, `flags.status`
-- `story.title`, `story.target_audience`, `story.target_core_value`, `story.artstyle_id`
+- `stories.title`, `stories.target_audience`, `stories.target_core_value`
+
+**Note:** Không đọc `stories.artstyle_id` - chưa được set ở thời điểm này (Step 5 chạy trong background job trước Phase 2).
 
 ## Parameters
 ```typescript
@@ -106,25 +107,34 @@ Kiểm tra cốt truyện có vấn đề logic hoặc narrative.
 ### 4.3 Age Appropriateness Tester (Parent + Child perspective)
 Kiểm tra nội dung phù hợp với độ tuổi target.
 
-**Checks based on audience:**
+**Checks based on target_audience:**
 
-**kids-3-6:**
-- Vocabulary complexity (should be simple)
-- Sentence length (5-10 words)
-- Scary/intense content
-- Concept complexity
-- Attention span consideration
+**1 - Kindergarten (2-3 tuổi):**
+- Vocabulary complexity (very simple, 3-5 words per sentence)
+- Repetition and rhythm
+- No scary/intense content
+- Basic concepts only
+- Very short attention span
 
-**kids-7-12:**
+**2 - Preschool (4-5 tuổi):**
+- Simple vocabulary (5-10 words per sentence)
 - Age-appropriate themes
+- Minimal scary content
+- Concept complexity appropriate
+- Short attention span
+
+**3 - Primary (6-8 tuổi):**
+- Varied vocabulary with context clues
 - Reading level match
 - Emotional intensity appropriate
 - Educational value
+- Can handle compound sentences
 
-**teens:**
+**4 - Middle Grade (9+ tuổi):**
+- Sophisticated vocabulary
 - Depth of themes
-- Relatable content
-- Not too childish, not too mature
+- Complex emotions allowed
+- Subtext and nuance
 
 **Parent perspective:**
 - Hidden meanings that might be inappropriate
@@ -159,7 +169,6 @@ Evaluate the following picture book manuscript:
 ## STORY METADATA
 - Title: {%title%}
 - Target Audience: {%target_audience%}
-- Art Style: {%art_style_description%}
 - Core Values: {%target_core_value%}
 
 ## DOCUMENTS
@@ -327,20 +336,26 @@ Suggestion: [Actionable recommendation to fix the issue]
 ## Flow
 ```
 1. Validate input parameters (storyId, snapshotId)
+
 2. Lấy prompt templates từ DB:
-   - Query `prompt_templates` với name = "TESTER_SYSTEM" → system prompt + model
-   - Query `prompt_templates` với name = "QUALITY_CHECK_USER_TEMPLATE" → user prompt template
+   - TESTER_SYSTEM → system prompt + model
+   - QUALITY_CHECK_USER_TEMPLATE → user prompt template
+
 3. Lấy full snapshot data từ DB (docs, characters, props, stages, spreads)
-4. Lấy story metadata (title, target_audience, target_core_value, artstyle_id → art_styles.description)
+
+4. Lấy story metadata (title, target_audience, target_core_value)
+   Note: KHÔNG lấy artstyle_id (chưa được set)
+
 5. Render user prompt template với variables:
-   - title, target_audience, art_style_description, target_core_value
+   - title, target_audience, target_core_value
    - docs_text, characters_json, props_json, stages_json, spreads_json
-6. Call LLM với:
-   - system prompt content
-   - rendered user prompt
-   - model từ prompt_templates (dynamic, không hardcode)
+
+6. Call LLM
+
 7. Parse JSON response
+
 8. Lưu flags[] vào DB (bảng flags)
+
 9. Return test results
 ```
 

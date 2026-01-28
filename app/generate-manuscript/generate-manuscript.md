@@ -45,7 +45,7 @@ Tạo manuscript hoàn chỉnh sau khi user kết thúc brainstorming. User clic
 // From brainstorming
 interface StoryParams {
   targetAudience: 1 | 2 | 3 | 4;
-  targetCoreValue: string;
+  targetCoreValue: number;              // 1-21: SMALLINT (see stories.target_core_value)
   formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre: number;
   writingStyle: 1 | 2 | 3;
@@ -159,10 +159,10 @@ Job chạy ngay sau Phase 1, song song với Phase 2 (settings). Job reads input
 | 1 | Story Teller | job.params | characters[], props[], stages[], spreads[], docs[] |
 | 2 | Art Director P1 | Step 1 output | visual_description cho entities, images[] |
 | 3 | Word Smith | Step 1-2 output | Refined spreads[].textboxes[].text |
-| 4 | Art Director P2 | Step 1-3 output | geometry cho images[], textboxes[] |
+| 4 | Art Director P2 | Step 1-3 output | geometry cho images[], textboxes[] (layout ratios) |
 | 5 | Tester | Full snapshot | flags[] (nếu có issues) |
 
-**Note:** Step 2 generates visual_description without requiring art_style. Art style applied later during image generation.
+**Note:** Step 2 generates visual_description without requiring art_style. Step 4 uses default layout ratios, actual dimensions applied on render.
 
 ### Job Table Schema
 ```sql
@@ -308,7 +308,7 @@ interface GenerateManuscriptState {
 ## Conversation Step Transitions
 
 ```
-brainstorming → generating → complete
+brainstorming → generating → story_editing
      │              │            │
      │              │            └─ Phase 4
      │              └─ Phase 1
