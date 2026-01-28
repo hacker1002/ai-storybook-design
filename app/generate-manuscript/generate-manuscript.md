@@ -48,16 +48,9 @@ interface StoryParams {
   targetCoreValue: string;
   formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre: number;
-  storyIdea: string | null;
   writingStyle: 1 | 2 | 3;
   eraId: string;
   locationId: string;
-}
-
-interface StoryDoc {
-  type: 0 | 1 | 2;               // 0: system, 1: user edit, 2: user read-only
-  title: "manuscript" | "story_structure" | "artistic_imagery" | "moral_lesson";
-  content: string;
 }
 
 // Job tracking
@@ -83,14 +76,14 @@ interface StepDetails {
 ### Responsibilities
 
 **CLIENT:**
-- Collect params + docs từ BrainstormingState
+- Collect params + storyIdea + storyIdeaExplanation từ BrainstormingState
 - Send request, handle loading
 - Store IDs on success
 
 **API:**
 - Validate request
 - Create story (chưa có dimension, artstyle_id)
-- Create snapshot với docs[]
+- Create snapshot với storyIdea + storyIdeaExplanation
 - Create + queue background job
 - Update ai_conversation: story_id, step = 'generating'
 - Return IDs
@@ -101,7 +94,8 @@ interface StepDetails {
 interface Request {
   conversationId: string;
   params: StoryParams;
-  docs: StoryDoc[];
+  storyIdea: string;
+  storyIdeaExplanation: string;
 }
 
 interface Response {
@@ -225,7 +219,7 @@ Job status = 'completed' | 'failed'
 | Phase | Operation | Table | Description |
 |-------|-----------|-------|-------------|
 | 1 | INSERT | `stories` | Create với params |
-| 1 | INSERT | `snapshots` | Create với docs[] |
+| 1 | INSERT | `snapshots` | Create với storyIdea + storyIdeaExplanation |
 | 1 | INSERT | `background_jobs` | Create job |
 | 1 | UPDATE | `ai_conversations` | Set story_id, step |
 | 2 | SELECT | `art_styles` | Fetch options |
