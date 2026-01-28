@@ -59,16 +59,17 @@ ai-storybook-design/
 | `cover` | JSONB | Thông tin bìa: `{ thumbnail_url, normal_url }` |
 | `book_type` | SMALLINT | Sách tranh/Truyện chữ có hình/Comics/Manga *(required: general)* |
 | `dimension` | SMALLINT | 1: Square (20x20cm), 2: A4 Landscape, 3: A4 Portrait *(required: general)* |
-| `target_audience` | SMALLINT | 1: preschool (2-5), 2: primary (6-8), 3: tweens (9-10) *(required: general)* |
+| `target_audience` | SMALLINT | 1: kindergarten (2-3), 2: preschool (4-5), 3: primary (6-8) *(required: general)* |
 | `target_core_value` | VARCHAR | Đạo đức, Trí tuệ, Nghị lực *(required: general)* |
-| `genre` | SMALLINT | 1: fantasy, 2: scifi, 3: mystery, 4: romance, 5: horror *(required: creative)* |
+| `format_genre` | SMALLINT | 1: Narrative Picture Books, 2: Lullaby/Bedtime Books, 3: Concept Books, 4: Non-fiction Picture Books, 5: Early Reader, 6: Wordless Picture Books *(required: creative)* |
+| `content_genre` | SMALLINT | 1: Mystery, 2: Fantasy, 3: Realistic Fiction, 4: Historical Fiction, 5: Science Fiction, 6: Folklore/Fairy Tales, 7: Humor, 8: Horror/Scary, 9: Biography, 10: Informational, 11: Memoir *(required: creative)* |
 | `writing_style` | SMALLINT | Phong cách viết 1: Narrative, 2: Rhyming, 3: Humorous Fiction *(required: creative)* |
 | `era_id` | UUID | FK → `eras` *(required: creative)* |
 | `location_id` | UUID | FK → `locations` *(required: creative)* |
 | `artstyle_id` | UUID | FK → `art_styles` *(required: creative)* |
 | `background_music` | JSONB | `{ title, media_url }` |
 | `typography` | JSONB | Default typography settings cho truyện |
-| `page_layout` | JSONB | Default layout cho trang mới |
+| `template_layout` | JSONB | Default layout cho trang mới `{ spread: id, left_page: id, right_page: id }` - FK → `template_layouts` |
 | `remix` | JSONB | Thông tin remix (languages, price, access_resources) |
 | `print & export` | JSONB | Thông tin in ấn & export |
 
@@ -88,21 +89,15 @@ ai-storybook-design/
 }
 ```
 
-**page_layout structure:**
+**template_layout structure:**
 ```json
 {
-  "textbox": {
-    "geometry": { "x": 0, "y": 0, "w": 100, "h": 50 },
-    "z-index": 1,
-    "fill": { "color": "#fff", "opacity": 1 },
-    "outline": { "color": "#000", "width": 1, "radius": 0, "type": "solid" }
-  },
-  "image": {
-    "geometry": { "x": 0, "y": 50, "w": 100, "h": 50 },
-    "z-index": 0
-  }
+  "spread": "uuid",
+  "left_page": "uuid",
+  "right_page": "uuid"
 }
 ```
+*Note: IDs reference `template_layouts` table*
 
 **remix structure:**
 ```json
@@ -250,15 +245,32 @@ Bảng lưu các vấn đề tồn đọng trong story.
 | `description` | TEXT | Mô tả chi tiết |
 | `image_references[]` | JSONB | `[{ title, media_url }]` |
 
-#### page_layouts
+#### template_layouts
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `title` | VARCHAR | Tên layout |
+| `thumbnail_url` | VARCHAR | URL ảnh thumbnail |
 | `book_type` | SMALLINT | Loại sách áp dụng |
-| `dimension` | SMALLINT | Kích thước |
-| `aspect_ratio` | VARCHAR | Tỉ lệ khung hình |
-| `content` | JSONB | Nội dung layout (textbox, image geometry) |
+| `type` | SMALLINT | 1: spread, 2: left_page, 3: right_page, 4: anyside |
+| `slots` | JSONB | Nội dung layout (textboxes[], images[]) |
+
+**slots structure:**
+```json
+{
+  "textboxes[]": [{
+    "geometry": { "x": 0, "y": 0, "w": 100, "h": 50 },
+    "z-index": 1,
+    "fill": { "color": "#fff", "opacity": 1 },
+    "outline": { "color": "#000", "width": 1, "radius": 0, "type": "solid" }
+  }],
+  "images[]": [{
+    "geometry": { "x": 0, "y": 50, "w": 100, "h": 50 },
+    "z-index": 0,
+    "edge_treatment": "spot | vignette | crop"
+  }]
+}
+```
 
 ### Bảng AI
 
@@ -300,7 +312,7 @@ Lưu lịch sử thay đổi của prompt templates. **Auto-populated** bởi tr
 | `instruction` | TEXT | Hướng dẫn cho agent |
 | `lens` | TEXT | Lens/góc nhìn của agent |
 | `model` | VARCHAR | Model AI sử dụng |
-| `type` | SMALLINT | 1: story agents, 2: characters, 3: parents, 4: children |
+| `type` | SMALLINT | 0: orchestrator, 1: creator, 2: artist, 3: parent, 4: children |
 
 #### ai_requests
 | Field | Type | Mô tả |
@@ -342,15 +354,15 @@ Messages trong conversation.
 #### docs[] structure
 ```json
 {
-  "type": "manuscript | story_structure | artistic_imagery | moral_lesson",
-  "title": "...",
+  "type": 0,
+  "title": "manuscript | story_structure | artistic_imagery | moral_lesson",
   "content": "...",
   "url": "..."
 }
 ```
 
 - `type`: 0 = hệ thống đọc/sửa, 1 = user đọc/sửa, 2 = user chỉ đọc
-- 4 loại docs:
+- 4 loại docs theo title:
 
 | Type | Mô tả |
 |------|-------|
@@ -362,23 +374,21 @@ Messages trong conversation.
 #### spreads[] structure
 ```json
 {
+  "type": 1,
   "number": 1,
   "left_page": { "number": 1, "type": "story" },
   "right_page": { "number": 2, "type": "story" },
   "manuscript": "cốt truyện của spread",
   "tiny_sketch_media_url": "...",
+  "background": { "color": "#fff", "texture": "..." },
   "images[]": [{
     "title": "...",
-    "geometry": { "x": 0, "y": 0, "w": 100, "h": 100, "rotation": 0 },
+    "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
+    "setting": "@stage_key/setting_key",
     "visual_description": "...",
-    "stage": "@stage_mention",
-    "actions": "@character doing something",
-    "temporal": { "era": "...", "season": "...", "weather": "...", "time_of_day": "...", "duration": "..." },
-    "sensory": { "atmosphere": "...", "soundscape": "...", "lighting": "...", "color_palette": "..." },
-    "emotional": { "mood": "..." },
     "image_references[]": [{ "title": "...", "media_url": "..." }],
-    "sketch[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
-    "illustration[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
+    "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
+    "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "final_hires_media_url": "...",
     "interaction": { "sound_effect": "...", "target_url": "..." }
   }],
@@ -412,6 +422,10 @@ Messages trong conversation.
 }
 ```
 
+- `type`: 1 = dps (double page spread), 0 = non-dps (2 trang nhỏ)
+- `background`: màu nền và texture cho spread
+- `setting`: reference tới stage setting (format: `@<stage_key>/<setting_key>`)
+
 #### characters[] structure
 ```json
 {
@@ -435,18 +449,25 @@ Messages trong conversation.
     "fears": "...",
     "contradictions": "..."
   },
-  "appearance": {
-    "height": 30,
-    "hair": "...",
-    "eyes": "...",
-    "face": "...",
-    "build": "..."
-  },
-  "visual_description": "...",
-  "sketch[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
-  "illustration[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
-  "image_references[]": [{ "title": "...", "media_url": "..." }],
-  "voice": {
+  "variants[]": [{
+    "name": "Default",
+    "key": "default",
+    "type": 0,
+    "appearance": {
+      "height": 30,
+      "hair": "...",
+      "eyes": "...",
+      "face": "...",
+      "build": "..."
+    },
+    "visual_description": "...",
+    "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
+    "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
+    "image_references[]": [{ "title": "...", "media_url": "..." }]
+  }],
+  "voices[]": [{
+    "name": "...",
+    "key": "...",
     "stability": 0.5,
     "clarity": 0.5,
     "similarity": 0.5,
@@ -454,9 +475,13 @@ Messages trong conversation.
     "speaker_boost": false,
     "system_voice": "...",
     "media_url": "..."
-  }
+  }]
 }
 ```
+
+- `variants[]`: Các biến thể của nhân vật (trang phục, trạng thái khác nhau)
+  - `type`: 0 = default, 1 = variant
+- `voices[]`: Nhiều giọng nói cho mỗi nhân vật
 
 #### props[] structure
 ```json
@@ -465,17 +490,23 @@ Messages trong conversation.
   "name": "Chiếc nơ đỏ",
   "key": "red_bow",
   "category_id": "category_1",
-  "visual_description": "...",
   "type": "narrative | anchor",
-  "sketch[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
-  "illustration[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
-  "image_references[]": [{ "title": "...", "media_url": "..." }],
-  "sounds[]": [{ "title": "...", "media_url": "..." }]
+  "states[]": [{
+    "name": "Default",
+    "key": "default",
+    "type": 0,
+    "visual_description": "...",
+    "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
+    "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
+    "image_references[]": [{ "title": "...", "media_url": "..." }]
+  }],
+  "sounds[]": [{ "name": "...", "key": "...", "media_url": "..." }]
 }
 ```
 
-- `narrative props`: đồ vật dẫn chuyện, tương tác với character
-- `anchor props`: đồ vật nằm trong stages, tạo sự nhất quán
+- `type`: `narrative` = đồ vật dẫn chuyện, tương tác với character | `anchor` = đồ vật nằm trong stages, tạo sự nhất quán
+- `states[]`: Các trạng thái của đạo cụ (mới, cũ, hỏng, ...)
+  - `type`: 0 = default, 1 = state
 
 #### stages[] structure
 ```json
@@ -483,14 +514,42 @@ Messages trong conversation.
   "order": 1,
   "name": "Khu rừng 1",
   "key": "forest_1",
-  "visual_description": "...",
-  "location_id": "uuid",  // FK → locations
-  "sketch[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
-  "illustration[]": [{ "media_url": "...", "is_active": true, "is_selected": true }],
-  "image_references[]": [{ "title": "...", "media_url": "..." }],
-  "sounds[]": [{ "title": "...", "media_url": "..." }]
+  "location_id": "uuid",
+  "settings[]": [{
+    "name": "Default",
+    "key": "default",
+    "type": 0,
+    "visual_description": "...",
+    "temporal": {
+      "era": "...",
+      "season": "...",
+      "weather": "...",
+      "time_of_day": "...",
+      "duration": "..."
+    },
+    "sensory": {
+      "atmosphere": "...",
+      "soundscape": "...",
+      "lighting": "...",
+      "color_palette": "..."
+    },
+    "emotional": {
+      "mood": "..."
+    },
+    "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
+    "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
+    "image_references[]": [{ "title": "...", "media_url": "..." }]
+  }],
+  "sounds[]": [{ "name": "...", "key": "...", "media_url": "..." }]
 }
 ```
+
+- `location_id`: FK → locations
+- `settings[]`: Các cài đặt môi trường (mùa, thời tiết, thời gian trong ngày, ...)
+  - `type`: 0 = default, 1 = setting
+  - `temporal`: Thông tin thời gian (era, season, weather, time_of_day, duration)
+  - `sensory`: Thông tin cảm quan (atmosphere, soundscape, lighting, color_palette)
+  - `emotional`: Cảm xúc (mood)
 
 ---
 
