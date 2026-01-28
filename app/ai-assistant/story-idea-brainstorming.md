@@ -1,7 +1,7 @@
 # Story Idea Brainstorming
 
 ## Description
-Tính năng tạo truyện từ ý tưởng người dùng. User nhập prompt bất kỳ → AI extract `storyIdea` + params → Client hỏi params còn thiếu qua Clarification → AI tạo 4 docs (manuscript, story_structure, artistic_imagery, moral_lesson) → User và AI brainstorm cho tới khi hài lòng → Tạo truyện.
+Tính năng tạo truyện từ ý tưởng người dùng. User nhập prompt bất kỳ → AI extract `storyIdea` + params → Client hỏi params còn thiếu qua Clarification → AI tạo/cải thiện `storyIdea` kèm `storyIdeaExplanation` (giải thích vì sao idea hay, dạy trẻ bài học gì, ...) → User và AI brainstorm cho tới khi hài lòng → Tạo truyện.
 
 **Conversation persistence:**
 - `ai_conversations`: Session với `step = "brainstorming"` hoặc `step = "story_editing"`
@@ -30,10 +30,12 @@ Tính năng tạo truyện từ ý tưởng người dùng. User nhập prompt b
 │   Phase 2: BRAINSTORMING                                                    │
 │   [CLIENT → API → AI]                                                       │
 │                                                                             │
-│   First call: Send params + storyIdea → AI tạo 4 docs (manuscript <500 từ,  │
-│               story_structure, artistic_imagery, moral_lesson)              │
+│   First call: Send params + storyIdea → AI tạo storyIdea + explanation      │
+│     (giải thích vì sao idea hay, dạy trẻ bài học gì, ...)                   │
 │     AI tự chọn writing_style, era_id, location_id nếu user không specify    │
-│   Next calls: User và AI brainstorm, AI update docs theo feedback           │
+│   Next calls: User và AI brainstorm                                         │
+│     - Nếu user chỉ hỏi → AI trả lời, không update idea                      │
+│     - Nếu user feedback → AI update storyIdea + explanation                 │
 └────────────────────────────────┬────────────────────────────────────────────┘
                                  │ User click "Tạo truyện"
                                  ▼
@@ -134,13 +136,13 @@ Client-side phase: hỏi các params còn thiếu theo thứ tự cố định. 
 - Determine which params still missing
 - Display questions sequentially
 - Filter contentGenre options based on selected formatGenre
-- Handle skip/back navigation
+- Handle next/back navigation
 - Merge answers with extracted params
 
 ### Question Order (Strict)
 Hỏi tuần tự **CHỈ NẾU param còn thiếu**:
 
-| # | Param | Question | Options | Default | Skip |
+| # | Param | Question | Options | Default | Next |
 |---|-------|----------|---------|---------|------|
 | 1 | `targetAudience` | "Dành cho độ tuổi nào?" | 1: 2-3, 2: 4-5, 3: 6-8 | **1** (2-3 tuổi) | ✅ |
 | 2 | `targetCoreValue` | "Truyện này truyền tải bài học gì?" | Text | placeholder: "Ví dụ: Tình bạn, Sự dũng cảm" | ✅ |
@@ -202,8 +204,8 @@ function getContentGenreOptions(formatGenre: number): number[] {
 ### User Actions
 | Action | Description |
 |--------|-------------|
-| Answer | Set param value, next question |
-| Skip | Giữ default value, next question |
+| Answer | Set param value |
+| Next | Giữ default value, next question |
 | Back | Previous question |
 
 ### State Management
@@ -229,9 +231,11 @@ All params answered (với default hoặc user input) → Transition to Phase 2 
 ### Description
 Multi-turn chat với AI để phát triển ý tưởng truyện.
 
-**First call:** AI nhận tất cả params + `storyIdea` → Tạo 4 loại docs (manuscript <500 từ, story_structure, artistic_imagery, moral_lesson). AI tự chọn `writing_style`, `era_id`, `location_id` nếu user không specify.
+**First call:** AI nhận tất cả params + `storyIdea` → Tạo/cải thiện `storyIdea` kèm `storyIdeaExplanation` (giải thích vì sao idea này hay, dạy trẻ bài học gì, ...). AI tự chọn `writing_style`, `era_id`, `location_id` nếu user không specify.
 
-**Next calls:** User và AI brainstorm. AI trả lời câu hỏi, update docs theo feedback của user.
+**Next calls:** User và AI brainstorm:
+- Nếu user chỉ hỏi câu hỏi (không yêu cầu update idea) → AI chỉ trả lời, không update `storyIdea`
+- Nếu user đưa feedback muốn thay đổi → AI update `storyIdea` + `storyIdeaExplanation`
 
 **Entry:** All params collected từ Clarification phase + storyIdea từ Phase 0.
 
@@ -239,42 +243,43 @@ Multi-turn chat với AI để phát triển ý tưởng truyện.
 
 **CLIENT:**
 - Display chat interface
-- Show current docs (manuscript, story_structure, artistic_imagery, moral_lesson)
+- Show current `storyIdea` + `storyIdeaExplanation`
 - Send messages to API
-- Update docs from AI response
+- Update `storyIdea` + `storyIdeaExplanation` from AI response
 - Handle "Tạo truyện" button click
 
 **API:**
 - Load conversation history
-- Build prompt with context (params, storyIdea, history, current docs)
+- Build prompt with context (params, storyIdea, storyIdeaExplanation, history)
 - Call AI
 - Save messages to DB
-- Return response with updated docs
+- Return response with updated `storyIdea` + `storyIdeaExplanation`
 
 **AI:**
 - Act as Story Consultant
-- First call: Generate 4 docs (manuscript <500 từ, story_structure, artistic_imagery, moral_lesson)
+- First call: Generate `storyIdea` + `storyIdeaExplanation`
 - Auto-select: `writingStyle`, `eraId`, `locationId` based on story context
-- Help develop/refine docs based on user feedback
-- Answer user questions about the story
-- Update docs when user requests changes
+- Answer user questions about the story (không update idea nếu user chỉ hỏi)
+- Update `storyIdea` + `storyIdeaExplanation` khi user đưa feedback muốn thay đổi
 
-### Initial Draft Generation
+### Initial Idea Generation
 Khi vào Phase 2, API call đầu tiên sẽ:
 1. Nhận tất cả params từ Clarification + `storyIdea` từ Phase 0
-2. AI generate 4 loại docs:
-   - `manuscript`: Draft truyện (<500 từ)
-   - `story_structure`: Cấu trúc 3 hồi, conflicts, pacing
-   - `artistic_imagery`: Metaphors, symbols, hình tượng nghệ thuật
-   - `moral_lesson`: Bài học đạo đức, themes, emotional journey
+2. AI generate/cải thiện `storyIdea` + `storyIdeaExplanation`:
+   - `storyIdea`: Ý tưởng truyện chi tiết
+   - `storyIdeaExplanation`: Giải thích vì sao idea này hay:
+     - Truyện có gì hấp dẫn
+     - Giáo dục trẻ bài học gì
+     - Phù hợp với độ tuổi như thế nào
+     - Yếu tố sáng tạo/độc đáo
 3. AI tự chọn `writingStyle`, `eraId`, `locationId` phù hợp với story
-4. Return docs[] + auto-selected params cho client
+4. Return `storyIdea` + `storyIdeaExplanation` + auto-selected params cho client
 
 ### User Actions
 | Action | Description |
 |--------|-------------|
-| Send message | Chat với AI để refine docs |
-| "Tạo truyện" | Kết thúc brainstorming, tạo truyện từ docs |
+| Send message | Chat với AI để refine storyIdea |
+| "Tạo truyện" | Kết thúc brainstorming, tạo truyện từ storyIdea |
 
 ### Request/Response
 ```typescript
@@ -287,7 +292,8 @@ interface BrainstormingChatRequest {
 interface BrainstormingResponse {
   conversationId: string;
   message: string;
-  docs: StoryDoc[];              // 4 types of docs (see Shared Types)
+  storyIdea: string;             // Ý tưởng truyện chi tiết
+  storyIdeaExplanation: string;  // Giải thích vì sao idea hay
   params: StoryParams;           // All params (extracted + auto-selected)
   turnNumber: number;
 }
@@ -298,7 +304,6 @@ interface StoryParams {
   targetCoreValue: string;
   formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre: number;
-  storyIdea: string | null;
   // AutoSelectedParams (AI chooses based on story)
   writingStyle: 1 | 2 | 3;
   eraId: string;
@@ -317,20 +322,21 @@ interface StoryParams {
 }
 ```
 
-**Docs Structure:**
-| title | type | Mô tả |
-|-------|------|-------|
-| `manuscript` | 0 | Draft truyện (<500 từ) |
-| `story_structure` | 0 | Cấu trúc 3 hồi, conflicts, pacing |
-| `artistic_imagery` | 0 | Metaphors, symbols, hình tượng nghệ thuật |
-| `moral_lesson` | 0 | Bài học đạo đức, themes, emotional journey |
+**Response Example:**
+```json
+{
+  "storyIdea": "Chú mèo Miu là một chú mèo nhỏ rất yêu đồ chơi của mình. Một ngày, bạn Thỏ Bông đến chơi nhưng Miu không muốn chia sẻ. Qua một tình huống bất ngờ khi Miu cần sự giúp đỡ, Miu nhận ra niềm vui khi chơi cùng bạn còn lớn hơn niềm vui một mình.",
+  "storyIdeaExplanation": "**Điểm hấp dẫn:** Câu chuyện có nhân vật động vật dễ thương (mèo, thỏ) thu hút trẻ nhỏ. Tình huống 'không muốn chia sẻ' rất gần gũi với trẻ 2-3 tuổi.\n\n**Bài học giáo dục:** Dạy trẻ về giá trị của việc chia sẻ và tình bạn. Thay vì răn dạy, truyện để trẻ tự rút ra bài học qua trải nghiệm của nhân vật.\n\n**Phù hợp độ tuổi:** Cốt truyện đơn giản, dễ hiểu với trẻ 2-3 tuổi. Xung đột nhẹ nhàng, kết thúc có hậu tạo cảm giác an toàn.\n\n**Yếu tố sáng tạo:** Sử dụng 'tình huống bất ngờ' để nhân vật tự nhận ra bài học thay vì bị ép buộc."
+}
+```
 
 ### State Management
 ```typescript
 interface BrainstormingState {
   conversationId: string;
   messages: ChatMessage[];
-  docs: StoryDoc[];              // 4 types of docs
+  storyIdea: string;             // Ý tưởng truyện chi tiết
+  storyIdeaExplanation: string;  // Giải thích vì sao idea hay
   params: StoryParams;           // All params (extracted + auto-selected)
   status: "active" | "creating";
 }
@@ -367,17 +373,10 @@ interface StoryParams {
   targetCoreValue: string;
   formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre: number;
-  storyIdea: string | null;
   // AI auto-selected
   writingStyle: 1 | 2 | 3;
   eraId: string;
   locationId: string;
-}
-
-interface StoryDoc {
-  type: 0 | 1 | 2;               // 0: system, 1: user edit, 2: user read-only
-  title: "manuscript" | "story_structure" | "artistic_imagery" | "moral_lesson";
-  content: string;
 }
 
 type CurrentPhase = "initial" | "clarification" | "brainstorming";
@@ -390,7 +389,7 @@ type CurrentPhase = "initial" | "clarification" | "brainstorming";
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/chat/story-brainstorming/initial` | Phase 0: Extract storyIdea + params |
-| POST | `/api/chat/story-brainstorming/draft` | Phase 2: Generate/refine docs |
+| POST | `/api/chat/story-brainstorming` | Phase 2: Generate/refine storyIdea |
 
 ### POST /api/chat/story-brainstorming/initial
 Phase 0: Tạo conversation mới, AI extract `storyIdea` và params từ user prompt.
@@ -409,8 +408,10 @@ interface InitialPromptResponse {
 }
 ```
 
-### POST /api/chat/story-brainstorming/draft
-Phase 2: Generate và refine docs. Unified interface cho cả init và chat.
+### POST /api/chat/story-brainstorming
+Phase 2: Generate và refine storyIdea. Unified interface cho cả init và chat.
+
+**Lưu ý:** Nếu user chỉ hỏi câu hỏi (không yêu cầu update idea) → AI chỉ trả lời trong `message`, giữ nguyên `storyIdea` + `storyIdeaExplanation`.
 
 ```typescript
 interface BrainstormingChatRequest {
@@ -421,7 +422,8 @@ interface BrainstormingChatRequest {
 interface BrainstormingResponse {
   conversationId: string;
   message: string;
-  docs: StoryDoc[];
+  storyIdea: string;             // Ý tưởng truyện chi tiết
+  storyIdeaExplanation: string;  // Giải thích vì sao idea hay
   params: StoryParams;           // All params (extracted + auto-selected)
   turnNumber: number;
 }
@@ -468,7 +470,7 @@ interface BrainstormingResponse {
 ### 2. User wants to start over
 - **Trigger:** "Làm lại", "Bắt đầu lại"
 - **Layer:** CLIENT (Clarification) or AI (Brainstorming)
-- **Solution:** Clarification: reset to Phase 0. Brainstorming: AI resets docs
+- **Solution:** Clarification: reset to Phase 0. Brainstorming: AI resets storyIdea
 
 ### 3. Conflicting format/content genre
 - **Trigger:** User selects invalid contentGenre for formatGenre
@@ -478,7 +480,7 @@ interface BrainstormingResponse {
 ### 4. User wants to change auto-selected params
 - **Trigger:** "Đổi sang phong cách thơ vần" trong Brainstorming
 - **Layer:** AI
-- **Solution:** AI updates autoSelectedParams và adjust docs accordingly
+- **Solution:** AI updates autoSelectedParams và adjust storyIdea accordingly
 
 ### 5. User closes browser mid-flow
 - **Trigger:** Browser close/refresh
@@ -486,6 +488,11 @@ interface BrainstormingResponse {
 - **Solution:** Phase 0+2 persist in DB (can resume). Clarification local state lost (restart from Phase 0)
 
 ### 6. User directly says "Tạo truyện" without brainstorming
-- **Trigger:** User satisfied with first docs
+- **Trigger:** User satisfied with first storyIdea
 - **Layer:** CLIENT
-- **Solution:** Allow immediate story creation from first docs
+- **Solution:** Allow immediate story creation from first storyIdea
+
+### 7. User only asks questions without wanting to update idea
+- **Trigger:** "Truyện này có phù hợp với bé 3 tuổi không?", "Bài học này có quá khó hiểu không?"
+- **Layer:** AI
+- **Solution:** AI chỉ trả lời câu hỏi trong `message`, giữ nguyên `storyIdea` + `storyIdeaExplanation`
