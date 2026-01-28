@@ -43,8 +43,8 @@ interface InitialPromptResult {
 }
 
 interface ExtractedParams {
-  targetAudience?: 1 | 2 | 3;         // 1: 2-3, 2: 4-5, 3: 6-8
-  targetCoreValue?: string;           // Moral/lesson
+  targetAudience?: 1 | 2 | 3 | 4;     // 1: 2-3, 2: 3-5, 3: 6-8, 4: 9+
+  targetCoreValue?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21;
   formatGenre?: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre?: number;              // 1-11, depends on formatGenre
 }
@@ -54,8 +54,34 @@ interface ExtractedParams {
 | Value | Age Range | User Input Examples |
 |-------|-----------|---------------------|
 | 1 | 2-3 tuổi | "bé 2 tuổi", "bé 3 tuổi", "sơ sinh" |
-| 2 | 4-5 tuổi | "bé 4 tuổi", "mẫu giáo", "mầm non" |
+| 2 | 3-5 tuổi | "bé 4 tuổi", "mẫu giáo", "mầm non" |
 | 3 | 6-8 tuổi | "bé 7 tuổi", "tiểu học", "lớp 1-2" |
+| 4 | 9+ tuổi | "bé 9 tuổi", "lớp 4-5", "middle grade" |
+
+### Target Core Value Mapping
+| Value | Name (VI) | User Input Examples |
+|-------|-----------|---------------------|
+| 1 | Dũng cảm | "dũng cảm", "mạnh mẽ", "brave" |
+| 2 | Quan tâm | "quan tâm", "chăm sóc", "caring" |
+| 3 | Trung thực | "trung thực", "thật thà", "honest" |
+| 4 | Kiên trì | "kiên trì", "cố gắng", "persistence" |
+| 5 | Biết ơn | "biết ơn", "cảm ơn", "grateful" |
+| 6 | Bản lĩnh | "bản lĩnh", "tự tin", "confidence" |
+| 7 | Thấu cảm | "thấu cảm", "đồng cảm", "empathy" |
+| 8 | Chính trực | "chính trực", "ngay thẳng", "integrity" |
+| 9 | Vị tha | "vị tha", "chia sẻ", "selfless" |
+| 10 | Tự thức | "tự thức", "tự nhận thức", "self-awareness" |
+| 11 | Tình bạn | "tình bạn", "bạn bè", "friendship" |
+| 12 | Hợp tác | "hợp tác", "làm việc nhóm", "teamwork" |
+| 13 | Chấp nhận sự khác biệt | "khác biệt", "đa dạng", "diversity" |
+| 14 | Tử tế | "tử tế", "tốt bụng", "kindness" |
+| 15 | Tò mò | "tò mò", "khám phá", "curiosity" |
+| 16 | Tự lập | "tự lập", "độc lập", "independence" |
+| 17 | Xử lý nỗi sợ | "nỗi sợ", "sợ hãi", "overcome fear" |
+| 18 | Quản lý cảm xúc | "cảm xúc", "bình tĩnh", "emotional regulation" |
+| 19 | Chuyển giao | "chuyển giao", "thay đổi", "transition" |
+| 20 | Bảo vệ môi trường | "môi trường", "thiên nhiên", "environment" |
+| 21 | Trí tưởng tượng | "tưởng tượng", "sáng tạo", "imagination" |
 
 ### Format Genre Mapping
 | Value | Name | User Input Examples |
@@ -123,12 +149,14 @@ Analyze the message and extract:
 
 ### targetAudience (extract when age mentioned)
 - 1: 2-3 tuổi
-- 2: 4-5 tuổi
+- 2: 3-5 tuổi
 - 3: 6-8 tuổi
+- 4: 9+ tuổi
 
-### targetCoreValue
+### targetCoreValue (SMALLINT 1-21)
 - ONLY extract when user EXPLICITLY states the lesson/moral
-- "dạy bé về tình bạn", "bài học là sự dũng cảm" → extract
+- Map to closest enum value from Core Value Mapping table
+- "dạy bé về tình bạn" → 11, "bài học là sự dũng cảm" → 1
 - "truyện về bạn bè" → DO NOT extract (not explicit lesson)
 
 ### formatGenre (extract when book format mentioned)
@@ -151,8 +179,8 @@ Return ONLY valid JSON:
   "message": "Your friendly response to the user",
   "storyIdea": "Extracted story concept" | null,
   "extractedParams": {
-    "targetAudience": null | 1 | 2 | 3,
-    "targetCoreValue": null | "The lesson",
+    "targetAudience": null | 1 | 2 | 3 | 4,
+    "targetCoreValue": null | 1-21,
     "formatGenre": null | 1-6,
     "contentGenre": null | 1-11
   }
@@ -229,7 +257,7 @@ Return ONLY valid JSON:
   "storyIdea": "Chú mèo học cách chia sẻ",
   "extractedParams": {
     "targetAudience": 1,
-    "targetCoreValue": "Chia sẻ",
+    "targetCoreValue": 9,
     "formatGenre": null,
     "contentGenre": 6
   },
@@ -242,7 +270,7 @@ Return ONLY valid JSON:
 | User Input | storyIdea | extractedParams |
 |------------|-----------|-----------------|
 | "Truyện cho bé 3 tuổi" | null | `{ targetAudience: 1 }` |
-| "Mình muốn dạy bé về tình bạn" | null | `{ targetCoreValue: "Tình bạn" }` |
+| "Mình muốn dạy bé về tình bạn" | null | `{ targetCoreValue: 11 }` |
 | "Truyện cổ tích ru ngủ" | null | `{ formatGenre: 2, contentGenre: 6 }` |
-| "Kể về chú mèo Miu học chia sẻ đồ chơi" | "Chú mèo Miu học cách chia sẻ đồ chơi" | `{ targetCoreValue: "Chia sẻ" }` |
+| "Kể về chú mèo Miu học chia sẻ đồ chơi" | "Chú mèo Miu học cách chia sẻ đồ chơi" | `{ targetCoreValue: 9 }` |
 | "Câu chuyện về cậu bé đi lạc trong rừng" | "Cậu bé đi lạc trong rừng" | `{}` |

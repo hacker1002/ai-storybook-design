@@ -8,8 +8,8 @@
   * [Generate Manuscript](app/generate-manuscript/generate-manuscript.md)
 
 * **API - Chat**
-  * [01 - Brainstorming Initial](api/chat/01-story-brainstorming-initial.md)
-  * [02 - Brainstorming Draft](api/chat/02-story-brainstorming-draft.md)
+  * [00 - Brainstorming Initial](api/chat/00-story-brainstorming-initial.md)
+  * [01 - Brainstorming](api/chat/01-story-brainstorming.md)
 
 * **API - Text Generation**
   * [00 - Generate Manuscript](api/text-generation/00-generate-manuscript.md)

@@ -29,8 +29,8 @@ Realtime chat endpoints với AI.
 
 | Endpoint | Description |
 |----------|-------------|
-| [Story Brainstorming Initial](api/chat/01-story-brainstorming-initial.md) | Extract story idea + params từ prompt |
-| [Story Brainstorming Draft](api/chat/02-story-brainstorming-draft.md) | Generate/refine docs qua chat |
+| [Story Brainstorming Initial](api/chat/00-story-brainstorming-initial.md) | Extract story idea + params từ prompt |
+| [Story Brainstorming Draft](api/chat/01-story-brainstorming-draft.md) | Generate/refine docs qua chat |
 
 ### API - Text Generation
 Pipeline tạo manuscript từ story idea.

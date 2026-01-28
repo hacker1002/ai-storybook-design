@@ -35,22 +35,24 @@
 ```typescript
 interface BrainstormingParams {
   conversationId: string;
-  userMessage: string;  // First call: JSON params, subsequent: chat message
+  userMessage: string;            // First call: JSON params, subsequent: chat message
+  isInitialBrainstorm: boolean;   // true = first call with params, false = regular chat
 }
 ```
 
-### First Call userMessage Format
+### First Call userMessage Format (`isInitialBrainstorm: true`)
 ```json
 {
   "targetAudience": 1,
-  "targetCoreValue": "Tình bạn",
+  "targetCoreValue": 11,
   "formatGenre": 1,
   "contentGenre": 2,
   "storyIdea": "Chú mèo Miu học cách chia sẻ đồ chơi"
 }
 ```
+*Note: `storyIdea` có thể `null` nếu user chỉ chọn preferences trong Phase 0*
 
-### Subsequent Calls
+### Subsequent Calls (`isInitialBrainstorm: false`)
 Regular chat message string, e.g., "Thêm nhân vật thỏ vào câu chuyện"
 
 ---
@@ -69,10 +71,10 @@ interface BrainstormingResult {
 
 interface StoryParams {
   // From Clarification (input)
-  targetAudience: 1 | 2 | 3;
-  targetCoreValue: string;
+  targetAudience: 1 | 2 | 3 | 4;      // 1: 2-3, 2: 3-5, 3: 6-8, 4: 9+
+  targetCoreValue: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21;
   formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
-  contentGenre: number;
+  contentGenre: number;               // 1-11
   // AI auto-selected
   writingStyle: 1 | 2 | 3;            // 1: Narrative, 2: Rhyming, 3: Humorous
   eraId: string;                      // UUID from eras table
@@ -243,7 +245,7 @@ Return ONLY valid JSON:
 
 3. Load conversation history:
    - SELECT ai_messages WHERE conversation_id ORDER BY created_at
-   - Determine if first call (no assistant messages with storyIdea) or subsequent
+   - Use isInitialBrainstorm flag from request to determine call type
 
 4. Save user message:
    - INSERT ai_messages (role = "user", content = userMessage)
@@ -257,8 +259,8 @@ Return ONLY valid JSON:
    - User: STORY_BRAINSTORMING_INIT_USER_TEMPLATE (first) or STORY_BRAINSTORMING_CHAT_USER_TEMPLATE (chat)
 
 7. Build context:
-   IF first call:
-     - params_json = userMessage
+   IF isInitialBrainstorm = true:
+     - params_json = userMessage (JSON parsed)
      - available_eras, available_locations
    ELSE:
      - conversation_history from messages
@@ -313,7 +315,8 @@ Return ONLY valid JSON:
 ```json
 {
   "conversationId": "conv-uuid-123",
-  "userMessage": "{\"targetAudience\":1,\"targetCoreValue\":\"Tình bạn\",\"formatGenre\":1,\"contentGenre\":2,\"storyIdea\":\"Chú mèo Miu học cách chia sẻ đồ chơi\"}"
+  "userMessage": "{\"targetAudience\":1,\"targetCoreValue\":11,\"formatGenre\":1,\"contentGenre\":2,\"storyIdea\":\"Chú mèo Miu học cách chia sẻ đồ chơi\"}",
+  "isInitialBrainstorm": true
 }
 ```
 
@@ -326,7 +329,7 @@ Return ONLY valid JSON:
   "storyIdeaExplanation": "**Điểm hấp dẫn:** Câu chuyện có nhân vật động vật dễ thương (mèo, thỏ) thu hút trẻ nhỏ. Tình huống 'không muốn chia sẻ' rất gần gũi với trẻ 2-3 tuổi.\n\n**Bài học giáo dục:** Dạy trẻ về giá trị của việc chia sẻ và tình bạn. Thay vì răn dạy, truyện để trẻ tự rút ra bài học qua trải nghiệm của nhân vật.\n\n**Phù hợp độ tuổi:** Cốt truyện đơn giản, dễ hiểu với trẻ 2-3 tuổi. Xung đột nhẹ nhàng, kết thúc có hậu tạo cảm giác an toàn.\n\n**Yếu tố sáng tạo:** Sử dụng 'tình huống bất ngờ' để nhân vật tự nhận ra bài học thay vì bị ép buộc.",
   "params": {
     "targetAudience": 1,
-    "targetCoreValue": "Tình bạn",
+    "targetCoreValue": 11,
     "formatGenre": 1,
     "contentGenre": 2,
     "writingStyle": 1,
@@ -341,7 +344,8 @@ Return ONLY valid JSON:
 ```json
 {
   "conversationId": "conv-uuid-123",
-  "userMessage": "Truyện này có phù hợp với bé 3 tuổi không?"
+  "userMessage": "Truyện này có phù hợp với bé 3 tuổi không?",
+  "isInitialBrainstorm": false
 }
 ```
 
@@ -354,7 +358,7 @@ Return ONLY valid JSON:
   "storyIdeaExplanation": "**Điểm hấp dẫn:** Câu chuyện có nhân vật động vật dễ thương (mèo, thỏ) thu hút trẻ nhỏ. Tình huống 'không muốn chia sẻ' rất gần gũi với trẻ 2-3 tuổi.\n\n**Bài học giáo dục:** Dạy trẻ về giá trị của việc chia sẻ và tình bạn. Thay vì răn dạy, truyện để trẻ tự rút ra bài học qua trải nghiệm của nhân vật.\n\n**Phù hợp độ tuổi:** Cốt truyện đơn giản, dễ hiểu với trẻ 2-3 tuổi. Xung đột nhẹ nhàng, kết thúc có hậu tạo cảm giác an toàn.\n\n**Yếu tố sáng tạo:** Sử dụng 'tình huống bất ngờ' để nhân vật tự nhận ra bài học thay vì bị ép buộc.",
   "params": {
     "targetAudience": 1,
-    "targetCoreValue": "Tình bạn",
+    "targetCoreValue": 11,
     "formatGenre": 1,
     "contentGenre": 2,
     "writingStyle": 1,
@@ -369,7 +373,8 @@ Return ONLY valid JSON:
 ```json
 {
   "conversationId": "conv-uuid-123",
-  "userMessage": "Thêm nhân vật chó Bông vào, và đổi sang phong cách thơ vần"
+  "userMessage": "Thêm nhân vật chó Bông vào, và đổi sang phong cách thơ vần",
+  "isInitialBrainstorm": false
 }
 ```
 
@@ -382,7 +387,7 @@ Return ONLY valid JSON:
   "storyIdeaExplanation": "**Điểm hấp dẫn:** Ba nhân vật động vật dễ thương (mèo, thỏ, chó) tạo sự đa dạng và hấp dẫn. Thể thơ vần điệu giúp trẻ dễ nhớ và thích thú khi nghe.\n\n**Bài học giáo dục:** Dạy về chia sẻ và tinh thần đoàn kết. Khi Miu gặp khó khăn, chính những người bạn mà Miu từ chối chia sẻ lại giúp đỡ Miu.\n\n**Phù hợp độ tuổi:** Thơ vần ngắn gọn, nhịp điệu vui tươi phù hợp với khả năng tập trung của trẻ 2-3 tuổi.\n\n**Yếu tố sáng tạo:** Tình huống 'bóng rơi xuống hồ' tạo kịch tính nhẹ nhàng, cho thấy giá trị của tình bạn một cách tự nhiên.",
   "params": {
     "targetAudience": 1,
-    "targetCoreValue": "Tình bạn",
+    "targetCoreValue": 11,
     "formatGenre": 1,
     "contentGenre": 2,
     "writingStyle": 2,
@@ -397,7 +402,7 @@ Return ONLY valid JSON:
 
 ## Notes
 
-- **First call detection:** Check if last assistant message has `storyIdea` field in content
+- **First call detection:** Use `isInitialBrainstorm` flag from request
 - **Question vs Feedback detection:** AI determines intent from user message context
 - **Param persistence:** autoSelectedParams persist across turns unless user explicitly requests change
 - **storyIdea update strategy:** Only update when user gives feedback, not when asking questions
