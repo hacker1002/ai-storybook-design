@@ -1,33 +1,30 @@
 <!-- Sidebar Navigation -->
 
 * [🏠 Home](/)
-
 * [📊 Database Schema](CLAUDE.md)
 
 * **App Features**
-  * **AI Assistant**
-    * [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
+  * [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
+  * [Generate Manuscript](app/generate-manuscript/generate-manuscript.md)
 
-* **API**
-  * [📚 Overview](api/README.md)
+* **API - Chat**
+  * [01 - Brainstorming Initial](api/chat/01-story-brainstorming-initial.md)
+  * [02 - Brainstorming Draft](api/chat/02-story-brainstorming-draft.md)
 
-  * **Chat**
-    * [00 - Story Brainstorming](api/chat/00-story-brainstorming.md)
+* **API - Text Generation**
+  * [00 - Generate Manuscript](api/text-generation/00-generate-manuscript.md)
+  * [01 - Story Draft](api/text-generation/01-generate-story-draft.md)
+  * [02 - Spread Visual Plan](api/text-generation/02-generate-spread-visual-plan.md)
+  * [03 - Text Refinement](api/text-generation/03-generate-text-refinement.md)
+  * [04 - Spread Composition](api/text-generation/04-generate-spread-composition.md)
+  * [05 - Quality Check](api/text-generation/05-generate-quality-check.md)
 
-  * **Text Generation**
-    * [00 - Generate Manuscript](api/text-generation/00-generate-manuscript.md)
-    * [01 - Story Draft](api/text-generation/01-generate-story-draft.md)
-    * [02 - Spread Visual Plan](api/text-generation/02-generate-spread-visual-plan.md)
-    * [03 - Text Refinement](api/text-generation/03-generate-text-refinement.md)
-    * [04 - Spread Composition](api/text-generation/04-generate-spread-composition.md)
-    * [05 - Quality Check](api/text-generation/05-generate-quality-check.md)
+* **API - Visual Description**
+  * [06 - Character](api/text-generation/06-generate-visual-description-character.md)
+  * [07 - Prop](api/text-generation/07-generate-visual-description-prop.md)
+  * [08 - Stage](api/text-generation/08-generate-visual-description-stage.md)
+  * [09 - Spread](api/text-generation/09-generate-visual-description-spread.md)
 
-  * **Visual Description**
-    * [06 - Character](api/text-generation/06-generate-visual-description-character.md)
-    * [07 - Prop](api/text-generation/07-generate-visual-description-prop.md)
-    * [08 - Stage](api/text-generation/08-generate-visual-description-stage.md)
-    * [09 - Spread](api/text-generation/09-generate-visual-description-spread.md)
-
-  * **Translation & Poetry**
-    * [10 - Translate Content](api/text-generation/10-translate-content.md)
-    * [11 - Generate Poetry](api/text-generation/11-generate-poetry.md)
+* **API - Translation & Poetry**
+  * [10 - Translate Content](api/text-generation/10-translate-content.md)
+  * [11 - Generate Poetry](api/text-generation/11-generate-poetry.md)
