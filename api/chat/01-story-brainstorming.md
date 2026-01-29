@@ -112,9 +112,9 @@ You are a Story Consultant helping develop children's picture book ideas.
 Your role:
 - First call: Generate/improve storyIdea + storyIdeaExplanation
 - Auto-select: writingStyle, eraId, locationId based on story context
-- Subsequent calls:
-  - If user ONLY ASKS QUESTIONS (không yêu cầu thay đổi) → Answer in message, keep storyIdea unchanged
-  - If user gives FEEDBACK to change → Update storyIdea + storyIdeaExplanation
+- Subsequent calls: Classify user intent via `intentType`:
+  - "question": User ONLY ASKS QUESTIONS → Answer in message, set other fields to null
+  - "feedback": User gives FEEDBACK to change → Update storyIdea + storyIdeaExplanation
 
 storyIdeaExplanation must include:
 - **Điểm hấp dẫn:** Why this story appeals to children
@@ -123,7 +123,7 @@ storyIdeaExplanation must include:
 - **Yếu tố sáng tạo:** What makes this idea unique
 
 You understand Vietnamese and English. Match the user's language.
-Return structured JSON with your response and updated storyIdea.
+Return structured JSON with intentType to signal how API should handle the response.
 ```
 
 ### User Prompt Template (First Call)
@@ -150,7 +150,7 @@ Return structured JSON with your response and updated storyIdea.
 
 Generate/improve the storyIdea based on input parameters:
 
-1. **storyIdea**: Ý tưởng truyện chi tiết
+1. **storyIdea**: Ý tưởng truyện chi tiết (4-6 dòng)
    - Phù hợp với targetAudience và formatGenre
    - Thể hiện targetCoreValue tự nhiên
    - Có cốt truyện rõ ràng (mở đầu, phát triển, kết thúc)
@@ -203,30 +203,34 @@ Return ONLY valid JSON:
 
 ## YOUR TASK
 
-IMPORTANT: Determine user intent:
+IMPORTANT: Determine user intent and set `intentType`:
 
-**Case A - User ONLY ASKS QUESTION** (e.g., "Truyện này có phù hợp không?", "Bài học này có khó hiểu không?"):
-→ Answer the question in "message"
-→ Keep storyIdea and storyIdeaExplanation UNCHANGED
+**intentType: "question"** - User ONLY ASKS QUESTION (e.g., "Truyện này có phù hợp không?", "Bài học này có khó hiểu không?"):
+→ Set `intentType: "question"`
+→ Answer the question in `message`
+→ Set `storyIdea`, `storyIdeaExplanation`, `autoSelectedParams` to `null`
+→ API will use previous values (guaranteed unchanged)
 
-**Case B - User gives FEEDBACK to change** (e.g., "Thêm nhân vật thỏ", "Đổi bối cảnh", "Làm đơn giản hơn"):
-→ Respond in "message"
-→ Update storyIdea and storyIdeaExplanation accordingly
-→ Update autoSelectedParams if user requests (e.g., "đổi sang phong cách thơ vần")
+**intentType: "feedback"** - User gives FEEDBACK to change (e.g., "Thêm nhân vật thỏ", "Đổi bối cảnh", "Làm đơn giản hơn"):
+→ Set `intentType: "feedback"`
+→ Respond in `message`
+→ Update `storyIdea` and `storyIdeaExplanation` accordingly
+→ Update `autoSelectedParams` if user requests (e.g., "đổi sang phong cách thơ vần")
 
 ---
 
 ## OUTPUT FORMAT
 Return ONLY valid JSON:
 {
+  "intentType": "question" | "feedback",
   "message": "Your response to the user",
-  "storyIdea": "Current or updated story idea",
-  "storyIdeaExplanation": "Current or updated explanation",
+  "storyIdea": "Updated story idea" | null,
+  "storyIdeaExplanation": "Updated explanation" | null,
   "autoSelectedParams": {
     "writingStyle": 1 | 2 | 3,
     "eraId": "uuid-string",
     "locationId": "uuid-string"
-  }
+  } | null
 }
 ```
 
@@ -278,17 +282,23 @@ Return ONLY valid JSON:
 
 10. Parse JSON response
 
-11. Merge params:
-    - Input params (from first call) + autoSelectedParams
+11. Handle intentType (chat calls only):
+    IF response.intentType === "question":
+      - Use previous storyIdea, storyIdeaExplanation, params (guaranteed unchanged)
+    ELSE (intentType === "feedback"):
+      - Use response values
 
-12. Save assistant message:
+12. Merge params:
+    - Input params (from first call) + autoSelectedParams (or previous if question)
+
+13. Save assistant message:
     - INSERT ai_messages (role = "assistant", content = JSON.stringify(response))
 
-13. Return result:
+14. Return result:
     - conversationId
     - message: response.message
-    - storyIdea: response.storyIdea
-    - storyIdeaExplanation: response.storyIdeaExplanation
+    - storyIdea: final storyIdea (from response or previous)
+    - storyIdeaExplanation: final explanation (from response or previous)
     - params: merged params
     - turnNumber: count user messages
 ```
@@ -349,7 +359,18 @@ Return ONLY valid JSON:
 }
 ```
 
-### Question-Only Response (storyIdea Unchanged)
+### AI Response (intentType: "question")
+```json
+{
+  "intentType": "question",
+  "message": "Câu chuyện này rất phù hợp với bé 3 tuổi! Lý do:\n\n1. **Cốt truyện đơn giản:** Chỉ có 2-3 nhân vật, 1 xung đột chính, dễ theo dõi\n2. **Tình huống quen thuộc:** Việc không muốn chia sẻ đồ chơi là trải nghiệm hàng ngày của bé\n3. **Kết thúc có hậu:** Tạo cảm giác an toàn và tích cực\n4. **Nhân vật dễ thương:** Mèo và thỏ là động vật trẻ em yêu thích\n\nBạn có muốn điều chỉnh gì thêm không?",
+  "storyIdea": null,
+  "storyIdeaExplanation": null,
+  "autoSelectedParams": null
+}
+```
+
+### API Response (storyIdea from previous turn)
 ```json
 {
   "conversationId": "conv-uuid-123",
@@ -378,7 +399,22 @@ Return ONLY valid JSON:
 }
 ```
 
-### Feedback Response (storyIdea Updated)
+### AI Response (intentType: "feedback")
+```json
+{
+  "intentType": "feedback",
+  "message": "Đã thêm chó Bông vào câu chuyện và chuyển sang phong cách thơ vần! Giờ truyện có 3 bạn nhỏ: Miu, Thỏ Bông và chó Bông cùng chơi đồ chơi.",
+  "storyIdea": "Trong khu vườn xinh tươi, chú mèo Miu có rất nhiều đồ chơi. Một ngày, bạn Thỏ Bông và chó Bông đến chơi. Miu không muốn chia sẻ, giữ đồ chơi một mình. Nhưng rồi quả bóng lăn xuống hồ, Miu cần bạn giúp đỡ. Thỏ và chó cùng nhau cứu bóng cho Miu. Từ đó Miu hiểu ra, chơi cùng bạn vui hơn nhiều!",
+  "storyIdeaExplanation": "**Điểm hấp dẫn:** Ba nhân vật động vật dễ thương (mèo, thỏ, chó) tạo sự đa dạng và hấp dẫn. Thể thơ vần điệu giúp trẻ dễ nhớ và thích thú khi nghe.\n\n**Bài học giáo dục:** Dạy về chia sẻ và tinh thần đoàn kết. Khi Miu gặp khó khăn, chính những người bạn mà Miu từ chối chia sẻ lại giúp đỡ Miu.\n\n**Phù hợp độ tuổi:** Thơ vần ngắn gọn, nhịp điệu vui tươi phù hợp với khả năng tập trung của trẻ 2-3 tuổi.\n\n**Yếu tố sáng tạo:** Tình huống 'bóng rơi xuống hồ' tạo kịch tính nhẹ nhàng, cho thấy giá trị của tình bạn một cách tự nhiên.",
+  "autoSelectedParams": {
+    "writingStyle": 2,
+    "eraId": "era-modern-uuid",
+    "locationId": "loc-garden-uuid"
+  }
+}
+```
+
+### API Response (storyIdea Updated)
 ```json
 {
   "conversationId": "conv-uuid-123",
@@ -403,6 +439,8 @@ Return ONLY valid JSON:
 ## Notes
 
 - **First call detection:** Use `isInitialBrainstorm` flag from request
-- **Question vs Feedback detection:** AI determines intent from user message context
+- **Intent classification:** AI sets `intentType` ("question" | "feedback") - API uses this to determine handling
+- **Question handling:** When `intentType = "question"`, AI returns null for storyIdea/explanation/params → API uses previous values (guaranteed unchanged)
+- **Feedback handling:** When `intentType = "feedback"`, AI returns updated values → API uses them
+- **Why this approach:** LLM non-deterministic - even with "keep unchanged" prompt, AI may paraphrase. API-side enforcement guarantees 0 change for questions
 - **Param persistence:** autoSelectedParams persist across turns unless user explicitly requests change
-- **storyIdea update strategy:** Only update when user gives feedback, not when asking questions

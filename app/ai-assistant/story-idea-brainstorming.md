@@ -317,7 +317,7 @@ Multi-turn chat với AI để phát triển ý tưởng truyện.
 - Act as Story Consultant
 - First call: Generate `storyIdea` + `storyIdeaExplanation`
 - Auto-select: `writingStyle`, `eraId`, `locationId` based on story context
-- Answer user questions about the story (không trả về idea nếu user chỉ hỏi)
+- Answer user questions about the story (không trả về idea và explaination nếu user chỉ hỏi)
 - Update và trả về `storyIdea` + `storyIdeaExplanation` khi user đưa feedback muốn thay đổi
 
 ### Initial Idea Generation
@@ -462,7 +462,7 @@ interface InitialPromptResponse {
 ### POST /api/chat/story-brainstorming
 Phase 2: Generate và refine storyIdea.
 
-**Lưu ý:** Nếu user chỉ hỏi câu hỏi (không yêu cầu update idea) → AI chỉ trả lời trong `message`, giữ nguyên `storyIdea` + `storyIdeaExplanation`.
+**Lưu ý:** Nếu user chỉ hỏi câu hỏi (không yêu cầu update idea) → AI chỉ trả lời trong `message`, API gán lại `storyIdea` + `storyIdeaExplanation` cũ vào response.
 
 ```typescript
 interface BrainstormingChatRequest {
