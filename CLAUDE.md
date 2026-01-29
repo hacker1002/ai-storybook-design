@@ -725,31 +725,6 @@ cp template-design/app-template.md app/{feature-group}/{feature-name}.md
 | System prompt | `{AGENT}_SYSTEM` | `STORY_TELLER_SYSTEM` |
 | User template | `{FUNCTION}_USER_TEMPLATE` | `STORY_DRAFT_USER_TEMPLATE` |
 
-### Template Registry
-
-| name | Mô tả | Variables |
-|------|-------|-----------|
-| `STORY_CONSULTANT_SYSTEM` | System prompt - Story Consultant (brainstorming) | *(none)* |
-| `STORY_CONSULTANT_USER_TEMPLATE` | User prompt - brainstorming chat | `conversation_history`, `current_user_message`, `current_story_idea`, `current_params`, `available_eras`, `available_locations`, `available_art_styles`, `is_finalize` |
-| `STORY_TELLER_SYSTEM` | System prompt - Story Teller agent | *(none)* |
-| `STORY_DRAFT_USER_TEMPLATE` | User prompt - tạo story draft | `story_idea`, `story_idea_explanation`, `target_audience`, `target_core_value`, `format_genre`, `content_genre`, `writing_style`, `era_name`, `era_description`, `location_name`, `location_description`, `language`, `spreads`, `words_per_spread`, `categories_text`, `locations_text` |
-| `ART_DIRECTOR_P1_SYSTEM` | System prompt - Art Director Phase 1 | *(none)* |
-| `VISUAL_PLAN_USER_TEMPLATE` | User prompt - tạo visual plan | `title`, `target_audience`, `format_genre`, `content_genre`, `language`, `docs_text`, `characters_text`, `props_text`, `stages_text`, `spreads_text` |
-| `WORD_SMITH_SYSTEM` | System prompt - Word Smith | *(none)* |
-| `TEXT_REFINEMENT_USER_TEMPLATE` | User prompt - refine text | `title`, `target_audience`, `format_genre`, `writing_style`, `language`, `manuscript_content`, `spreads_text` |
-| `ART_DIRECTOR_P2_SYSTEM` | System prompt - Art Director Phase 2 | *(none)* |
-| `COMPOSITION_USER_TEMPLATE` | User prompt - spread composition | `title`, `target_audience`, `book_type`, `spreads_data` |
-| `TESTER_SYSTEM` | System prompt - Quality Check | *(none)* |
-| `QUALITY_CHECK_USER_TEMPLATE` | User prompt - quality check | `title`, `target_audience`, `target_core_value`, `docs_text`, `characters_json`, `props_json`, `stages_json`, `spreads_json` |
-| `VISUAL_DESCRIPTOR_SYSTEM` | System prompt - Visual Descriptor (shared for character, prop, stage, spread) | *(none)* |
-| `VISUAL_DESC_CHARACTER_USER_TEMPLATE` | User prompt - character visual description | `name`, `key`, `description`, `gender`, `age`, `category_name`, `category_type`, `category_description`, `role`, `personality_text`, `appearance_text`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `existing_visual_descriptions`, `target_length`, `language` |
-| `VISUAL_DESC_PROP_USER_TEMPLATE` | User prompt - prop visual description | `name`, `key`, `current_description`, `category_name`, `category_type`, `category_description`, `type`, `sounds_text`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `existing_visual_descriptions`, `target_length`, `language` |
-| `VISUAL_DESC_STAGE_USER_TEMPLATE` | User prompt - stage visual description | `name`, `key`, `current_description`, `location_name`, `location_description`, `location_nation`, `location_city`, `location_type`, `location_image_references`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `era_name`, `era_description`, `story_location_name`, `story_location_description`, `existing_visual_descriptions`, `target_length`, `language` |
-| `VISUAL_DESC_SPREAD_USER_TEMPLATE` | User prompt - spread visual description | `spread_number`, `total_spreads`, `left_page_number`, `right_page_number`, `left_page_type`, `right_page_type`, `images_text`, `textboxes_text`, `characters_in_scene`, `stage_info`, `props_in_scene`, `art_style_description`, `title`, `genre`, `target_audience`, `target_core_value`, `previous_spread_description`, `target_length`, `language` |
-| `TRANSLATOR_SYSTEM` | System prompt - Translator | *(none)* |
-| `TRANSLATOR_USER_TEMPLATE` | User prompt - translate content | `source_language`, `target_language`, `title`, `target_audience`, `genre`, `character_name_mappings`, `content_type`, `content`, `preserve_formatting` |
-| `POETRY_GENERATION_USER_TEMPLATE` | User prompt - generate poetry | `title`, `audience`, `language`, `scope`, `poetry_type`, `poetry_type_description`, `source_content`, `custom_instructions` |
-
 ### Content Example
 
 ```
