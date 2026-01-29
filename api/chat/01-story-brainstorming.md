@@ -98,6 +98,85 @@ Giải thích vì sao idea này hay, bao gồm:
 
 ---
 
+## Mapping Constants
+
+### Target Audience
+```typescript
+const TARGET_AUDIENCE_MAP: Record<number, string> = {
+  1: "Kindergarten (2-3 tuổi)",
+  2: "Preschool (4-5 tuổi)",
+  3: "Primary (6-8 tuổi)",
+  4: "Middle Grade (9+ tuổi)"
+};
+```
+
+### Target Core Value
+```typescript
+const TARGET_CORE_VALUE_MAP: Record<number, string> = {
+  1: "Dũng cảm",
+  2: "Quan tâm",
+  3: "Trung thực",
+  4: "Kiên trì",
+  5: "Biết ơn",
+  6: "Bản lĩnh",
+  7: "Thấu cảm",
+  8: "Chính trực",
+  9: "Vị tha",
+  10: "Tự thức",
+  11: "Tình bạn",
+  12: "Hợp tác",
+  13: "Chấp nhận sự khác biệt",
+  14: "Tử tế",
+  15: "Tò mò",
+  16: "Tự lập",
+  17: "Xử lý nỗi sợ",
+  18: "Quản lý cảm xúc",
+  19: "Chuyển giao",
+  20: "Bảo vệ môi trường",
+  21: "Trí tưởng tượng"
+};
+```
+
+### Format Genre
+```typescript
+const FORMAT_GENRE_MAP: Record<number, string> = {
+  1: "Narrative Picture Books",
+  2: "Lullaby/Bedtime Books",
+  3: "Concept Books",
+  4: "Non-fiction Picture Books",
+  5: "Early Reader",
+  6: "Wordless Picture Books"
+};
+```
+
+### Content Genre
+```typescript
+const CONTENT_GENRE_MAP: Record<number, string> = {
+  1: "Mystery",
+  2: "Fantasy",
+  3: "Realistic Fiction",
+  4: "Historical Fiction",
+  5: "Science Fiction",
+  6: "Folklore/Fairy Tales",
+  7: "Humor",
+  8: "Horror/Scary",
+  9: "Biography",
+  10: "Informational",
+  11: "Memoir"
+};
+```
+
+### Writing Style
+```typescript
+const WRITING_STYLE_MAP: Record<number, string> = {
+  1: "Narrative (văn xuôi, kể chuyện)",
+  2: "Rhyming (thơ, vần điệu)",
+  3: "Humorous Fiction (hài hước)"
+};
+```
+
+---
+
 ## Prompt
 
 > **DB Template Names:**
@@ -264,13 +343,31 @@ Return ONLY valid JSON:
 
 7. Build context:
    IF isInitialBrainstorm = true:
-     - params_json = userMessage (JSON parsed)
+     - Parse userMessage JSON → extract targetAudience, targetCoreValue, formatGenre, contentGenre, storyIdea
+     - Build params_json (aggregate string):
+       ```
+       - Đối tượng: {TARGET_AUDIENCE_MAP[targetAudience]}
+       - Giá trị cốt lõi: {TARGET_CORE_VALUE_MAP[targetCoreValue]}
+       - Thể loại format: {FORMAT_GENRE_MAP[formatGenre]}
+       - Thể loại nội dung: {CONTENT_GENRE_MAP[contentGenre]}
+       - Ý tưởng ban đầu: {storyIdea || "Chưa có ý tưởng cụ thể"}
+       ```
      - available_eras, available_locations
    ELSE:
      - conversation_history from messages
      - current_story_idea from last assistant message
      - current_story_idea_explanation from last assistant message
-     - current_params from last assistant message
+     - Extract params from last assistant message
+     - Build current_params (aggregate string):
+       ```
+       - Đối tượng: {TARGET_AUDIENCE_MAP[targetAudience]}
+       - Giá trị cốt lõi: {TARGET_CORE_VALUE_MAP[targetCoreValue]}
+       - Thể loại format: {FORMAT_GENRE_MAP[formatGenre]}
+       - Thể loại nội dung: {CONTENT_GENRE_MAP[contentGenre]}
+       - Phong cách viết: {WRITING_STYLE_MAP[writingStyle]}
+       - Thời đại: {Query eras by eraId → name}
+       - Địa điểm: {Query locations by locationId → name}
+       ```
      - user_message
 
 8. Render user prompt template
