@@ -54,7 +54,7 @@ interface ExtractedParams {
 | Value | Age Range | User Input Examples |
 |-------|-----------|---------------------|
 | 1 | 2-3 tuổi | "bé 2 tuổi", "bé 3 tuổi", "sơ sinh" |
-| 2 | 3-5 tuổi | "bé 4 tuổi", "mẫu giáo", "mầm non" |
+| 2 | 4-5 tuổi | "bé 4 tuổi", "mẫu giáo", "mầm non" |
 | 3 | 6-8 tuổi | "bé 7 tuổi", "tiểu học", "lớp 1-2" |
 | 4 | 9+ tuổi | "bé 9 tuổi", "lớp 4-5", "middle grade" |
 
