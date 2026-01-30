@@ -146,21 +146,23 @@ For each image, identify where text can be placed:
 
 ## OUTPUT FORMAT
 
-For each spread, return:
-```json
+Return a JSON object with `spreads` array containing all composed spreads:
 {
-  "number": 1,
-  "images": [{
-    "title": "Miu discovers the forest path",
-    "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
-    "visual_description": "Original description... [TEXT ZONE: Leave the top-right corner (approximately 20% width, 30% height) with soft, gradient sky for text placement.]"
-  }],
-  "textboxes": [{
-    "order": 1,
-    "geometry": { "x": 55, "y": 8, "w": 40, "h": 20, "rotation": 0 }
-  }]
+  "spreads": [
+    {
+      "number": 1,
+      "images": [{
+        "title": "Miu discovers the forest path",
+        "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
+        "visual_description": "Original description... [TEXT ZONE: Leave the top-right corner (approximately 20% width, 30% height) with soft, gradient sky for text placement.]"
+      }],
+      "textboxes": [{
+        "order": 1,
+        "geometry": { "x": 55, "y": 8, "w": 40, "h": 20, "rotation": 0 }
+      }]
+    }
+  ]
 }
-```
 
 ### Visual Description Update Rules
 - Append [TEXT ZONE: ...] to the end of visual_description

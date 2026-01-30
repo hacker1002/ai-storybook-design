@@ -14,23 +14,6 @@
 - `eras`: Truy vấn era info
 - `locations`: Truy vấn location info
 
-### background_jobs Table
-```sql
-CREATE TABLE background_jobs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  type VARCHAR(50) NOT NULL,           -- 'generate_manuscript'
-  story_id UUID REFERENCES stories(id),
-  status VARCHAR(20) NOT NULL,         -- 'queued', 'running', 'completed', 'failed'
-  current_step SMALLINT DEFAULT 0,
-  total_steps SMALLINT DEFAULT 5,
-  step_details JSONB,
-  params JSONB,                        -- { storyIdea, storyIdeaExplanation, ...StoryParams }
-  error_message TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
 ## Shared Types
 
 ```typescript
@@ -83,6 +66,8 @@ interface GenerateManuscriptResponse {
 1. Validate input parameters
 
 2. Create story record:
+   - title = "" (empty, user đặt tên sau)
+   - owner_id = user_id (lấy từ API access key)
    - book_type = 1 (sách tranh)
    - original_language = user.settings.language
    - target_audience, target_core_value, format_genre, content_genre

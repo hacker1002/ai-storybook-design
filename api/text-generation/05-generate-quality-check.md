@@ -57,7 +57,6 @@ interface Issue {
 // Map với bảng flags trong DB (simplified format)
 interface FlagItem {
   title: string;                  // Format: "[Tester] [Severity] Category: Brief description"
-                                  // Example: "[Story Consistency] [MAJOR] character_consistency: Miu behavior inconsistent"
   content: string;                // Format: "Location: xxx\n\nIssue: xxx\n\nSuggestion: xxx"
   type: number;                   // 0: consistency, 1: plot, 2: age_inappropriate, 3: other
   status: number;                 // 0: open, 1: in_progress, 2: resolved, 3: ignored (default: 0)
@@ -79,70 +78,6 @@ enum FlagStatus {
 }
 ```
 
-## Sub-Agents
-
-### 4.1 Story Consistency Tester
-Kiểm tra tính nhất quán của characters, props, stages với cốt truyện và visual design.
-
-**Checks:**
-- Character personality vs. actions in spreads
-- Character appearance vs. visual descriptions
-- Prop usage consistency
-- Stage descriptions vs. spread usage
-- Timeline/sequence logic
-- Character relationships consistency
-
-### 4.2 Plot Tester
-Kiểm tra cốt truyện có vấn đề logic hoặc narrative.
-
-**Checks:**
-- Plot holes (lỗ hổng cốt truyện)
-- Contradictions (mâu thuẫn)
-- Pacing issues (nhịp truyện)
-- Character arc completion
-- Moral/lesson clarity and depth
-- Emotional journey coherence
-- Ending satisfaction
-
-### 4.3 Age Appropriateness Tester (Parent + Child perspective)
-Kiểm tra nội dung phù hợp với độ tuổi target.
-
-**Checks based on target_audience:**
-
-**1 - Kindergarten (2-3 tuổi):**
-- Vocabulary complexity (very simple, 3-5 words per sentence)
-- Repetition and rhythm
-- No scary/intense content
-- Basic concepts only
-- Very short attention span
-
-**2 - Preschool (4-5 tuổi):**
-- Simple vocabulary (5-10 words per sentence)
-- Age-appropriate themes
-- Minimal scary content
-- Concept complexity appropriate
-- Short attention span
-
-**3 - Primary (6-8 tuổi):**
-- Varied vocabulary with context clues
-- Reading level match
-- Emotional intensity appropriate
-- Educational value
-- Can handle compound sentences
-
-**4 - Middle Grade (9+ tuổi):**
-- Sophisticated vocabulary
-- Depth of themes
-- Complex emotions allowed
-- Subtext and nuance
-
-**Parent perspective:**
-- Hidden meanings that might be inappropriate
-- Values alignment
-- Educational merit
-- Entertainment value
-- Conversation starters
-
 ## Prompt
 
 > **DB Template Names:**
@@ -156,8 +91,30 @@ You are a team of quality assurance testers for children's picture books. You ev
 You consist of three specialized testers:
 
 1. **Story Consistency Tester**: Ensures all story elements are internally consistent
+   - Character personality vs. actions in spreads
+   - Character appearance vs. visual descriptions
+   - Prop usage consistency
+   - Stage descriptions vs. spread usage
+   - Timeline/sequence logic
+   - Character relationships consistency
+
 2. **Plot Tester**: Evaluates narrative structure, logic, and lesson effectiveness
+   - Plot holes detection
+   - Logical contradictions
+   - Pacing issues
+   - Character arc completion
+   - Moral/lesson clarity and depth
+   - Emotional journey coherence
+   - Ending satisfaction
+
 3. **Age Appropriateness Tester**: Reviews content from both child and parent perspectives
+   - Vocabulary complexity for reading level
+   - Sentence length appropriateness
+   - Theme suitability
+   - Scary/disturbing content assessment
+   - Concept understandability
+   - Entertainment value for child
+   - Educational value for parent
 
 Your evaluation is thorough but constructive. You identify issues and provide actionable suggestions for improvement.
 ```
@@ -172,41 +129,24 @@ Evaluate the following picture book manuscript:
 - Core Values: {%target_core_value%}
 
 ## DOCUMENTS
-{ // from snapshot.docs[]:
-- type: "manuscript", content: "..."
-- type: "story_structure", content: "..."
-- type: "artistic_imagery", content: "..."
-- type: "moral_lesson", content: "..."
-}
 {%docs_text%}
 
 ## CHARACTERS
-{ // from snapshot.characters[] with visual_description:
-- key: "@miu_cat", name: "Miu", visual_description: "...", basic_info: {...}, personality: {...}
-- ...
-}
 {%characters_json%}
 
 ## PROPS
-{ // from snapshot.props[] with visual_description:
-- key: "@red_bow", name: "Chiếc nơ đỏ", visual_description: "...", type: "narrative"
-- ...
-}
 {%props_json%}
 
 ## STAGES
-{ // from snapshot.stages[] with visual_description:
-- key: "@forest_1", name: "Khu rừng", visual_description: "..."
-- ...
-}
 {%stages_json%}
 
 ## SPREADS
-{ // from snapshot.spreads[] with images[]:
-- number: 1, manuscript: "...", images: [...], textboxes: [...]
-- ...
-}
 {%spreads_json%}
+
+---
+
+## AGE-SPECIFIC GUIDELINES
+{%age_guidelines%}
 
 ---
 
@@ -233,7 +173,7 @@ Check for:
 - [ ] Ending is satisfying
 
 ### 3. AGE APPROPRIATENESS TEST
-For target audience "{audience}":
+Based on the AGE-SPECIFIC GUIDELINES above, check for:
 - [ ] Vocabulary matches reading level
 - [ ] Sentence length appropriate
 - [ ] Themes appropriate
@@ -291,34 +231,19 @@ Return JSON:
   "recommendation": "approved" | "needs_revision" | "major_issues"
 }
 
-## SIMPLIFIED FLAGS FORMAT
+## FLAGS FORMAT
 
 **Title Format:** `[Tester] [Severity] Category: Brief description`
 - **Tester:** Story Consistency | Plot | Age Appropriateness
 - **Severity:** SUGGESTION | MINOR | MAJOR | CRITICAL
 - **Category:** character_consistency | plot_hole | vocabulary_level | etc.
-- **Brief description:** Short summary of the issue
 
-**Content Format:** Multi-line text with three sections:
-```
+**Content Format:**
 Location: [target_type]:[target_id], [additional_context]
 
 Issue: [Detailed description of the problem]
 
 Suggestion: [Actionable recommendation to fix the issue]
-```
-
-**Example:**
-{
-  "title": "[Plot] [CRITICAL] plot_hole: Missing resolution for conflict",
-  "content": "Location: spread:5-7\n\nIssue: The conflict between Miu and the forest guardian is introduced in spread 5 but never resolved. The story jumps to the ending without addressing this plotline.\n\nSuggestion: Add a spread showing Miu apologizing to the guardian or finding a way to make amends.",
-  "type": 1,
-  "status": 0
-}
-
-## ENUM MAPPINGS
-- **type**: 0=consistency, 1=plot, 2=age_inappropriate, 3=other
-- **status**: 0=open, 1=in_progress, 2=resolved, 3=ignored
 
 ## SCORING GUIDELINES
 - 90-100: Excellent, ready to publish
@@ -333,6 +258,22 @@ Suggestion: [Actionable recommendation to fix the issue]
 - "major_issues": score < 60 OR has critical issues
 ```
 
+## Age Guidelines Mapping
+
+| Value | Name | Guidelines |
+|-------|------|------------|
+| 1 | Kindergarten (2-3 tuổi) | Vocabulary: very simple, 3-5 words per sentence. Repetition and rhythm important. No scary/intense content. Basic concepts only. Very short attention span. |
+| 2 | Preschool (4-5 tuổi) | Vocabulary: simple, 5-10 words per sentence. Age-appropriate themes. Minimal scary content. Concept complexity appropriate. Short attention span. |
+| 3 | Primary (6-8 tuổi) | Vocabulary: varied with context clues. Reading level match. Emotional intensity appropriate. Educational value. Can handle compound sentences. |
+| 4 | Middle Grade (9+ tuổi) | Vocabulary: sophisticated. Depth of themes. Complex emotions allowed. Subtext and nuance. |
+
+**Parent perspective (all ages):**
+- Hidden meanings that might be inappropriate
+- Values alignment
+- Educational merit
+- Entertainment value
+- Conversation starters
+
 ## Flow
 ```
 1. Validate input parameters (storyId, snapshotId)
@@ -341,26 +282,56 @@ Suggestion: [Actionable recommendation to fix the issue]
    - TESTER_SYSTEM → system prompt + model
    - QUALITY_CHECK_USER_TEMPLATE → user prompt template
 
-3. Lấy full snapshot data từ DB (docs, characters, props, stages, spreads)
-
-4. Lấy story metadata (title, target_audience, target_core_value)
+3. Lấy story metadata từ DB (storyId):
+   - title
+   - target_audience (SMALLINT 1-4)
+   - target_core_value (SMALLINT 1-21)
    Note: KHÔNG lấy artstyle_id (chưa được set)
 
-5. Render user prompt template với variables:
-   - title, target_audience, target_core_value
-   - docs_text, characters_json, props_json, stages_json, spreads_json
+4. Lấy full snapshot data từ DB (snapshotId):
+   - docs[], characters[], props[], stages[], spreads[]
 
-6. Call LLM
+5. Build prompt variables:
+   a. title = story.title
+   b. target_audience = map_target_audience_to_text(story.target_audience)
+      // 1 → "Kindergarten (2-3 tuổi)"
+      // 2 → "Preschool (4-5 tuổi)"
+      // 3 → "Primary (6-8 tuổi)"
+      // 4 → "Middle Grade (9+ tuổi)"
+   c. target_core_value = map_core_value_to_text(story.target_core_value)
+      // 1 → "Dũng cảm", 2 → "Quan tâm", etc.
+   d. age_guidelines = get_age_guidelines(story.target_audience)
+      // Lấy từ Age Guidelines Mapping table
+   e. docs_text = format_docs(snapshot.docs)
+      // Format: "### {type}: {title}\n{content}..."
+   f. characters_json = json.dumps(snapshot.characters)
+   g. props_json = json.dumps(snapshot.props)
+   h. stages_json = json.dumps(snapshot.stages)
+   i. spreads_json = json.dumps(snapshot.spreads)
 
-7. Parse JSON response
+6. Render user prompt template với variables
 
-8. Lưu flags[] vào DB (bảng flags)
+7. Call LLM
 
-9. Return test results
+8. Parse JSON response
+
+9. Lưu flags[] vào DB (bảng flags):
+   - user_id = system_user_id
+   - story_id = storyId
+   - title, content, type, status từ LLM output
+   - type: sử dụng trực tiếp từ LLM (0-3)
+   - status: default = 0 (open)
+
+10. Return test results
 ```
 
+## Error Handling
+- LLM response không parse được → Retry 1 lần
+- Vẫn fail → Return error với message
+- Flag creation fail → Log warning, continue với các flags còn lại
 
-**Notes:**
-- Simplified design: Gộp các thông tin (tester, severity, category, suggestion, location, target_type, target_id) vào `title` và `content`
+## Notes
+- Simplified design: Gộp các thông tin (tester, severity, category, suggestion, location) vào `title` và `content`
 - `title` format: `[Tester] [Severity] Category: Brief description`
 - `content` format: Multi-line text với Location, Issue, Suggestion sections
+- DB flag type và LLM output type dùng chung enum (0-3)

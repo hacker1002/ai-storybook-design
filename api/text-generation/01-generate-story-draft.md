@@ -3,8 +3,6 @@
 ## Description
 **Story Teller Agent** - Phân tích ý tưởng và tạo khung truyện ban đầu bao gồm: docs[], characters[], props[], stages[], spreads[]. Function được gọi từ background job (Step 1).
 
-**Note:** Không có `dimension`, `artstyle_id` ở step này - chúng được chọn song song ở Phase 2 (Settings).
-
 ## DB Schema Dependencies
 
 ### Tables Referenced
@@ -21,21 +19,18 @@
 
 ## Parameters
 ```typescript
-// Được đọc từ background_jobs.params + stories table
+// Story đã được tạo từ bước trước, API nhận storyId + storyParams
 interface GenerateStoryDraftInput {
-  storyId: string;                      // Từ background_jobs.story_id
-  jobParams: {
+  storyId: string;                      // Story đã tồn tại từ generate-manuscript
+  storyParams: {
     storyIdea: string;
     storyIdeaExplanation: string;
-    targetAudience: 1 | 2 | 3 | 4;
-    targetCoreValue: number;            // 1-21: Dũng cảm, Quan tâm, etc.
-    formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
-    contentGenre: number;               // 1-11: Mystery, Fantasy, etc.
-    writingStyle: 1 | 2 | 3;
-    eraId: string;
-    locationId: string;
   };
 }
+
+// Các settings khác được đọc từ DB bảng stories:
+// - target_audience, target_core_value, format_genre, content_genre
+// - writing_style, era_id, location_id, original_language
 ```
 
 ### Target Audience Mapping
@@ -218,7 +213,7 @@ Analyze the following story idea and create a complete story framework:
 - Content Genre: {%content_genre%}
 - Writing Style: {%writing_style%}
 - Era: {%era_name%} - {%era_description%}
-- Location: {%location_name%} - {%location_description%}
+- Location (id: {%location_id%}): {%location_name%} - {%location_description%}
 
 ### Format
 - Language: {%language%}
@@ -229,9 +224,6 @@ Analyze the following story idea and create a complete story framework:
 
 ### asset_categories
 {%categories_text%}
-
-### locations (for stages)
-{%locations_text%}
 
 ---
 
@@ -362,41 +354,46 @@ Return a JSON object with the following structure:
 
 ## Flow
 ```
-1. Validate jobParams
+1. Validate storyId và storyParams
 
-2. Lấy prompt templates từ DB:
+2. Đọc Story record từ DB (storyId)
+   - Lấy: target_audience, target_core_value, format_genre, content_genre
+   - Lấy: writing_style, era_id, location_id, original_language
+
+3. Lấy prompt templates từ DB:
    - STORY_TELLER_SYSTEM → system prompt + model
    - STORY_DRAFT_USER_TEMPLATE → user prompt template
 
-3. Lấy reference data từ DB:
-   - eras (id = eraId) → era_name, era_description
-   - locations (id = locationId) → location_name, location_description
+4. Lấy reference data từ DB:
+   - eras (id = story.era_id) → era_name, era_description
+   - locations (id = story.location_id) → location_name, location_description
 
-4. Lấy resource lists từ DB:
+5. Lấy resource lists từ DB:
    - asset_categories → categories_text
    - locations → locations_text
 
-5. Map input values:
+6. Map input values:
    - targetAudience → target_audience_text, spreads, words_per_spread (theo mapping table)
    - targetCoreValue → target_core_value_text (1-21 mapping)
    - formatGenre → format_genre_text
    - contentGenre → content_genre_text
    - writingStyle → writing_style_text
 
-6. Render user prompt template
+7. Render user prompt template
 
-7. Call LLM
+8. Call LLM
 
-8. Parse JSON response
+9. Parse JSON response
 
-9. Tạo Snapshot record với:
-   - docs[], characters[], props[], stages[], spreads[]
-   - story_id = storyId
+10. Tạo Snapshot record với:
+    - docs[], characters[], props[], stages[], spreads[]
+    - story_id = storyId
 
-10. Update story metadata:
+11. Update Story record:
     - title, description từ LLM output
+    - current_version = snapshot.id
 
-11. Return { snapshotId, data }
+12. Return { snapshotId, data }
 ```
 
 ## Error Handling
