@@ -61,7 +61,7 @@ Generate visual descriptions cho entities.
 | [Generate Poetry](api/text-generation/11-generate-poetry.md) | Tạo thơ/vần điệu |
 
 ### Database Schema
-👉 [View Database Schema](CLAUDE.md)
+👉 [View Database Schema](DATABASE-SCHEMA.md)
 
 ## 🚀 Deploy
 

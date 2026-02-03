@@ -1,7 +1,7 @@
 <!-- Sidebar Navigation -->
 
 * [🏠 Home](/)
-* [📊 Database Schema](CLAUDE.md)
+* [📊 Database Schema](DATABASE-SCHEMA.md)
 
 * **App Features**
   * [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
