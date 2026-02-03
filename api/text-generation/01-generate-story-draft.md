@@ -6,29 +6,29 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `stories`: Đọc story record đã tạo ở Phase 1
+- `books`: Đọc book record đã tạo ở Phase 1
 - `snapshots`: Tạo snapshot đầu tiên
 - `eras`: Truy vấn era description
 - `locations`: Truy vấn location description và list cho stages
 - `asset_categories`: Truy vấn list cho characters/props
 
 ### Fields Used
-- `stories.id`, `stories.target_audience`, `stories.target_core_value`, `stories.format_genre`, `stories.content_genre`, `stories.writing_style`, `stories.era_id`, `stories.location_id`, `stories.original_language`
+- `books.id`, `books.target_audience`, `books.target_core_value`, `books.format_genre`, `books.content_genre`, `books.writing_style`, `books.era_id`, `books.location_id`, `books.original_language`
 - `background_jobs.params` - Đọc storyIdea, storyIdeaExplanation
 - `snapshots.docs[]`, `snapshots.characters[]`, `snapshots.props[]`, `snapshots.stages[]`, `snapshots.spreads[]`
 
 ## Parameters
 ```typescript
-// Story đã được tạo từ bước trước, API nhận storyId + storyParams
+// Book đã được tạo từ bước trước, API nhận bookId + storyParams
 interface GenerateStoryDraftInput {
-  storyId: string;                      // Story đã tồn tại từ generate-manuscript
+  bookId: string;                       // Book đã tồn tại từ generate-manuscript
   storyParams: {
     storyIdea: string;
     storyIdeaExplanation: string;
   };
 }
 
-// Các settings khác được đọc từ DB bảng stories:
+// Các settings khác được đọc từ DB bảng books:
 // - target_audience, target_core_value, format_genre, content_genre
 // - writing_style, era_id, location_id, original_language
 ```
@@ -354,9 +354,9 @@ Return a JSON object with the following structure:
 
 ## Flow
 ```
-1. Validate storyId và storyParams
+1. Validate bookId và storyParams
 
-2. Đọc Story record từ DB (storyId)
+2. Đọc Book record từ DB (bookId)
    - Lấy: target_audience, target_core_value, format_genre, content_genre
    - Lấy: writing_style, era_id, location_id, original_language
 
@@ -365,8 +365,8 @@ Return a JSON object with the following structure:
    - STORY_DRAFT_USER_TEMPLATE → user prompt template
 
 4. Lấy reference data từ DB:
-   - eras (id = story.era_id) → era_name, era_description
-   - locations (id = story.location_id) → location_name, location_description
+   - eras (id = book.era_id) → era_name, era_description
+   - locations (id = book.location_id) → location_name, location_description
 
 5. Lấy resource lists từ DB:
    - asset_categories → categories_text
@@ -387,9 +387,9 @@ Return a JSON object with the following structure:
 
 10. Tạo Snapshot record với:
     - docs[], characters[], props[], stages[], spreads[]
-    - story_id = storyId
+    - book_id = bookId
 
-11. Update Story record:
+11. Update Book record:
     - title, description từ LLM output
     - current_version = snapshot.id
 

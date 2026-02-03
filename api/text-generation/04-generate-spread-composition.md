@@ -6,19 +6,19 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `stories`: Truy vấn target_audience, book_type
+- `books`: Truy vấn target_audience, book_type
 - `snapshots`: Đọc spreads[] (images[], textboxes[]) và UPDATE geometry + visual_description
 
 ### Fields Used/Updated
 - `snapshots.spreads[].images[].geometry` - UPDATE
 - `snapshots.spreads[].images[].visual_description` - UPDATE (append text zone notes for image gen)
 - `snapshots.spreads[].textboxes[].language[0].geometry` - UPDATE (original_language only)
-- `stories.title`, `stories.book_type`, `stories.target_audience` - READ
+- `books.title`, `books.book_type`, `books.target_audience` - READ
 
 ## Parameters
 ```typescript
 interface GenerateSpreadCompositionInput {
-  storyId: string;
+  bookId: string;
   snapshotId: string;
 }
 ```
@@ -196,7 +196,7 @@ Return a JSON object with `spreads` array containing all composed spreads:
 
 ## Flow
 ```
-1. Validate input parameters (storyId, snapshotId)
+1. Validate input parameters (bookId, snapshotId)
 
 2. Lấy prompt templates từ DB:
    - ART_DIRECTOR_P2_SYSTEM → system prompt + model
@@ -204,7 +204,7 @@ Return a JSON object with `spreads` array containing all composed spreads:
 
 3. Lấy snapshot data từ DB (spreads với images[] và textboxes[])
 
-4. Lấy story metadata (title, book_type, target_audience)
+4. Lấy book metadata (title, book_type, target_audience)
 
 5. Render user prompt template với variables:
    - title, target_audience, book_type, spreads_data

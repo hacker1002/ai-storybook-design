@@ -6,24 +6,24 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `stories`: Truy vấn target_audience, original_language, format_genre, writing_style
+- `books`: Truy vấn target_audience, original_language, format_genre, writing_style
 - `snapshots`: Đọc docs[], spreads[] và UPDATE spreads[].textboxes[].language[].text
 
 ### Fields Used/Updated
 - `snapshots.docs[]` - READ (để hiểu context)
 - `snapshots.spreads[].textboxes[].language[0].text` - READ & UPDATE (only original_language)
-- `stories.title` - READ
-- `stories.target_audience` - READ
-- `stories.original_language` - READ (determines which language[0] to refine)
-- `stories.format_genre` - READ
-- `stories.writing_style` - READ
+- `books.title` - READ
+- `books.target_audience` - READ
+- `books.original_language` - READ (determines which language[0] to refine)
+- `books.format_genre` - READ
+- `books.writing_style` - READ
 
 **Note:** Only refines `original_language` (first in `language[]` array). Other languages handled by translation step (10-translate-content.md).
 
 ## Parameters
 ```typescript
 interface GenerateTextRefinementInput {
-  storyId: string;
+  bookId: string;
   snapshotId: string;
 }
 ```
@@ -32,7 +32,7 @@ interface GenerateTextRefinementInput {
 ```typescript
 interface GenerateTextRefinementResult {
   success: boolean;
-  languageCode: string;                 // e.g., "vi", "en" - from stories.original_language
+  languageCode: string;                 // e.g., "vi", "en" - from books.original_language
   updatedSpreads: {
     number: number;
     textboxes: {
@@ -202,7 +202,7 @@ Return JSON with:
 
 ## Flow
 ```
-1. Validate input parameters (storyId, snapshotId)
+1. Validate input parameters (bookId, snapshotId)
 
 2. Lấy prompt templates từ DB:
    - WORD_SMITH_SYSTEM → system prompt + model
@@ -210,7 +210,7 @@ Return JSON with:
 
 3. Lấy snapshot data từ DB (docs, spreads)
 
-4. Lấy story metadata (title, target_audience, format_genre, writing_style, original_language)
+4. Lấy book metadata (title, target_audience, format_genre, writing_style, original_language)
 
 5. Render user prompt template với variables:
    - title, target_audience, format_genre, writing_style, language

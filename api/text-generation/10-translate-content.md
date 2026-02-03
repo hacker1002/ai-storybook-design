@@ -6,24 +6,24 @@
 ## DB Schema Dependencies
 
 ### Tables Used
-- `stories`: id, title, original_language, target_audience, format_genre, content_genre
+- `books`: id, title, original_language, target_audience, format_genre, content_genre
 - `snapshots`: characters[], props[], stages[] (để lấy name mappings nếu cần)
 
 ### Fields Reference
-- `stories.id` (UUID) - Primary key
-- `stories.title` (VARCHAR) - Tiêu đề truyện, dùng làm context
-- `stories.original_language` (VARCHAR) - Ngôn ngữ gốc (vi, en), fallback cho sourceLanguage
-- `stories.target_audience` (SMALLINT) - Nhóm tuổi: 1=kindergarten (2-3), 2=preschool (4-5), 3=primary (6-8), 4=middle grade (9+)
-- `stories.format_genre` (SMALLINT) - 1: Narrative, 2: Lullaby, 3: Concept, 4: Non-fiction, 5: Early Reader, 6: Wordless
-- `stories.content_genre` (SMALLINT) - 1: Mystery, 2: Fantasy, 3: Realistic, 4: Historical, 5: Sci-Fi, 6: Folklore, 7: Humor, 8: Horror, 9: Biography, 10: Informational, 11: Memoir
+- `books.id` (UUID) - Primary key
+- `books.title` (VARCHAR) - Tiêu đề truyện, dùng làm context
+- `books.original_language` (VARCHAR) - Ngôn ngữ gốc (vi, en), fallback cho sourceLanguage
+- `books.target_audience` (SMALLINT) - Nhóm tuổi: 1=kindergarten (2-3), 2=preschool (4-5), 3=primary (6-8), 4=middle grade (9+)
+- `books.format_genre` (SMALLINT) - 1: Narrative, 2: Lullaby, 3: Concept, 4: Non-fiction, 5: Early Reader, 6: Wordless
+- `books.content_genre` (SMALLINT) - 1: Mystery, 2: Fantasy, 3: Realistic, 4: Historical, 5: Sci-Fi, 6: Folklore, 7: Humor, 8: Horror, 9: Biography, 10: Informational, 11: Memoir
 
 ## Parameters
 ```typescript
 interface GenerateTranslationParams {
-  storyId: string;                // ID của story trong DB
+  bookId: string;                 // ID của book trong DB
   snapshotId?: string;            // ID snapshot (optional, để lấy character names)
   content: string | TranslationItem[];  // Nội dung cần dịch
-  sourceLanguage?: string;        // Ngôn ngữ nguồn - fallback: story.original_language
+  sourceLanguage?: string;        // Ngôn ngữ nguồn - fallback: book.original_language
   targetLanguage: string;         // Ngôn ngữ đích (required)
   contentType: ContentType;       // Loại nội dung
   characterNameMappings?: Record<string, string>;  // Name mappings (optional)
@@ -128,14 +128,14 @@ Respond in JSON format:
 
 ## Flow
 ```
-1. Validate input parameters (storyId, content, targetLanguage, contentType)
+1. Validate input parameters (bookId, content, targetLanguage, contentType)
 2. Lấy prompt templates từ DB:
    - Query `prompt_templates` với name = "TRANSLATOR_SYSTEM" → system prompt
    - Query `prompt_templates` với name = "TRANSLATOR_USER_TEMPLATE" → user prompt
-3. Lấy story info từ DB:
+3. Lấy book info từ DB:
    - SELECT title, original_language, target_audience, format_genre, content_genre
-   - FROM stories WHERE id = storyId
-4. Determine sourceLanguage: params.sourceLanguage || story.original_language
+   - FROM books WHERE id = bookId
+4. Determine sourceLanguage: params.sourceLanguage || book.original_language
 5. Format character_name_mappings:
    - Nếu có params.characterNameMappings → format thành text
    - Nếu không → "No specific mappings (keep names unchanged)"
@@ -143,9 +143,9 @@ Respond in JSON format:
    - Nếu string → wrap trong array
    - Nếu array → giữ nguyên
 7. Map enum values to text:
-   - target_audience: mapTargetAudienceToText(story.target_audience)
-   - format_genre: mapFormatGenreToText(story.format_genre)
-   - content_genre: mapContentGenreToText(story.content_genre)
+   - target_audience: mapTargetAudienceToText(book.target_audience)
+   - format_genre: mapFormatGenreToText(book.format_genre)
+   - content_genre: mapContentGenreToText(book.content_genre)
 8. Render user prompt template với variables
 9. Call LLM với system prompt và rendered user prompt
 10. Parse JSON response
@@ -162,7 +162,7 @@ Respond in JSON format:
 | `metadata` | Titles, descriptions, keep brief and impactful |
 
 ## Error Handling
-- Nếu story không tồn tại → Return error
+- Nếu book không tồn tại → Return error
 - Nếu targetLanguage = sourceLanguage → Return original content unchanged
 - Nếu content rỗng → Return empty translations array
 - Nếu LLM không parse được → Log error, return partial results nếu có
@@ -172,7 +172,7 @@ Respond in JSON format:
 ### Example 1: Translate manuscript
 ```typescript
 const result = await generateTranslation({
-  storyId: 'uuid-1',
+  bookId: 'uuid-1',
   content: 'Ngày xửa ngày xưa, có một chú mèo tên là @miu_cat...',
   targetLanguage: 'en',
   contentType: 'manuscript'
@@ -183,7 +183,7 @@ const result = await generateTranslation({
 ### Example 2: Translate multiple textboxes
 ```typescript
 const result = await generateTranslation({
-  storyId: 'uuid-1',
+  bookId: 'uuid-1',
   content: [
     { id: 'tb-1', text: 'Miu vui vẻ chạy nhảy.' },
     { id: 'tb-2', text: '@miu_cat thích chơi với @red_bow.' }
@@ -197,7 +197,7 @@ const result = await generateTranslation({
 ### Example 3: Translate with custom name mappings
 ```typescript
 const result = await generateTranslation({
-  storyId: 'uuid-1',
+  bookId: 'uuid-1',
   content: 'Bé An và Miu đang chơi trong vườn.',
   targetLanguage: 'en',
   contentType: 'textbox',

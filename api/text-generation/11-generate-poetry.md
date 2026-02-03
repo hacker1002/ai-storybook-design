@@ -6,14 +6,14 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `stories`: Truy vấn title, target_audience, original_language
+- `books`: Truy vấn title, target_audience, original_language
 - `snapshots`: Đọc docs[], spreads[] để lấy nội dung text cần chuyển thành thơ
 
 ### Fields Used
-- `stories.id` (UUID) - Primary key
-- `stories.title` (VARCHAR) - Tiêu đề truyện
-- `stories.target_audience` (SMALLINT) - Nhóm tuổi: 1=preschool (2-5), 2=primary (6-8), 3=tweens (9-10)
-- `stories.original_language` (VARCHAR) - Ngôn ngữ gốc (vi, en)
+- `books.id` (UUID) - Primary key
+- `books.title` (VARCHAR) - Tiêu đề truyện
+- `books.target_audience` (SMALLINT) - Nhóm tuổi: 1=preschool (2-5), 2=primary (6-8), 3=tweens (9-10)
+- `books.original_language` (VARCHAR) - Ngôn ngữ gốc (vi, en)
 - `snapshots.docs[]` (JSONB) - Manuscript context
 - `snapshots.spreads[].manuscript` (TEXT) - Cốt truyện spread
 - `snapshots.spreads[].textboxes[].language[].text` (TEXT) - Nội dung textbox
@@ -21,7 +21,7 @@
 ## Parameters
 ```typescript
 interface GeneratePoetryParams {
-  storyId: string;
+  bookId: string;
   snapshotId: string;
   scope: 'spread' | 'story';
   spreadNumber?: number;           // Required when scope = 'spread'
@@ -148,12 +148,12 @@ const POETRY_TYPE_DESCRIPTIONS: Record<PoetryType, string> = {
 
 ## Flow
 ```
-1. Validate input parameters (storyId, snapshotId, poetryType)
+1. Validate input parameters (bookId, snapshotId, poetryType)
 2. Lấy prompt templates từ DB:
    - Query `prompt_templates` với name = "WORD_SMITH_SYSTEM"
    - Query `prompt_templates` với name = "POETRY_GENERATION_USER_TEMPLATE"
-3. Lấy story metadata (title, target_audience, original_language)
-4. Determine language: params.language || story.original_language
+3. Lấy book metadata (title, target_audience, original_language)
+4. Determine language: params.language || book.original_language
 5. Lấy source content based on scope:
    - scope = 'spread': Lấy spread[spreadNumber].manuscript + textboxes
    - scope = 'story': Lấy docs[manuscript] + tất cả spreads
@@ -165,7 +165,7 @@ const POETRY_TYPE_DESCRIPTIONS: Record<PoetryType, string> = {
 ```
 
 ## Error Handling
-- Nếu story/snapshot không tồn tại → Return error
+- Nếu book/snapshot không tồn tại → Return error
 - Nếu scope = 'spread' nhưng spreadNumber không có → Return validation error
 - Nếu không có text content trong scope → Return error
 - Nếu poetryType không hợp lệ → Return validation error với danh sách types
@@ -176,7 +176,7 @@ const POETRY_TYPE_DESCRIPTIONS: Record<PoetryType, string> = {
 ### Example 1: Tạo lục bát cho 1 spread
 ```typescript
 const result = await generatePoetry({
-  storyId: 'uuid-1',
+  bookId: 'uuid-1',
   snapshotId: 'uuid-2',
   scope: 'spread',
   spreadNumber: 3,
@@ -188,7 +188,7 @@ const result = await generatePoetry({
 ### Example 2: Tạo haiku cho toàn bộ truyện
 ```typescript
 const result = await generatePoetry({
-  storyId: 'uuid-1',
+  bookId: 'uuid-1',
   snapshotId: 'uuid-2',
   scope: 'story',
   language: 'en',
@@ -199,7 +199,7 @@ const result = await generatePoetry({
 ### Example 3: Tạo đồng dao với custom instructions
 ```typescript
 const result = await generatePoetry({
-  storyId: 'uuid-1',
+  bookId: 'uuid-1',
   snapshotId: 'uuid-2',
   scope: 'spread',
   spreadNumber: 1,

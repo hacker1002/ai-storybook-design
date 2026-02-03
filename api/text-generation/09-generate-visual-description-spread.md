@@ -8,7 +8,7 @@
 ## DB Schema Dependencies
 
 ### Tables Used
-- `stories`: artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title
+- `books`: artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title
 - `snapshots`: spreads[], characters[], props[], stages[]
 - `locations`: id, name, description, image_references[]
 - `art_styles`: id, name, description, image_references[]
@@ -20,19 +20,19 @@
   - right_page: { number, type }
   - manuscript
   - tiny_sketch_media_url
-  - images[]: { title, geometry, visual_description, stage, actions, temporal, sensory, emotional, image_references[], sketch[], illustration[], final_hires_media_url, interaction }
-  - videos[], textboxes[], shapes[]
+  - images[]: { title, geometry, visual_description, stage, actions, temporal, sensory, emotional, image_references[], sketch[], illustration[], final_hires_media_url }
+  - objects[], animations[], textboxes[]
 
 - `characters[]`, `props[]`, `stages[]` structures (referenced via @key)
 
 ## Parameters
 ```typescript
 interface GenerateVisualDescriptionSpreadParams {
-  storyId: string;         // ID của story trong DB
+  bookId: string;          // ID của book trong DB
   snapshotId: string;      // ID của snapshot trong DB
   spreadNumber: number;    // Spread number (1-based)
   targetLength: "short" | "medium" | "detailed";  // short: 50-80, medium: 80-120, detailed: 120-200 words
-  language?: string;       // Ngôn ngữ output - fallback: story.original_language
+  language?: string;       // Ngôn ngữ output - fallback: book.original_language
 }
 ```
 
@@ -119,13 +119,13 @@ Generate JSON response:
 
 ## Flow
 ```
-1. Validate input parameters (storyId, snapshotId, spreadNumber, targetLength)
+1. Validate input parameters (bookId, snapshotId, spreadNumber, targetLength)
 2. Lấy prompt templates từ DB:
    - Query `prompt_templates` với name = "VISUAL_DESCRIPTOR_SYSTEM" → system prompt
    - Query `prompt_templates` với name = "VISUAL_DESC_SPREAD_USER_TEMPLATE" → user prompt
-3. Lấy story info từ DB:
+3. Lấy book info từ DB:
    - SELECT artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title
-   - FROM stories WHERE id = storyId
+   - FROM books WHERE id = bookId
 4. Lấy spread từ snapshot.spreads[] WHERE number = spreadNumber
 5. Parse @key trong spread.images[].stage và spread.images[].actions
    → Lấy danh sách character keys, prop keys, stage keys liên quan
@@ -135,11 +135,11 @@ Generate JSON response:
    - stages[].visual_description WHERE key IN stage_keys
 7. Với mỗi stage liên quan, lấy location info từ locations WHERE id = stage.location_id
    → name, description
-8. Lấy art_style từ art_styles WHERE id = story.artstyle_id
+8. Lấy art_style từ art_styles WHERE id = book.artstyle_id
    → description
 9. Lấy previous spread description nếu spreadNumber > 1
    → spreads[spreadNumber - 2].images[0].visual_description (để đảm bảo continuity)
-10. Determine language: params.language || story.original_language
+10. Determine language: params.language || book.original_language
 11. Format all variables:
     - images_text: từ spread.images[]
     - textboxes_text: từ spread.textboxes[].language[].text
@@ -153,7 +153,7 @@ Generate JSON response:
 ```
 
 ## Error Handling
-- Nếu story/snapshot không tồn tại → Return error
+- Nếu book/snapshot không tồn tại → Return error
 - Nếu spread với spreadNumber không tìm thấy → Return error với valid range
 - Nếu referenced entities không tìm thấy → Log warning, tiếp tục với available data
 - Nếu art_style không tìm thấy → Return error (art_style bắt buộc)

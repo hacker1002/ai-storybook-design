@@ -8,9 +8,9 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `stories`: Tạo record mới với StoryParams (chưa có dimension, artstyle_id)
+- `books`: Tạo record mới với StoryParams (chưa có dimension, artstyle_id)
 - `background_jobs`: Tạo job record với params và track progress
-- `ai_conversations`: Update story_id và step
+- `ai_conversations`: Update book_id và step
 - `eras`: Truy vấn era info
 - `locations`: Truy vấn location info
 
@@ -20,7 +20,7 @@
 // From brainstorming
 interface StoryParams {
   targetAudience: 1 | 2 | 3 | 4;       // 1: kindergarten, 2: preschool, 3: primary, 4: middle grade
-  targetCoreValue: number;              // 1-21: Dũng cảm, Quan tâm, etc. (see stories.target_core_value)
+  targetCoreValue: number;              // 1-21: Dũng cảm, Quan tâm, etc. (see books.target_core_value)
   formatGenre: 1 | 2 | 3 | 4 | 5 | 6;  // Narrative, Lullaby, Concept, Non-fiction, Early Reader, Wordless
   contentGenre: number;                 // 1-11: Mystery, Fantasy, etc.
   writingStyle: 1 | 2 | 3;             // 1: Narrative, 2: Rhyming, 3: Humorous Fiction
@@ -55,7 +55,7 @@ interface GenerateManuscriptRequest {
 ## Result
 ```typescript
 interface GenerateManuscriptResponse {
-  storyId: string;                      // UUID của story được tạo
+  bookId: string;                       // UUID của book được tạo
   jobId: string;                        // UUID của background job
 }
 ```
@@ -65,7 +65,7 @@ interface GenerateManuscriptResponse {
 ```
 1. Validate input parameters
 
-2. Create story record:
+2. Create book record:
    - title = "" (empty, user đặt tên sau)
    - owner_id = user_id (lấy từ API access key)
    - book_type = 1 (sách tranh)
@@ -77,7 +77,7 @@ interface GenerateManuscriptResponse {
 
 3. Create background_jobs record:
    - type = 'generate_manuscript'
-   - story_id = story.id
+   - book_id = book.id
    - status = 'queued'
    - current_step = 0
    - total_steps = 5
@@ -85,12 +85,12 @@ interface GenerateManuscriptResponse {
    - params = { storyIdea, storyIdeaExplanation, ...StoryParams }
 
 4. Update ai_conversations:
-   - story_id = story.id
+   - book_id = book.id
    - step = 'generating'
 
 5. Queue job for background processing
 
-6. Return { storyId, jobId }
+6. Return { bookId, jobId }
 ```
 
 ## Background Job Flow (Phase 3)

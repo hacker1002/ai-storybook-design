@@ -8,7 +8,7 @@
 ## DB Schema Dependencies
 
 ### Tables Used
-- `stories`: artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title
+- `books`: artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title
 - `snapshots`: characters[]
 - `asset_categories`: id, name, type, description
 - `art_styles`: id, name, description, image_references[]
@@ -26,11 +26,11 @@
 ## Parameters
 ```typescript
 interface GenerateVisualDescriptionCharacterParams {
-  storyId: string;         // ID của story trong DB
+  bookId: string;          // ID của book trong DB
   snapshotId: string;      // ID của snapshot trong DB
   key: string;             // Character key (e.g., "miu_cat"), dùng để lấy thông tin từ snapshot.characters[]
   targetLength: "short" | "medium" | "detailed";  // short: 50-80, medium: 80-120, detailed: 120-200 words
-  language?: string;       // Ngôn ngữ output - fallback: story.original_language
+  language?: string;       // Ngôn ngữ output - fallback: book.original_language
 }
 ```
 
@@ -123,21 +123,21 @@ Generate JSON response:
 
 ## Flow
 ```
-1. Validate input parameters (storyId, snapshotId, key, targetLength)
+1. Validate input parameters (bookId, snapshotId, key, targetLength)
 2. Lấy prompt templates từ DB:
    - Query `prompt_templates` với name = "VISUAL_DESCRIPTOR_SYSTEM" → system prompt
    - Query `prompt_templates` với name = "VISUAL_DESC_CHARACTER_USER_TEMPLATE" → user prompt
-3. Lấy story info từ DB:
+3. Lấy book info từ DB:
    - SELECT artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title
-   - FROM stories WHERE id = storyId
+   - FROM books WHERE id = bookId
 4. Lấy character từ snapshot.characters[] WHERE key = params.key
 5. Lấy category từ asset_categories WHERE id = character.basic_info.category_id
    → name, type, description
-6. Lấy art_style từ art_styles WHERE id = story.artstyle_id
+6. Lấy art_style từ art_styles WHERE id = book.artstyle_id
    → description
 7. Lấy existing visual descriptions từ các characters khác trong snapshot
    → Để đảm bảo consistency
-8. Determine language: params.language || story.original_language
+8. Determine language: params.language || book.original_language
 9. Render user prompt template với variables
 10. Call LLM với system prompt và rendered user prompt
 11. Parse JSON response
@@ -145,7 +145,7 @@ Generate JSON response:
 ```
 
 ## Error Handling
-- Nếu story/snapshot không tồn tại → Return error
+- Nếu book/snapshot không tồn tại → Return error
 - Nếu character với key không tìm thấy → Return error với available keys
 - Nếu category_id invalid → Log warning, tiếp tục với empty category info
 - Nếu art_style không tìm thấy → Return error (art_style bắt buộc)

@@ -6,20 +6,20 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `stories`: Đọc metadata (title, target_audience, target_core_value)
+- `books`: Đọc metadata (title, target_audience, target_core_value)
 - `snapshots`: Đọc toàn bộ docs[], characters[], props[], stages[], spreads[]
 - `flags`: TẠO MỚI các flag records cho issues tìm thấy
 
 ### Fields Used
-- `flags.id`, `flags.user_id`, `flags.story_id`, `flags.title`, `flags.content`, `flags.type`, `flags.status`
-- `stories.title`, `stories.target_audience`, `stories.target_core_value`
+- `flags.id`, `flags.user_id`, `flags.book_id`, `flags.title`, `flags.content`, `flags.type`, `flags.status`
+- `books.title`, `books.target_audience`, `books.target_core_value`
 
-**Note:** Không đọc `stories.artstyle_id` - chưa được set ở thời điểm này (Step 5 chạy trong background job trước Phase 2).
+**Note:** Không đọc `books.artstyle_id` - chưa được set ở thời điểm này (Step 5 chạy trong background job trước Phase 2).
 
 ## Parameters
 ```typescript
 interface GenerateQualityCheckParams {
-  storyId: string;
+  bookId: string;
   snapshotId: string;
 }
 ```
@@ -276,13 +276,13 @@ Suggestion: [Actionable recommendation to fix the issue]
 
 ## Flow
 ```
-1. Validate input parameters (storyId, snapshotId)
+1. Validate input parameters (bookId, snapshotId)
 
 2. Lấy prompt templates từ DB:
    - TESTER_SYSTEM → system prompt + model
    - QUALITY_CHECK_USER_TEMPLATE → user prompt template
 
-3. Lấy story metadata từ DB (storyId):
+3. Lấy book metadata từ DB (bookId):
    - title
    - target_audience (SMALLINT 1-4)
    - target_core_value (SMALLINT 1-21)
@@ -292,15 +292,15 @@ Suggestion: [Actionable recommendation to fix the issue]
    - docs[], characters[], props[], stages[], spreads[]
 
 5. Build prompt variables:
-   a. title = story.title
-   b. target_audience = map_target_audience_to_text(story.target_audience)
+   a. title = book.title
+   b. target_audience = map_target_audience_to_text(book.target_audience)
       // 1 → "Kindergarten (2-3 tuổi)"
       // 2 → "Preschool (4-5 tuổi)"
       // 3 → "Primary (6-8 tuổi)"
       // 4 → "Middle Grade (9+ tuổi)"
-   c. target_core_value = map_core_value_to_text(story.target_core_value)
+   c. target_core_value = map_core_value_to_text(book.target_core_value)
       // 1 → "Dũng cảm", 2 → "Quan tâm", etc.
-   d. age_guidelines = get_age_guidelines(story.target_audience)
+   d. age_guidelines = get_age_guidelines(book.target_audience)
       // Lấy từ Age Guidelines Mapping table
    e. docs_text = format_docs(snapshot.docs)
       // Format: "### {type}: {title}\n{content}..."
@@ -317,7 +317,7 @@ Suggestion: [Actionable recommendation to fix the issue]
 
 9. Lưu flags[] vào DB (bảng flags):
    - user_id = system_user_id
-   - story_id = storyId
+   - book_id = bookId
    - title, content, type, status từ LLM output
    - type: sử dụng trực tiếp từ LLM (0-3)
    - status: default = 0 (open)

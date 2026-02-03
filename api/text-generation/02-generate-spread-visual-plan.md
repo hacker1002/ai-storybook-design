@@ -8,7 +8,7 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `stories`: Truy vấn target_audience, original_language, format_genre, content_genre
+- `books`: Truy vấn target_audience, original_language, format_genre, content_genre
 - `snapshots`: Đọc docs[], characters[], props[], stages[], spreads[] từ Step 1; UPDATE visual_description và images[]
 
 ### Fields Used/Updated
@@ -16,14 +16,14 @@
 - `snapshots.props[].states[].visual_description`, `negative_prompt` - UPDATE
 - `snapshots.stages[].settings[].visual_description`, `negative_prompt`, `temporal`, `sensory`, `emotional` - UPDATE
 - `snapshots.spreads[].images[]` - UPDATE (title, setting, visual_description, negative_prompt - chưa có geometry)
-- `stories.title`, `stories.target_audience`, `stories.original_language`, `stories.format_genre`, `stories.content_genre` - READ
+- `books.title`, `books.target_audience`, `books.original_language`, `books.format_genre`, `books.content_genre` - READ
 
-**Note:** Không đọc `stories.artstyle_id` - chưa được set ở thời điểm này.
+**Note:** Không đọc `books.artstyle_id` - chưa được set ở thời điểm này.
 
 ## Parameters
 ```typescript
 interface GenerateSpreadVisualPlanInput {
-  storyId: string;
+  bookId: string;
   snapshotId: string;
 }
 ```
@@ -54,7 +54,6 @@ interface GenerateSpreadVisualPlanResult {
       season: string;
       weather: string;
       time_of_day: string;
-      duration: string;
     };
     sensory: {
       atmosphere: string;
@@ -220,7 +219,7 @@ Return JSON with:
 
 ## Flow
 ```
-1. Validate input parameters (storyId, snapshotId)
+1. Validate input parameters (bookId, snapshotId)
 
 2. Lấy prompt templates từ DB:
    - ART_DIRECTOR_P1_SYSTEM → system prompt + model
@@ -228,7 +227,7 @@ Return JSON with:
 
 3. Lấy snapshot data từ DB (docs, characters, props, stages, spreads từ Step 1)
 
-4. Lấy story metadata (title, target_audience, format_genre, content_genre, original_language)
+4. Lấy book metadata (title, target_audience, format_genre, content_genre, original_language)
    Note: KHÔNG lấy artstyle_id (chưa được set)
 
 5. Render user prompt template với variables:

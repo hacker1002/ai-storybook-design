@@ -8,7 +8,7 @@
 ## DB Schema Dependencies
 
 ### Tables Used
-- `stories`: artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title, era_id, location_id
+- `books`: artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title, era_id, location_id
 - `snapshots`: stages[]
 - `locations`: id, name, description, nation, city, type, image_references[]
 - `eras`: id, name, description, image_references[]
@@ -25,11 +25,11 @@
 ## Parameters
 ```typescript
 interface GenerateVisualDescriptionStageParams {
-  storyId: string;         // ID của story trong DB
+  bookId: string;          // ID của book trong DB
   snapshotId: string;      // ID của snapshot trong DB
   key: string;             // Stage key (e.g., "forest_1"), dùng để lấy thông tin từ snapshot.stages[]
   targetLength: "short" | "medium" | "detailed";  // short: 50-80, medium: 80-120, detailed: 120-200 words
-  language?: string;       // Ngôn ngữ output - fallback: story.original_language
+  language?: string;       // Ngôn ngữ output - fallback: book.original_language
 }
 ```
 
@@ -108,25 +108,25 @@ Generate JSON response:
 
 ## Flow
 ```
-1. Validate input parameters (storyId, snapshotId, key, targetLength)
+1. Validate input parameters (bookId, snapshotId, key, targetLength)
 2. Lấy prompt templates từ DB:
    - Query `prompt_templates` với name = "VISUAL_DESCRIPTOR_SYSTEM" → system prompt
    - Query `prompt_templates` với name = "VISUAL_DESC_STAGE_USER_TEMPLATE" → user prompt
-3. Lấy story info từ DB:
+3. Lấy book info từ DB:
    - SELECT artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title, era_id, location_id
-   - FROM stories WHERE id = storyId
+   - FROM books WHERE id = bookId
 4. Lấy stage từ snapshot.stages[] WHERE key = params.key
 5. Lấy location từ locations WHERE id = stage.location_id
    → name, description, nation, city, type, image_references
-6. Lấy era từ eras WHERE id = story.era_id
+6. Lấy era từ eras WHERE id = book.era_id
    → name, description
-7. Lấy story location từ locations WHERE id = story.location_id
-   → name, description (story-level setting)
-8. Lấy art_style từ art_styles WHERE id = story.artstyle_id
+7. Lấy book location từ locations WHERE id = book.location_id
+   → name, description (book-level setting)
+8. Lấy art_style từ art_styles WHERE id = book.artstyle_id
    → description
 9. Lấy existing visual descriptions từ các stages khác trong snapshot
    → Để đảm bảo consistency
-10. Determine language: params.language || story.original_language
+10. Determine language: params.language || book.original_language
 11. Render user prompt template với variables
 12. Call LLM với system prompt và rendered user prompt
 13. Parse JSON response
@@ -134,7 +134,7 @@ Generate JSON response:
 ```
 
 ## Error Handling
-- Nếu story/snapshot không tồn tại → Return error
+- Nếu book/snapshot không tồn tại → Return error
 - Nếu stage với key không tìm thấy → Return error với available keys
 - Nếu location_id invalid → Log warning, tiếp tục với empty location info
 - Nếu era_id invalid → Log warning, tiếp tục với empty era info

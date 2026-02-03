@@ -23,7 +23,7 @@ interface {EndpointName}Params {
   };
 
   // Common patterns
-  language?: string;                  // "vi" | "en" - defaults to story.original_language
+  language?: string;                  // "vi" | "en" - defaults to book.original_language
   options?: {
     skipStep?: boolean;               // Skip optional step (default: false)
   };

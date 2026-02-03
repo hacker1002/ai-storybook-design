@@ -13,7 +13,7 @@ Tạo manuscript hoàn chỉnh sau khi user kết thúc brainstorming. User clic
 │                                                                             │
 │   User click "Tạo truyện" → API tạo story + queue job → Return IDs          │
 └────────────────────────────────┬────────────────────────────────────────────┘
-                                 │ storyId, jobId
+                                 │ bookId, jobId
                                  ▼
         ┌────────────────────────┴────────────────────────┐
         │                    PARALLEL                      │
@@ -45,7 +45,7 @@ Tạo manuscript hoàn chỉnh sau khi user kết thúc brainstorming. User clic
 // From brainstorming
 interface StoryParams {
   targetAudience: 1 | 2 | 3 | 4;
-  targetCoreValue: number;              // 1-21: SMALLINT (see stories.target_core_value)
+  targetCoreValue: number;              // 1-21: SMALLINT (see books.target_core_value)
   formatGenre: 1 | 2 | 3 | 4 | 5 | 6;
   contentGenre: number;
   writingStyle: 1 | 2 | 3;
@@ -78,14 +78,14 @@ interface StepDetails {
 **CLIENT:**
 - Collect params + storyIdea + storyIdeaExplanation từ BrainstormingState
 - Send request, handle loading
-- Store storyId + jobId on success
+- Store bookId + jobId on success
 
 **API:**
 - Validate request
-- Create story với params (book_type = 1, original_language từ user settings, chưa có dimension, artstyle_id)
+- Create book với params (book_type = 1, original_language từ user settings, chưa có dimension, artstyle_id)
 - Create + queue background job (status = 'queued', params = {storyIdea, storyIdeaExplanation, ...StoryParams})
-- Update ai_conversation: story_id, step = 'generating'
-- Return storyId + jobId
+- Update ai_conversation: book_id, step = 'generating'
+- Return bookId + jobId
 
 ### Request/Response
 ```typescript
@@ -98,7 +98,7 @@ interface Request {
 }
 
 interface Response {
-  storyId: string;
+  bookId: string;
   jobId: string;
 }
 ```
@@ -121,7 +121,7 @@ Modal cho user chọn dimension và artstyle_id. Chạy song song với Phase 3 
 **CLIENT:**
 - Fetch art_styles từ DB
 - Display modal (dimension + art style selector)
-- Validate và save to story table
+- Validate và save to books table
 
 ### Dimension Options
 | Value | Name | Size |
@@ -138,7 +138,7 @@ Modal cho user chọn dimension và artstyle_id. Chạy song song với Phase 3 
 | Operation | Table | Description |
 |-----------|-------|-------------|
 | SELECT | `art_styles` | Fetch list (id, name, description, image_references) |
-| UPDATE | `stories` | Save dimension, artstyle_id |
+| UPDATE | `books` | Save dimension, artstyle_id |
 
 ### Exit Condition
 User confirms → Settings saved
@@ -169,7 +169,7 @@ Job chạy ngay sau Phase 1, song song với Phase 2 (settings). Job reads input
 CREATE TABLE background_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   type VARCHAR(50) NOT NULL,           -- 'generate_manuscript'
-  story_id UUID REFERENCES stories(id),
+  book_id UUID REFERENCES books(id),
   status VARCHAR(20) NOT NULL,         -- 'queued', 'running', 'completed', 'failed'
   current_step SMALLINT DEFAULT 0,
   total_steps SMALLINT DEFAULT 5,
@@ -197,8 +197,8 @@ Job status = 'completed' | 'failed'
 
 ### Responsibilities
 - Cleanup subscriptions
-- Update ai_conversation: step = 'story_editing'
-- Redirect to `/stories/{storyId}/editor`
+- Update ai_conversation: step = 'book_editing'
+- Redirect to `/books/{bookId}/editor`
 
 ### Completion Requirements
 | Condition | Required |
@@ -223,14 +223,14 @@ Job status = 'completed' | 'failed'
 
 | Phase | Operation | Table | Description |
 |-------|-----------|-------|-------------|
-| 1 | INSERT | `stories` | Create với StoryParams, book_type=1, original_language từ user settings |
+| 1 | INSERT | `books` | Create với StoryParams, book_type=1, original_language từ user settings |
 | 1 | INSERT | `background_jobs` | Create job với params = {storyIdea, storyIdeaExplanation, ...StoryParams} |
-| 1 | UPDATE | `ai_conversations` | Set story_id, step = 'generating' |
+| 1 | UPDATE | `ai_conversations` | Set book_id, step = 'generating' |
 | 2 | SELECT | `art_styles` | Fetch options |
-| 2 | UPDATE | `stories` | Save dimension, artstyle_id |
+| 2 | UPDATE | `books` | Save dimension, artstyle_id |
 | 3 | UPDATE | `background_jobs` | Progress (worker) |
 | 3 | INSERT | `snapshots` | Create với AI-generated content |
-| 4 | UPDATE | `ai_conversations` | Set step = 'story_editing' |
+| 4 | UPDATE | `ai_conversations` | Set step = 'book_editing' |
 
 ---
 
@@ -241,7 +241,7 @@ interface GenerateManuscriptState {
   // Phase 1
   trigger: {
     status: "idle" | "loading" | "success" | "error";
-    storyId: string | null;
+    bookId: string | null;
     jobId: string | null;
   };
 
@@ -300,7 +300,7 @@ interface GenerateManuscriptState {
 | Browser close during job | Job continues. On return, check for incomplete jobs |
 | Settings not saved, job done | Block redirect, show settings modal |
 | Partial job failure | Save partial result, offer "Continue" / "Restart" |
-| Duplicate "Tạo truyện" click | Return existing storyId + jobId, don't create duplicates |
+| Duplicate "Tạo truyện" click | Return existing bookId + jobId, don't create duplicates |
 | art_styles empty | Show error, block settings save |
 
 ---
@@ -308,7 +308,7 @@ interface GenerateManuscriptState {
 ## Conversation Step Transitions
 
 ```
-brainstorming → generating → story_editing
+brainstorming → generating → book_editing
      │              │            │
      │              │            └─ Phase 4
      │              └─ Phase 1
