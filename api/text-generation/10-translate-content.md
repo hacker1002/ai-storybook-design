@@ -6,15 +6,16 @@
 ## DB Schema Dependencies
 
 ### Tables Used
-- `stories`: id, title, original_language, target_audience, genre
+- `stories`: id, title, original_language, target_audience, format_genre, content_genre
 - `snapshots`: characters[], props[], stages[] (để lấy name mappings nếu cần)
 
 ### Fields Reference
 - `stories.id` (UUID) - Primary key
 - `stories.title` (VARCHAR) - Tiêu đề truyện, dùng làm context
 - `stories.original_language` (VARCHAR) - Ngôn ngữ gốc (vi, en), fallback cho sourceLanguage
-- `stories.target_audience` (SMALLINT) - Nhóm tuổi: 1=preschool (2-5), 2=primary (6-8), 3=tweens (9-10)
-- `stories.genre` (SMALLINT) - Thể loại: 1=fantasy, 2=scifi, 3=mystery, 4=romance, 5=horror
+- `stories.target_audience` (SMALLINT) - Nhóm tuổi: 1=kindergarten (2-3), 2=preschool (4-5), 3=primary (6-8), 4=middle grade (9+)
+- `stories.format_genre` (SMALLINT) - 1: Narrative, 2: Lullaby, 3: Concept, 4: Non-fiction, 5: Early Reader, 6: Wordless
+- `stories.content_genre` (SMALLINT) - 1: Mystery, 2: Fantasy, 3: Realistic, 4: Historical, 5: Sci-Fi, 6: Folklore, 7: Humor, 8: Horror, 9: Biography, 10: Informational, 11: Memoir
 
 ## Parameters
 ```typescript
@@ -93,7 +94,8 @@ Translate the following content from {%source_language%} to {%target_language%}:
 ## Story Context
 - Title: {%title%}
 - Target Audience: {%target_audience%}
-- Genre: {%genre%}
+- Format Genre: {%format_genre%}
+- Content Genre: {%content_genre%}
 
 ## Character Name Mappings
 {%character_name_mappings%}
@@ -131,7 +133,7 @@ Respond in JSON format:
    - Query `prompt_templates` với name = "TRANSLATOR_SYSTEM" → system prompt
    - Query `prompt_templates` với name = "TRANSLATOR_USER_TEMPLATE" → user prompt
 3. Lấy story info từ DB:
-   - SELECT title, original_language, target_audience, genre
+   - SELECT title, original_language, target_audience, format_genre, content_genre
    - FROM stories WHERE id = storyId
 4. Determine sourceLanguage: params.sourceLanguage || story.original_language
 5. Format character_name_mappings:
@@ -142,7 +144,8 @@ Respond in JSON format:
    - Nếu array → giữ nguyên
 7. Map enum values to text:
    - target_audience: mapTargetAudienceToText(story.target_audience)
-   - genre: mapGenreToText(story.genre)
+   - format_genre: mapFormatGenreToText(story.format_genre)
+   - content_genre: mapContentGenreToText(story.content_genre)
 8. Render user prompt template với variables
 9. Call LLM với system prompt và rendered user prompt
 10. Parse JSON response

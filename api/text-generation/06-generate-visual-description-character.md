@@ -8,7 +8,7 @@
 ## DB Schema Dependencies
 
 ### Tables Used
-- `stories`: artstyle_id, original_language, target_audience, genre, target_core_value, title
+- `stories`: artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title
 - `snapshots`: characters[]
 - `asset_categories`: id, name, type, description
 - `art_styles`: id, name, description, image_references[]
@@ -98,7 +98,8 @@ Generate a visual description for a character:
 
 ## Story Context
 - Title: {%title%}
-- Genre: {%genre%}
+- Format Genre: {%format_genre%}
+- Content Genre: {%content_genre%}
 - Target Audience: {%target_audience%}
 - Core Value: {%target_core_value%}
 
@@ -127,7 +128,7 @@ Generate JSON response:
    - Query `prompt_templates` với name = "VISUAL_DESCRIPTOR_SYSTEM" → system prompt
    - Query `prompt_templates` với name = "VISUAL_DESC_CHARACTER_USER_TEMPLATE" → user prompt
 3. Lấy story info từ DB:
-   - SELECT artstyle_id, original_language, target_audience, genre, target_core_value, title
+   - SELECT artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title
    - FROM stories WHERE id = storyId
 4. Lấy character từ snapshot.characters[] WHERE key = params.key
 5. Lấy category từ asset_categories WHERE id = character.basic_info.category_id

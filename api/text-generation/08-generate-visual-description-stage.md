@@ -8,7 +8,7 @@
 ## DB Schema Dependencies
 
 ### Tables Used
-- `stories`: artstyle_id, original_language, target_audience, genre, target_core_value, title, era_id, location_id
+- `stories`: artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title, era_id, location_id
 - `snapshots`: stages[]
 - `locations`: id, name, description, nation, city, type, image_references[]
 - `eras`: id, name, description, image_references[]
@@ -75,7 +75,8 @@ Generate a visual description for a stage/background:
 
 ## Story Context
 - Title: {%title%}
-- Genre: {%genre%}
+- Format Genre: {%format_genre%}
+- Content Genre: {%content_genre%}
 - Target Audience: {%target_audience%}
 - Core Value: {%target_core_value%}
 - Era: {%era_name%} - {%era_description%}
@@ -112,7 +113,7 @@ Generate JSON response:
    - Query `prompt_templates` với name = "VISUAL_DESCRIPTOR_SYSTEM" → system prompt
    - Query `prompt_templates` với name = "VISUAL_DESC_STAGE_USER_TEMPLATE" → user prompt
 3. Lấy story info từ DB:
-   - SELECT artstyle_id, original_language, target_audience, genre, target_core_value, title, era_id, location_id
+   - SELECT artstyle_id, original_language, target_audience, format_genre, content_genre, target_core_value, title, era_id, location_id
    - FROM stories WHERE id = storyId
 4. Lấy stage từ snapshot.stages[] WHERE key = params.key
 5. Lấy location từ locations WHERE id = stage.location_id
