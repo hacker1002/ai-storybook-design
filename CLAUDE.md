@@ -44,7 +44,7 @@ ai-storybook-design/
 
 ## Database Schema
 
-### Bảng Story (các fields chính)
+### Bảng Book (các fields chính)
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
@@ -52,7 +52,7 @@ ai-storybook-design/
 | `description` | TEXT | Mô tả truyện |
 | `owner_id` | UUID | ID người sở hữu |
 | `step` | SMALLINT | 1: manuscript, 2: sketch, 3: illustration |
-| `type` | SMALLINT | 0: source story (thư viện assets), 1: normal story |
+| `type` | SMALLINT | 0: source book (thư viện assets, ko có docs/spreads), 1: normal book |
 | `original_language` | VARCHAR | Ngôn ngữ gốc (vi, en) |
 | `current_version` | UUID | Version hiện tại |
 | `current_content` | JSONB | Autosave content (ghi đè mỗi khi user dừng 1p) |
@@ -64,9 +64,9 @@ ai-storybook-design/
 | `format_genre` | SMALLINT | 1: Narrative Picture Books, 2: Lullaby/Bedtime Books, 3: Concept Books, 4: Non-fiction Picture Books, 5: Early Reader, 6: Wordless Picture Books *(required: creative)* |
 | `content_genre` | SMALLINT | 1: Mystery, 2: Fantasy, 3: Realistic Fiction, 4: Historical Fiction, 5: Science Fiction, 6: Folklore/Fairy Tales, 7: Humor, 8: Horror/Scary, 9: Biography, 10: Informational, 11: Memoir *(required: creative)* |
 | `writing_style` | SMALLINT | 1: Narrative, 2: Rhyming, 3: Humorous Fiction *(required: creative)* |
-| `era_id` | UUID | FK → `eras` *(required: creative)* |
-| `location_id` | UUID | FK → `locations` *(required: creative)* |
-| `artstyle_id` | UUID | FK → `art_styles` *(required: creative)* |
+| `era_id` | UUID | FK → `eras` *(required: creative)* - AI tự chọn nếu ko nói gì |
+| `location_id` | UUID | FK → `locations` *(required: creative)* - AI tự chọn nếu ko nói gì |
+| `artstyle_id` | UUID | FK → `art_styles` *(required: creative)* - hỏi nếu ko có |
 | `background_music` | JSONB | `{ title, media_url }` |
 | `typography` | JSONB | Default typography settings cho truyện |
 | `template_layout` | JSONB | Default layout cho trang mới `{ spread: id, left_page: id, right_page: id }` - FK → `template_layouts` |
@@ -129,7 +129,7 @@ ai-storybook-design/
 | `id` | UUID | Primary key |
 | `version` | VARCHAR | Version string (năm, tháng, ngày, giờ, phút) |
 | `tag` | VARCHAR | Tag đánh dấu |
-| `story_id` | UUID | Link đến Story |
+| `book_id` | UUID | Link đến Book |
 | `save_type` | SMALLINT | manual save hay autobackup |
 | `docs[]` | JSONB | Các tài liệu |
 | `spreads[]` | JSONB | Các spread/trang truyện |
@@ -138,13 +138,13 @@ ai-storybook-design/
 | `stages[]` | JSONB | Danh sách bối cảnh |
 
 ### Bảng Flags
-Bảng lưu các vấn đề tồn đọng trong story.
+Bảng lưu các vấn đề tồn đọng trong book.
 
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `user_id` | UUID | ID người tạo flag |
-| `story_id` | UUID | Link đến Story |
+| `book_id` | UUID | Link đến Book |
 | `title` | VARCHAR | Tiêu đề vấn đề |
 | `content` | TEXT | Mô tả chi tiết vấn đề |
 | `type` | SMALLINT | 0: consistency, 1: plot, 2: age_inappropriate, 3: other |
@@ -174,7 +174,7 @@ Bảng lưu các vấn đề tồn đọng trong story.
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `user_id` | UUID | FK → users |
-| `story_id` | UUID | FK → stories |
+| `book_id` | UUID | FK → books |
 | `access_rights` | JSONB | Quyền truy cập chi tiết |
 
 **access_rights structure:**
@@ -193,7 +193,7 @@ Bảng lưu các vấn đề tồn đọng trong story.
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `user_id` | UUID | FK → users |
-| `story_id` | UUID | FK → stories |
+| `book_id` | UUID | FK → books |
 | `name` | VARCHAR | Tên link |
 | `url` | VARCHAR | URL chia sẻ |
 | `privacy` | SMALLINT | Mức độ riêng tư |
@@ -252,7 +252,7 @@ Bảng lưu các vấn đề tồn đọng trong story.
 | `title` | VARCHAR | Tên layout |
 | `thumbnail_url` | VARCHAR | URL ảnh thumbnail |
 | `book_type` | SMALLINT | Loại sách áp dụng |
-| `type` | SMALLINT | 1: spread, 2: left_page, 3: right_page, 4: anyside |
+| `type` | SMALLINT | 1: double page, 2: single page |
 | `slots` | JSONB | Nội dung layout (textboxes[], images[]) |
 
 **slots structure:**
@@ -281,6 +281,7 @@ Bảng lưu các vấn đề tồn đọng trong story.
 | `name` | VARCHAR | **UNIQUE** key (UPPER_SNAKE_CASE) - dùng để query từ code |
 | `content` | TEXT | Nội dung prompt với `{%variable%}` placeholders |
 | `model` | VARCHAR | Model AI sử dụng (e.g., `gemini-3-flash-preview`) |
+| `type` | SMALLINT | Loại prompt: storytelling, pacing, art direction, wordsmith, draw |
 | `created_at` | TIMESTAMPTZ | Thời điểm tạo |
 | `updated_at` | TIMESTAMPTZ | Thời điểm cập nhật |
 
@@ -332,8 +333,8 @@ Chat sessions giữa user và AI assistants.
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `user_id` | UUID | FK → auth.users |
-| `story_id` | UUID | FK → stories (nullable) |
-| `step` | VARCHAR(50) | `brainstorming`, `story_editing`, `complete`, etc. |
+| `book_id` | UUID | FK → books (nullable) |
+| `step` | VARCHAR(50) | `brainstorming`, `generating`, `book_editing`, `complete`, etc. |
 | `created_at` | TIMESTAMPTZ | Thời điểm tạo |
 | `updated_at` | TIMESTAMPTZ | Thời điểm cập nhật |
 | `deleted_at` | TIMESTAMPTZ | Soft delete |
@@ -356,7 +357,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 |-------|------|-------|
 | `id` | UUID | Primary key |
 | `type` | VARCHAR(50) | Job type: `generate_manuscript`, `export_pdf`, etc. |
-| `story_id` | UUID | FK → stories (nullable) |
+| `book_id` | UUID | FK → books (nullable) |
 | `user_id` | UUID | FK → auth.users |
 | `status` | VARCHAR(20) | `queued`, `running`, `completed`, `failed` |
 | `current_step` | SMALLINT | Current step number (default 0) |
@@ -406,8 +407,8 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 {
   "type": 1,
   "number": 1,
-  "left_page": { "number": 1, "type": "story" },
-  "right_page": { "number": 2, "type": "story" },
+  "left_page": { "number": 1, "type": "normal_page" },
+  "right_page": { "number": 2, "type": "normal_page" },
   "manuscript": "cốt truyện của spread",
   "tiny_sketch_media_url": "...",
   "background": { "color": "#fff", "texture": "..." },
@@ -420,18 +421,11 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     "image_references[]": [{ "title": "...", "media_url": "..." }],
     "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
-    "final_hires_media_url": "...",
-    "interaction": { "sound_effect": "...", "target_url": "..." }
-  }],
-  "videos[]": [{
-    "title": "...",
-    "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
-    "final_hires_image_url": "...",
-    "z-index": 1,
-    "interaction": { "sound_effect": "...", "target_url": "..." }
+    "final_hires_media_url": "..."
   }],
   "textboxes[]": [{
-    "order": 1,
+    "id": "...",
+    "title": "...",
     "language[]": [{
       "text": "...",
       "geometry": { "x": 0, "y": 0, "w": 100, "h": 100, "rotation": 0 },
@@ -439,23 +433,41 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     }],
     "fill": { "color": "...", "opacity": 1 },
     "outline": { "color": "...", "width": 1, "radius": 0, "type": "solid" },
-    "audio": { "script": "...", "media_url": "...", "speed": 1, "emotion": "...", "voice": "..." },
-    "interaction": { "sound_effect": "...", "target_url": "..." }
+    "audio": { "script": "...", "media_url": "...", "speed": 1, "emotion": "...", "voice": "..." }
   }],
-  "shapes[]": [{
-    "title": "...",
-    "type": "rectangle",
-    "geometry": { "x": 0, "y": 0, "w": 100, "h": 100, "rotation": 0 },
-    "fill": { "is_fill": true, "color": "...", "opacity": 1 },
-    "outline": { "color": "...", "width": 1, "radius": 0, "type": "solid" },
-    "interaction": { "sound_effect": "...", "target_url": "..." }
+  "objects[]": [{
+    "id": "...",
+    "name": "key_name",
+    "state": "key_state",
+    "type": "character | prop | background | foreground | other",
+    "image_url": "...",
+    "video_url": "...",
+    "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
+    "z-index": 1,
+    "status": "...",
+    "aspect_ratio": "..."
+  }],
+  "animations[]": [{
+    "order": 1,
+    "target_id": "...",
+    "target_type": "textbox | object",
+    "action_type": "appear | exit | emphasis | read-along",
+    "trigger_type": "on_click | with_previous | after_previous",
+    "delay": 0,
+    "duration": 1000
   }]
 }
 ```
 
 - `type`: 1 = dps (double page spread), 0 = non-dps (2 trang nhỏ)
+- `left_page.type` / `right_page.type`: normal_page, front_matter, back_matter, dedication, ...
 - `background`: màu nền và texture cho spread
 - `setting`: reference tới stage setting (format: `@<stage_key>/<setting_key>`)
+- `objects[]`: các object trên spread (character, prop, background, foreground, vfx...)
+  - `geometry`: vị trí tương đối trên ảnh gốc (%), quy đổi ra vị trí trên spread cho animation
+- `animations[]`: animation cho textbox và object
+  - `action_type`: appear (xuất hiện), exit (biến mất), emphasis (nhấn mạnh), read-along (đọc theo)
+  - `trigger_type`: on_click (khi click), with_previous (cùng lúc với trước), after_previous (sau cái trước)
 
 #### characters[] structure
 ```json
@@ -507,6 +519,19 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     "speaker_boost": false,
     "system_voice": "...",
     "media_url": "..."
+  }],
+  "crop_sheets[]": [{
+    "title": "...",
+    "image_url": "...",
+    "crops[]": [{
+      "spread_number": 1,
+      "aspect_ratio": "1:1 | 4:3 | 16:9 | ...",
+      "name": "variant_key",
+      "state": "state_key",
+      "media_url": "...",
+      "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
+      "z-index": 1
+    }]
   }]
 }
 ```
@@ -514,6 +539,9 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 - `variants[]`: Các biến thể của nhân vật (trang phục, trạng thái khác nhau)
   - `type`: 0 = default, 1 = variant
 - `voices[]`: Nhiều giọng nói cho mỗi nhân vật
+- `crop_sheets[]`: Các sheet chứa crops của nhân vật
+  - `crops[]`: Các crop ở các aspect ratio khác nhau để dùng trong spread
+  - `geometry`: vị trí tương đối trên ảnh gốc (%), quy đổi ra vị trí trên spread cho animation
 
 #### props[] structure
 ```json
@@ -533,13 +561,29 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "image_references[]": [{ "title": "...", "media_url": "..." }]
   }],
-  "sounds[]": [{ "name": "...", "key": "...", "media_url": "..." }]
+  "sounds[]": [{ "name": "...", "key": "...", "media_url": "..." }],
+  "crop_sheets[]": [{
+    "title": "...",
+    "image_url": "...",
+    "crops[]": [{
+      "spread_number": 1,
+      "aspect_ratio": "1:1 | 4:3 | 16:9 | ...",
+      "name": "state_key",
+      "state": "state_key",
+      "media_url": "...",
+      "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
+      "z-index": 1
+    }]
+  }]
 }
 ```
 
 - `type`: `narrative` = đồ vật dẫn chuyện, tương tác với character | `anchor` = đồ vật nằm trong stages, tạo sự nhất quán
 - `states[]`: Các trạng thái của đạo cụ (mới, cũ, hỏng, ...)
   - `type`: 0 = default, 1 = state
+- `crop_sheets[]`: Các sheet chứa crops của prop
+  - `crops[]`: Các crop ở các aspect ratio khác nhau để dùng trong spread
+  - `geometry`: vị trí tương đối trên ảnh gốc (%), quy đổi ra vị trí trên spread cho animation
 
 #### stages[] structure
 ```json
@@ -558,8 +602,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
       "era": "...",
       "season": "...",
       "weather": "...",
-      "time_of_day": "...",
-      "duration": "..."
+      "time_of_day": "..."
     },
     "sensory": {
       "atmosphere": "...",
@@ -581,7 +624,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 - `location_id`: FK → locations
 - `settings[]`: Các cài đặt môi trường (mùa, thời tiết, thời gian trong ngày, ...)
   - `type`: 0 = default, 1 = setting
-  - `temporal`: Thông tin thời gian (era, season, weather, time_of_day, duration)
+  - `temporal`: Thông tin thời gian (era, season, weather, time_of_day)
   - `sensory`: Thông tin cảm quan (atmosphere, soundscape, lighting, color_palette)
   - `emotional`: Cảm xúc (mood)
 
@@ -611,12 +654,12 @@ cp template-design/app-template.md app/{feature-group}/{feature-name}.md
 ## Quy tắc khi thiết kế API
 
 ### Language Fallback
-- Nếu `language` không được truyền vào parameter, **luôn lấy** `story.original_language`
+- Nếu `language` không được truyền vào parameter, **luôn lấy** `book.original_language`
 - Áp dụng cho tất cả các generate-visual-description functions và translate-content
 
 ### Art Style
 - **KHÔNG** truyền `artStyleId` vào parameter
-- Art style được lấy từ `story.artstyle_id` → query bảng `art_styles` để lấy description
+- Art style được lấy từ `book.artstyle_id` → query bảng `art_styles` để lấy description
 - Sử dụng art style description trong prompt để đảm bảo consistency
 
 ### Negative Prompt (Text Generation)
@@ -626,7 +669,7 @@ cp template-design/app-template.md app/{feature-group}/{feature-name}.md
 - **Lưu ý:** Quy tắc này KHÔNG áp dụng cho các function Image Generation
 
 ### Consistency
-- Khi generate visual description cho một entity, **nên lấy** visual descriptions của các entities cùng loại khác trong story
+- Khi generate visual description cho một entity, **nên lấy** visual descriptions của các entities cùng loại khác trong book
 - Điều này đảm bảo style và tone nhất quán giữa các characters, props, stages
 
 ### Mention Name Convention
@@ -686,7 +729,7 @@ cp template-design/app-template.md app/{feature-group}/{feature-name}.md
 
 #### API
 - Business logic phức tạp
-- Get extra context từ DB (story settings, related entities)
+- Get extra context từ DB (book settings, related entities)
 - Build prompts từ template + context
 - Gọi AI Provider
 - Parse và validate AI response
@@ -756,7 +799,7 @@ Return ONLY valid JSON:
 
 ```bash
 # Đọc file Excel với pandas
-python3 -c "import pandas as pd; print(pd.read_excel('CoreDB.xlsx', 'Story').to_string())"
+python3 -c "import pandas as pd; print(pd.read_excel('CoreDB.xlsx', 'Book').to_string())"
 
 # Đọc tất cả sheets
 python3 -c "import pandas as pd; xl = pd.ExcelFile('CoreDB.xlsx'); print(xl.sheet_names)"
