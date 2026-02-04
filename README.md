@@ -16,6 +16,13 @@
 
 ## 📚 Documentation Structure
 
+### Component Design
+Thiết kế kiến trúc component cho các trang chính.
+
+| Component | Description |
+|-----------|-------------|
+| [Editor Page](component/editor-page/00-editor-page.md) | Root component của trang editor, quản lý workspace và navigation |
+
 ### App Features
 User-facing features và flows.
 
@@ -84,4 +91,4 @@ netlify deploy --prod
 
 ---
 
-**Last Updated:** January 28, 2026
+**Last Updated:** February 4, 2026

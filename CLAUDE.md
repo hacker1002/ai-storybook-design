@@ -37,9 +37,15 @@ ai-storybook-design/
 │   └── ai-assistant/
 │       └── story-idea-brainstorming.md
 │
+├── component/                   # Component Designs
+│   └── editor-page/             # Editor page components
+│       ├── 00-editor-page.md
+│       └── screenshots/
+│
 └── template-design/             # Design Templates
     ├── api-template.md          # Template cho API endpoint
-    └── app-template.md          # Template cho App feature
+    ├── app-template.md          # Template cho App feature
+    └── component-template.md    # Template cho Component design
 ```
 
 ---
@@ -68,6 +74,70 @@ cp template-design/app-template.md app/{feature-group}/{feature-name}.md
 ```
 - `{feature-group}`: nhóm tính năng (ai-assistant, editor, ...)
 - `{feature-name}`: tên tính năng (kebab-case)
+
+### Component Design
+```bash
+cp template-design/component-template.md component/{page-name}/{nn}-{component-name}.md
+```
+- `{page-name}`: tên page (editor-page, dashboard, ...)
+- `{nn}`: số thứ tự 2 chữ số (00, 01, 02, ...)
+- `{component-name}`: tên component (kebab-case)
+
+---
+
+## Quy tắc khi thiết kế Component
+
+### Phạm vi thiết kế
+- **Chỉ thiết kế 2 tầng:** Component cha + các component con trực tiếp
+- **KHÔNG thiết kế:** Sub-components của children (sẽ có file riêng)
+
+### Nội dung bắt buộc
+
+| Mục | Mô tả |
+|-----|-------|
+| **Mục đích** | Nhiệm vụ của component (1-2 câu) |
+| **Interface** | Props, State, Callbacks (TypeScript) |
+| **Visualization** | Diagrams (ASCII hoặc Mermaid) |
+
+### Được phép / Không được phép
+
+| ✅ Được phép | ❌ Không được phép |
+|-------------|-------------------|
+| Pseudo code | Code implementation |
+| TypeScript interfaces | JSX, CSS |
+| JSON structures | Business logic chi tiết |
+| Mapping constants | Sub-components details |
+| Helper function signatures | Error handling details |
+
+### State Location
+
+| Loại State | Vị trí | Ví dụ |
+|------------|--------|-------|
+| Data state | Parent cao nhất | book, snapshot |
+| UI state chung | Parent component | currentStep, activeWorkspace |
+| UI state riêng | Local component | isMenuOpen, selectedItem |
+
+### Naming Conventions
+
+| Loại | Convention | Ví dụ |
+|------|------------|-------|
+| Data props | noun | `book`, `items` |
+| Callback props | on + Verb | `onSave`, `onChange` |
+| Boolean props | is/has + Adj | `isOpen`, `hasChanges` |
+| Handler functions | handle + Verb | `handleSave` |
+
+### Annotations
+
+| Ký hiệu | Ý nghĩa |
+|---------|---------|
+| ⚡ | Bị ảnh hưởng bởi logic đặc biệt |
+| ✅ | Có / Enabled |
+| ❌ | Không / Disabled |
+
+### Anti-patterns
+- ❌ Prop drilling quá sâu (> 3 tầng)
+- ❌ Component làm quá nhiều việc (God component)
+- ❌ Intermediate component chỉ pass props mà không có logic riêng
 
 ---
 

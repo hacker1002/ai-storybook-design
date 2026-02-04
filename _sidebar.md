@@ -3,6 +3,9 @@
 * [🏠 Home](/)
 * [📊 Database Schema](DATABASE-SCHEMA.md)
 
+* **Component Design**
+  * [Editor Page](component/editor-page/00-editor-page.md)
+
 * **App Features**
   * [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
   * [Generate Manuscript](app/generate-manuscript/generate-manuscript.md)
