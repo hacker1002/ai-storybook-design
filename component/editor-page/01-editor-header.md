@@ -10,9 +10,10 @@
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │                                      EditorHeader                                         │
 │  ┌────────┬────────────────┬────────────────────────┬──────────┬────────────┬─────────┐  │
-│  │MenuBtn │   BookTitle    │     StepBreadcrumb     │SaveStatus│ LangSelect │ NotifBtn│  │
+│  │MenuBtn │   [BookTitle]  │     StepBreadcrumb     │SaveStatus│ LangSelect │ NotifBtn│  │
 │  │   ≡    │The Hidden Val..│ [I] > S > I > R        │ ✓ Saved  │ English(US)│   🔔    │  │
 │  └────────┴────────────────┴────────────────────────┴──────────┴────────────┴─────────┘  │
+│                           ▲ inline render (no child component)                            │
 │                                                                                           │
 │  ┌────────────────────────────────┐                                                       │
 │  │         MenuPopover            │  (when isMenuOpen = true)                             │
@@ -36,19 +37,19 @@
 │  ┌─────────────────────────────────────────────────────────────────────────────────┐  │
 │  │  Props: bookTitle, currentStep, currentLanguage, saveStatus,                    │  │
 │  │         notificationCount, userPoints, editorMode                               │  │
-│  │  LocalState: isMenuOpen, isEditingTitle                                         │  │
+│  │  LocalState: isMenuOpen, isEditingTitle, editTitleValue                         │  │
 │  └─────────────────────────────────────────────────────────────────────────────────┘  │
 │           │                │                  │                │                      │
 │           ▼                ▼                  ▼                ▼                      │
 │    ┌───────────┐    ┌───────────┐      ┌───────────┐    ┌─────────────────────────┐  │
-│    │ MenuBtn   │    │ BookTitle │      │   Step    │    │     Actions Group       │  │
-│    │           │    │           │      │ Breadcrumb│    │ ┌─────────┬───────────┐ │  │
-│    │ onClick:  │    │ Props:    │      │           │    │ │SaveStat │ LangSelect│ │  │
-│    │ toggle    │    │ •title    │      │ Props:    │    │ ├─────────┼───────────┤ │  │
-│    │ isMenuOpen│    │ •isEditing│      │ •current  │    │ │NotifBtn │           │ │  │
-│    │           │    │           │      │  Step     │    │ └─────────┴───────────┘ │  │
-│    │           │    │ Callback: │      │           │    │                         │  │
-│    │           │    │ •onEdit   │      │ Callback: │    │ Callbacks: onSave,      │  │
+│    │ MenuBtn   │    │[BookTitle]│      │   Step    │    │     Actions Group       │  │
+│    │           │    │ (inline)  │      │ Breadcrumb│    │ ┌─────────┬───────────┐ │  │
+│    │ onClick:  │    │           │      │           │    │ │SaveStat │ LangSelect│ │  │
+│    │ toggle    │    │ Render:   │      │ Props:    │    │ ├─────────┼───────────┤ │  │
+│    │ isMenuOpen│    │ IF editing│      │ •current  │    │ │NotifBtn │           │ │  │
+│    │           │    │  → input  │      │  Step     │    │ └─────────┴───────────┘ │  │
+│    │           │    │ ELSE      │      │           │    │                         │  │
+│    │           │    │  → text   │      │ Callback: │    │ Callbacks: onSave,      │  │
 │    │           │    │           │      │ •onChange │    │ onLangChange, onNotif   │  │
 │    └───────────┘    └───────────┘      └───────────┘    └─────────────────────────┘  │
 │           │                                                                           │
@@ -69,19 +70,50 @@
 
 ### 1.3 Step Breadcrumb Visual States
 
+**3 trạng thái:**
+
+| State | Visual | Behavior | Description |
+|-------|--------|----------|-------------|
+| `active` | Solid bg, highlight | Không click | Step hiện tại đang làm việc |
+| `completed` | Normal text, có check | Click → quay lại | Step đã hoàn thành, có thể quay lại |
+| `inactive` | Dim/muted, opacity 50% | Click → đi tiếp | Step chưa mở khóa |
+
 ```
-Step: idea (active)
+Step: idea (active) - Step đầu tiên
 ┌───────────────────────────────────────────────────────────────┐
 │  [Idea]  >  Sketch  >  Illustration  >  Retouch               │
 │   ▲ active   dim         dim             dim                  │
-│   (solid bg) (clickable) (clickable)     (clickable)          │
 └───────────────────────────────────────────────────────────────┘
 
-Step: illustration (active)
+Step: sketch (active) - Có thể quay lại idea
 ┌───────────────────────────────────────────────────────────────┐
-│  Idea  >  Sketch  >  [Illustration]  >  Retouch               │
-│  clickable clickable    ▲ active        clickable             │
+│  ✓ Idea  >  [Sketch]  >  Illustration  >  Retouch             │
+│  ▲ completed   active       dim            dim                │
 └───────────────────────────────────────────────────────────────┘
+
+Step: illustration (active) - Có thể quay lại idea hoặc sketch
+┌───────────────────────────────────────────────────────────────┐
+│  ✓ Idea  >  ✓ Sketch  >  [Illustration]  >  Retouch           │
+│  completed   completed      ▲ active          dim             │
+└───────────────────────────────────────────────────────────────┘
+
+Step: retouch (active) - Có thể quay lại tất cả steps trước
+┌───────────────────────────────────────────────────────────────┐
+│  ✓ Idea  >  ✓ Sketch  >  ✓ Illustration  >  [Retouch]         │
+│  completed   completed      completed        ▲ active         │
+└───────────────────────────────────────────────────────────────┘
+```
+
+**Visual Styling:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  State        │ Background  │ Text Color  │ Icon   │ Cursor        │
+├─────────────────────────────────────────────────────────────────────┤
+│  active       │ primary     │ white       │ none   │ default       │
+│  completed    │ transparent │ primary     │ ✓      │ pointer       │
+│  inactive     │ transparent │ muted (50%) │ none   │ not-allowed   │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -132,6 +164,7 @@ interface EditorHeaderProps {
 interface EditorHeaderState {
   isMenuOpen: boolean;
   isEditingTitle: boolean;
+  editTitleValue: string;  // local value khi đang edit
 }
 ```
 
@@ -144,7 +177,20 @@ EditorHeader:
     // Left section
     RENDER div.flex.items-center.gap-3
       RENDER MenuButton với onClick → toggle isMenuOpen
-      RENDER BookTitle với bookTitle, isEditingTitle, onTitleEdit
+
+      // BookTitle (inline, không tách component)
+      IF isEditingTitle:
+        RENDER input với:
+          - value: editTitleValue
+          - onChange: setEditTitleValue
+          - onKeyDown: Enter → onTitleEdit(editTitleValue), Escape → cancel
+          - onBlur: onTitleEdit(editTitleValue)
+          - autoFocus
+      ELSE:
+        RENDER span với:
+          - text: bookTitle (truncate max ~200px)
+          - onClick: setIsEditingTitle(true), setEditTitleValue(bookTitle)
+          - cursor: text
 
     // Center section
     RENDER StepBreadcrumb với currentStep, onStepChange
@@ -183,52 +229,15 @@ interface MenuButtonProps {
 
 ---
 
-### 2.3 BookTitle
+### 2.3 StepBreadcrumb
 
-**Mục đích:** Hiển thị và cho phép edit book title inline.
-
-**Interface:**
-
-```typescript
-interface BookTitleProps {
-  title: string;
-  isEditing: boolean;
-  onStartEdit: () => void;
-  onEndEdit: (newTitle: string) => void;
-  onCancel: () => void;
-}
-
-interface BookTitleState {
-  editValue: string;
-}
-```
-
-**Visual:**
-
-```
-Default:                      Editing:
-┌──────────────────────┐      ┌──────────────────────┐
-│ The Hidden Valley... │  →   │ The Hidden Valley█   │
-└──────────────────────┘      └──────────────────────┘
-       (click)                     (input mode)
-```
-
-**Behavior:**
-
-- Default: Hiển thị title dạng text, truncate nếu quá dài (max ~200px)
-- Click: Chuyển sang input mode
-- Enter/Blur: Save và exit edit mode
-- Escape: Cancel edit, restore original
-
----
-
-### 2.4 StepBreadcrumb
-
-**Mục đích:** Breadcrumb navigation giữa 4 steps. Click để jump đến step bất kỳ.
+**Mục đích:** Breadcrumb navigation giữa 4 steps. Click step trước hoặc sau để chuyển step.
 
 **Interface:**
 
 ```typescript
+type StepState = 'active' | 'completed' | 'inactive';
+
 interface StepBreadcrumbProps {
   currentStep: Step;
   onStepChange: (step: Step) => void;
@@ -244,11 +253,52 @@ const STEPS: { id: Step; label: string }[] = [
   { id: 'illustration', label: 'Illustration' },
   { id: 'retouch', label: 'Retouch' },
 ];
+
+const STEP_ORDER: Record<Step, number> = {
+  idea: 0,
+  sketch: 1,
+  illustration: 2,
+  retouch: 3,
+};
+
+// Xác định state của mỗi step
+function getStepState(step: Step, currentStep: Step): StepState {
+  const stepIndex = STEP_ORDER[step];
+  const currentIndex = STEP_ORDER[currentStep];
+
+  if (stepIndex === currentIndex) return 'active';
+  if (stepIndex < currentIndex) return 'completed';
+  return 'inactive';
+}
+```
+
+**Render Logic (pseudo):**
+
+```
+StepBreadcrumb:
+  FOR step IN STEPS:
+    stepState = getStepState(step.id, currentStep)
+
+    RENDER step item với:
+      IF stepState === 'active':
+        - cursor: default
+        - không có onClick
+      ELSE IF stepState === 'completed':
+        - text: primary color
+        - cursor: pointer
+        - onClick: onStepChange(step.id)
+      ELSE (inactive):
+        - text: muted (opacity 50%)
+        - cursor: pointer
+        - onClick: onStepChange(step.id)
+
+    IF không phải step cuối:
+      RENDER separator ">"
 ```
 
 ---
 
-### 2.5 SaveStatus
+### 2.4 SaveStatus
 
 **Mục đích:** Indicator hiển thị trạng thái save.
 
@@ -271,7 +321,7 @@ interface SaveStatusProps {
 
 ---
 
-### 2.6 NotificationButton
+### 2.5 NotificationButton
 
 **Mục đích:** Bell icon với badge count, mở notification panel.
 
@@ -296,7 +346,7 @@ No notifications:     Has notifications:
 
 ---
 
-### 2.7 LanguageSelector
+### 2.6 LanguageSelector
 
 **Mục đích:** Dropdown chọn ngôn ngữ hiển thị trong editor. Đặt trực tiếp trên header để dễ truy cập.
 
@@ -339,7 +389,7 @@ Closed:                       Open:
 
 ---
 
-### 2.8 MenuPopover
+### 2.7 MenuPopover
 
 **Mục đích:** Popover menu chứa points, navigation home, và editor mode display (không thay đổi được).
 
@@ -398,7 +448,7 @@ MenuPopover:
 
 ---
 
-### 2.9 PointsDisplay
+### 2.8 PointsDisplay
 
 **Mục đích:** Hiển thị user points với progress bar trong MenuPopover.
 
