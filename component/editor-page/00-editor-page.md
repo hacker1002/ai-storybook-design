@@ -145,11 +145,11 @@ type SaveStatus = 'unsaved' | 'saving' | 'saved';
 
 // constants/languages.ts
 const AVAILABLE_LANGUAGES: Language[] = [
-  { name: "English", code: "en_US" },
+  { name: "English (US)", code: "en_US" },
   { name: "Tiếng Việt", code: "vi_VN" },
   { name: "日本語", code: "ja_JP" },
   { name: "한국어", code: "ko_KR" },
-  { name: "中文", code: "zh_CN" }
+  { name: "中文 (简体)", code: "zh_CN" },
 ];
 ```
 
@@ -280,16 +280,16 @@ const STEP_ORDER: Record<Step, number> = {
 
 const ICON_RAIL_ITEMS: IconRailItem[] = [
   { id: 'manuscripts', icon: 'FileText',   label: 'Manuscripts',   enabledFromStep: 'idea' },
-  { id: 'characters',  icon: 'Users',      label: 'Characters',    enabledFromStep: 'sketch' },
-  { id: 'props',       icon: 'Package',    label: 'Props',         enabledFromStep: 'sketch' },
-  { id: 'stages',      icon: 'Map',        label: 'Stages',        enabledFromStep: 'sketch' },
+  { id: 'characters',  icon: 'Smile',      label: 'Characters',    enabledFromStep: 'sketch' },
+  { id: 'props',       icon: 'Box',        label: 'Props',         enabledFromStep: 'sketch' },
+  { id: 'stages',      icon: 'Mountain',   label: 'Stages',        enabledFromStep: 'sketch' },
   { id: 'spreads',     icon: 'BookOpen',   label: 'Spreads',       enabledFromStep: 'sketch' },
   { id: 'objects',     icon: 'Layers',     label: 'Objects',       enabledFromStep: 'retouch' },
-  { id: 'animations',  icon: 'Play',       label: 'Animations',    enabledFromStep: 'retouch' },
+  { id: 'animations',  icon: 'Zap',        label: 'Animations',    enabledFromStep: 'retouch' },
   { id: 'flags',       icon: 'Flag',       label: 'Flags',         enabledFromStep: 'idea' },
-  { id: 'shares',      icon: 'Share',      label: 'Share Links',   enabledFromStep: 'idea' },
-  { id: 'collabs',     icon: 'UserPlus',   label: 'Collaborators', enabledFromStep: 'idea' },
-  { id: 'config',      icon: 'Settings',   label: 'Config',        enabledFromStep: 'idea' },
+  { id: 'shares',      icon: 'Share2',     label: 'Share Links',   enabledFromStep: 'idea' },
+  { id: 'collabs',     icon: 'Users',      label: 'Collaborators', enabledFromStep: 'idea' },
+  { id: 'config',      icon: 'Settings',   label: 'Settings',      enabledFromStep: 'idea' },
 ];
 
 function isWorkspaceEnabled(item: IconRailItem, currentStep: Step): boolean {
