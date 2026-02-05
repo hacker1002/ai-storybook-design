@@ -711,10 +711,56 @@ Mỗi workspace có local state riêng (selected item, active tab, filter). Stat
 **Conditional Rendering**
 Render duy nhất một workspace tại một thời điểm. Unmount workspace cũ khi chuyển, nhưng EditorPage giữ data nên không mất state.
 
-### 3.2 Initial Language
+### 3.2 Step Transition Validation
+
+**Mục đích:** Kiểm tra dữ liệu bắt buộc trước khi cho phép chuyển step trong pipeline.
+
+**Interface:**
+
+```typescript
+interface ValidationResult {
+  valid: boolean;
+  missingFields?: string[];  // Field IDs để UI highlight
+  message?: string;          // User-facing message
+}
+
+interface StepTransitionRule {
+  from: Step;
+  to: Step;
+  validate: (book: Book, snapshot: Snapshot) => ValidationResult;
+}
+
+// Helper function
+function canTransitionToStep(
+  from: Step,
+  to: Step,
+  book: Book,
+  snapshot: Snapshot
+): ValidationResult;
+```
+
+**Flow:**
+
+```
+onStepChange(targetStep)
+       │
+       ▼
+canTransitionToStep(current, target, book, snapshot)
+       │
+   ┌───┴───┐
+valid:true  valid:false
+   │            │
+   ▼            ▼
+Update     Show feedback
+step       (toast/modal)
+```
+
+**Note:** Validation rules được định nghĩa sau. Chi tiết các required fields cho mỗi transition sẽ được thiết kế riêng.
+
+### 3.3 Initial Language
 Khi load Editor, `currentLanguage` mặc định là `book.original_language` hoặc language đầu tiên trong `AVAILABLE_LANGUAGES`.
 
-### 3.3 Khi nào cần refactor thêm MainWorkspace?
+### 3.4 Khi nào cần refactor thêm MainWorkspace?
 
 Cân nhắc tách MainWorkspace nếu xuất hiện nhu cầu:
 - Transition animation giữa các workspace
