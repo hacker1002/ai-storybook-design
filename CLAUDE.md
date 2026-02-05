@@ -103,7 +103,7 @@ editor-page/
 ├── 01-editor-header.md         # Child of root
 ├── 01-01-logo.md               # Child of 01
 ├── 02-icon-rail.md             # Child of root
-├── 03-manuscript-workspace.md  # Child of root
+├── 03-manuscript-creative-space.md  # Child of root
 ├── 03-01-page-canvas.md        # Child of 03
 └── 03-01-01-layer-panel.md     # Child of 03-01
 ```
@@ -146,7 +146,7 @@ editor-page/
 | Loại State | Vị trí | Ví dụ |
 |------------|--------|-------|
 | Data state | Parent cao nhất | book, snapshot |
-| UI state chung | Parent component | currentStep, activeWorkspace |
+| UI state chung | Parent component | currentStep, activeCreativeSpace |
 | UI state riêng | Local component | isMenuOpen, selectedItem |
 
 ### Naming Conventions

@@ -24,7 +24,7 @@ cp template-design/component-template.md component/{page-name}/{nn}-{component-n
 
 | Page | Description | Status |
 |------|-------------|--------|
-| [editor-page](./editor-page/) | Editor page - workspace quản lý book | ✅ Active |
+| [editor-page](./editor-page/) | Editor page - creativeSpace quản lý book | ✅ Active |
 
 ## Cấu trúc thư mục
 

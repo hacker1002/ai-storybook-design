@@ -1,4 +1,4 @@
-# ManuscriptWorkspace: Component Design
+# ManuscriptCreativeSpace: Component Design
 
 ---
 
@@ -8,7 +8,7 @@
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│                           ManuscriptWorkspace                               │
+│                           ManuscriptCreativeSpace                               │
 │  ┌────────────────────────┬─────────────────────────────────────────────┐  │
 │  │   ManuscriptStepsSidebar│              Main Content                  │  │
 │  │  ┌──────────────────┐  │  ┌───────────────────────────────────────┐  │  │
@@ -46,7 +46,7 @@
                                            │
                                            ▼
 ┌────────────────────────────────────────────────────────────────────────────┐
-│                           ManuscriptWorkspace                               │
+│                           ManuscriptCreativeSpace                               │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │  State: activeStep, promptInput, isGenerating                        │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
@@ -112,7 +112,7 @@
 
 ## 2. Component Designs
 
-### 2.1 ManuscriptWorkspace (Root Component)
+### 2.1 ManuscriptCreativeSpace (Root Component)
 
 **Mục đích:** Container chính cho manuscript editing workflow. Quản lý navigation giữa các bước, prompt input, và render content tương ứng với step.
 
@@ -178,20 +178,20 @@ interface Manuscript {
 **Interface:**
 
 ```typescript
-interface ManuscriptWorkspaceProps {
+interface ManuscriptCreativeSpaceProps {
   manuscripts: Manuscript;
   currentLanguage: Language;
   onManuscriptsUpdate: (manuscripts: Manuscript) => void;
 }
 
-interface ManuscriptWorkspaceState {
+interface ManuscriptCreativeSpaceState {
   activeStep: ManuscriptStepType;
   promptInput: string;
   isGenerating: boolean;
   selectedDummyType: DummyType;  // For Finalization step source selection
 }
 
-interface ManuscriptWorkspaceCallbacks {
+interface ManuscriptCreativeSpaceCallbacks {
   onStepChange: (step: ManuscriptStepType) => void;
   onPromptChange: (prompt: string) => void;
   onGenerate: (step: ManuscriptStepType, prompt: string) => Promise<void>;
@@ -205,7 +205,7 @@ interface ManuscriptWorkspaceCallbacks {
 **Render Logic (pseudo):**
 
 ```
-ManuscriptWorkspace:
+ManuscriptCreativeSpace:
   RENDER ManuscriptStepsSidebar với:
     - activeStep, promptInput, isGenerating
     - selectedDummyType (visible only for finalization)
@@ -573,7 +573,7 @@ Textbox content được lấy theo `textbox[currentLanguage.code]`. Lý do: H�
 
 **Finalization Output**
 - Finalization step output đi vào `snapshot.spreads[]`, KHÔNG thay đổi `manuscripts.dummies[]`
-- Là bước chuyển từ manuscript workspace → spreads workspace
+- Là bước chuyển từ manuscript creativeSpace → spreads creativeSpace
 
 ### 3.4 Spread Interaction (Future Design)
 

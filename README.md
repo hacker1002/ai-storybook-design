@@ -21,10 +21,10 @@ Thiết kế kiến trúc component cho các trang chính.
 
 | Component | Description |
 |-----------|-------------|
-| [Editor Page](component/editor-page/00-editor-page.md) | Root component của trang editor, quản lý workspace và navigation |
+| [Editor Page](component/editor-page/00-editor-page.md) | Root component của trang editor, quản lý creativeSpace và navigation |
 | [Editor Header](component/editor-page/01-editor-header.md) | Top navigation bar với step breadcrumb, language selector, save status |
-| [Icon Rail](component/editor-page/02-icon-rail.md) | Vertical navigation rail với workspace icons |
-| [Manuscript Workspace](component/editor-page/03-manuscript-workspace.md) | Main workspace area cho manuscript editing |
+| [Icon Rail](component/editor-page/02-icon-rail.md) | Vertical navigation rail với creativeSpace icons |
+| [Manuscript CreativeSpace](component/editor-page/03-manuscript-creative-space.md) | Main creativeSpace area cho manuscript editing |
 
 ### App Features
 User-facing features và flows.

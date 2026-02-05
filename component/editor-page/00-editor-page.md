@@ -20,17 +20,17 @@
 │  │        │                                               │              │  │
 │  │        │  Conditional Render (trực tiếp):              │   Right      │  │
 │  │        │  ┌─────────────────────────────────────────┐  │   Sidebar    │  │
-│  │  Icon  │  │ ManuscriptWorkspace   (if manuscripts) ⚡│  │     (AI)     │  │
-│  │  Rail  │  │ CharactersWorkspace   (if characters)   │  │              │  │
-│  │        │  │ PropsWorkspace        (if props)        │  │  ┌────────┐  │  │
-│  │        │  │ StagesWorkspace       (if stages)       │  │  │   X    │  │  │
-│  │        │  │ SpreadsWorkspace      (if spreads) ⚡    │  │  │ close  │  │  │
-│  │        │  │ ObjectsWorkspace      (if objects)      │  │  └────────┘  │  │
-│  │        │  │ AnimationsWorkspace   (if animations) ⚡ │  │              │  │
-│  │        │  │ FlagsWorkspace        (if flags)        │  │              │  │
-│  │        │  │ SharesWorkspace       (if shares)       │  │              │  │
-│  │        │  │ CollaboratorsWorkspace(if collabs)      │  │              │  │
-│  │        │  │ ConfigWorkspace       (if config)       │  │              │  │
+│  │  Icon  │  │ ManuscriptCreativeSpace   (if manuscripts) ⚡│  │     (AI)     │  │
+│  │  Rail  │  │ CharactersCreativeSpace   (if characters)   │  │              │  │
+│  │        │  │ PropsCreativeSpace        (if props)        │  │  ┌────────┐  │  │
+│  │        │  │ StagesCreativeSpace       (if stages)       │  │  │   X    │  │  │
+│  │        │  │ SpreadsCreativeSpace      (if spreads) ⚡    │  │  │ close  │  │  │
+│  │        │  │ ObjectsCreativeSpace      (if objects)      │  │  └────────┘  │  │
+│  │        │  │ AnimationsCreativeSpace   (if animations) ⚡ │  │              │  │
+│  │        │  │ FlagsCreativeSpace        (if flags)        │  │              │  │
+│  │        │  │ SharesCreativeSpace       (if shares)       │  │              │  │
+│  │        │  │ CollaboratorsCreativeSpace(if collabs)      │  │              │  │
+│  │        │  │ ConfigCreativeSpace       (if config)       │  │              │  │
 │  │        │  └─────────────────────────────────────────┘  │              │  │
 │  └────────┴──────────────────────────────────────────────┴──────────────┘  │
 │                                                                              │
@@ -41,10 +41,10 @@
 │                                                    └─────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-⚡ = Workspaces affected by currentLanguage
+⚡ = CreativeSpaces affected by currentLanguage
 ```
 
-**Lưu ý:** Không có component MainWorkspace trung gian. EditorPage render trực tiếp workspace tương ứng với `activeWorkspace`.
+**Lưu ý:** Không có component MainCreativeSpace trung gian. EditorPage render trực tiếp creativeSpace tương ứng với `activeCreativeSpace`.
 
 ### 1.2 Data Flow
 
@@ -58,28 +58,28 @@
 │                              EditorPage                                      │
 │  ┌─────────────────────────────────────────────────────────────────────────┐ │
 │  │  State: book, snapshot, flags, shareLinks, collaborations               │ │
-│  │         currentStep, activeWorkspace, currentLanguage, saveStatus       │ │
+│  │         currentStep, activeCreativeSpace, currentLanguage, saveStatus       │ │
 │  │         isSidebarOpen                                                   │ │
 │  └─────────────────────────────────────────────────────────────────────────┘ │
 │         │              │                              │                │     │
 │         ▼              ▼                              ▼                ▼     │
 │  ┌───────────┐  ┌───────────┐  ┌──────────────────────────────┐ ┌─────────┐ │
-│  │  Editor   │  │  Icon     │  │     Workspace (1 of 11)      │ │ Right   │ │
+│  │  Editor   │  │  Icon     │  │     CreativeSpace (1 of 11)      │ │ Right   │ │
 │  │  Header   │  │  Rail     │  │                              │ │ Sidebar │ │
 │  │           │  │           │  │  Rendered directly based on  │ │         │ │
-│  │ Props:    │  │ Props:    │  │  activeWorkspace state:      │ │ Props:  │ │
+│  │ Props:    │  │ Props:    │  │  activeCreativeSpace state:      │ │ Props:  │ │
 │  │ •bookTitle│  │ •active   │  │                              │ │ •isOpen │ │
-│  │ •step     │  │  Workspace│  │  • ManuscriptWorkspace ⚡     │ │ •bookId │ │
-│  │ •language │  │ •step     │  │  • CharactersWorkspace       │ │ •step   │ │
-│  │ •saveStat │  │           │  │  • PropsWorkspace            │ │ •lang   │ │
-│  │           │  │ Callback: │  │  • StagesWorkspace           │ │ •context│ │
-│  │ Callbacks:│  │ •onChange │  │  • SpreadsWorkspace    ⚡     │ │         │ │
-│  │ •onSave   │  │           │  │  • ObjectsWorkspace          │ │Callback:│ │
-│  │ •onStep   │  │           │  │  • AnimationsWorkspace ⚡     │ │ •onClose│ │
-│  │  Change   │  │           │  │  • FlagsWorkspace            │ └─────────┘ │
-│  │ •onLang   │  │           │  │  • SharesWorkspace           │             │
-│  │  Change   │  │           │  │  • CollaboratorsWorkspace    │ ┌─────────┐ │
-│  │           │  │           │  │  • ConfigWorkspace           │ │AISidebar│ │
+│  │ •step     │  │  CreativeSpace│  │  • ManuscriptCreativeSpace ⚡     │ │ •bookId │ │
+│  │ •language │  │ •step     │  │  • CharactersCreativeSpace       │ │ •step   │ │
+│  │ •saveStat │  │           │  │  • PropsCreativeSpace            │ │ •lang   │ │
+│  │           │  │ Callback: │  │  • StagesCreativeSpace           │ │ •context│ │
+│  │ Callbacks:│  │ •onChange │  │  • SpreadsCreativeSpace    ⚡     │ │         │ │
+│  │ •onSave   │  │           │  │  • ObjectsCreativeSpace          │ │Callback:│ │
+│  │ •onStep   │  │           │  │  • AnimationsCreativeSpace ⚡     │ │ •onClose│ │
+│  │  Change   │  │           │  │  • FlagsCreativeSpace            │ └─────────┘ │
+│  │ •onLang   │  │           │  │  • SharesCreativeSpace           │             │
+│  │  Change   │  │           │  │  • CollaboratorsCreativeSpace    │ ┌─────────┐ │
+│  │           │  │           │  │  • ConfigCreativeSpace           │ │AISidebar│ │
 │  └───────────┘  └───────────┘  │                              │ │ Toggle  │ │
 │                                │  ⚡ = receives currentLanguage│ │(floating│ │
 │                                └──────────────────────────────┘ │ button) │ │
@@ -87,36 +87,36 @@
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.3 Step ↔ Workspace Mapping
+### 1.3 Step ↔ CreativeSpace Mapping
 
-Workspaces được enable dựa trên nguyên tắc "từ step X trở đi" (progressive unlock):
+CreativeSpaces được enable dựa trên nguyên tắc "từ step X trở đi" (progressive unlock):
 
-| Step | Newly Enabled | All Available Workspaces |
+| Step | Newly Enabled | All Available CreativeSpaces |
 |------|---------------|--------------------------|
 | `idea` | manuscripts, flags, shares, collabs, config | manuscripts, flags, shares, collabs, config |
 | `sketch` | characters, props, stages, spreads⚡ | manuscripts, characters, props, stages, spreads⚡, flags, shares, collabs, config |
 | `illustration` | (none) | manuscripts, characters, props, stages, spreads⚡, flags, shares, collabs, config |
 | `retouch` | objects, animations⚡ | manuscripts, characters, props, stages, spreads⚡, objects, animations⚡, flags, shares, collabs, config |
 
-⚡ = Language-aware workspaces
+⚡ = Language-aware creativeSpaces
 
 **Logic:** `currentStep >= enabledFromStep`
 
 ### 1.4 Language Impact Summary
 
-| Workspace | Receives `currentLanguage` | How it's used |
+| CreativeSpace | Receives `currentLanguage` | How it's used |
 |-----------|---------------------------|---------------|
-| ManuscriptWorkspace | ✅ | Manuscript finalization step translate need current language |
-| CharactersWorkspace | ❌ | Character metadata not multilingual |
-| PropsWorkspace | ❌ | Props metadata not multilingual |
-| StagesWorkspace | ❌ | Stage metadata not multilingual |
-| **SpreadsWorkspace** | ✅ | Filter `textbox.[language_code]` by `currentLanguage.code` |
-| ObjectsWorkspace | ❌ | Only displays image objects, not textboxes |
-| **AnimationsWorkspace** | ✅ | Show textbox names/preview in selected language |
-| FlagsWorkspace | ❌ | Flags are language-agnostic |
-| SharesWorkspace | ❌ | Share links are language-agnostic |
-| CollaboratorsWorkspace | ❌ | Permissions reference languages but don't filter by current |
-| ConfigWorkspace | ❌ | Manages `book.remix.languages[]` but doesn't filter |
+| ManuscriptCreativeSpace | ✅ | Manuscript finalization step translate need current language |
+| CharactersCreativeSpace | ❌ | Character metadata not multilingual |
+| PropsCreativeSpace | ❌ | Props metadata not multilingual |
+| StagesCreativeSpace | ❌ | Stage metadata not multilingual |
+| **SpreadsCreativeSpace** | ✅ | Filter `textbox.[language_code]` by `currentLanguage.code` |
+| ObjectsCreativeSpace | ❌ | Only displays image objects, not textboxes |
+| **AnimationsCreativeSpace** | ✅ | Show textbox names/preview in selected language |
+| FlagsCreativeSpace | ❌ | Flags are language-agnostic |
+| SharesCreativeSpace | ❌ | Share links are language-agnostic |
+| CollaboratorsCreativeSpace | ❌ | Permissions reference languages but don't filter by current |
+| ConfigCreativeSpace | ❌ | Manages `book.remix.languages[]` but doesn't filter |
 | **RightSidebar** | ✅ | AI knows which language user is editing |
 
 ---
@@ -125,7 +125,7 @@ Workspaces được enable dựa trên nguyên tắc "từ step X trở đi" (pr
 
 ### 2.1 EditorPage (Root Component)
 
-**Mục đích:** Container gốc điều phối toàn bộ Editor. Quản lý state toàn cục, fetch data từ API, và render trực tiếp các component con bao gồm workspace.
+**Mục đích:** Container gốc điều phối toàn bộ Editor. Quản lý state toàn cục, fetch data từ API, và render trực tiếp các component con bao gồm creativeSpace.
 
 **Shared Types:**
 
@@ -137,7 +137,7 @@ interface Language {
 
 type Step = 'idea' | 'sketch' | 'illustration' | 'retouch';
 
-type WorkspaceType =
+type CreativeSpaceType =
   | 'manuscripts' | 'characters' | 'props' | 'stages' | 'spreads'
   | 'objects' | 'animations' | 'flags' | 'shares' | 'collabs' | 'config';
 
@@ -170,7 +170,7 @@ interface EditorPageState {
 
   // UI State
   currentStep: Step;
-  activeWorkspace: WorkspaceType;
+  activeCreativeSpace: CreativeSpaceType;
   currentLanguage: Language;
   saveStatus: SaveStatus;
   isLoading: boolean;
@@ -179,7 +179,7 @@ interface EditorPageState {
 
 interface EditorPageCallbacks {
   onStepChange: (step: Step) => void;
-  onWorkspaceChange: (workspace: WorkspaceType) => void;
+  onCreativeSpaceChange: (creativeSpace: CreativeSpaceType) => void;
   onLanguageChange: (language: Language) => void;
   onSave: () => Promise<void>;
   onBookUpdate: (updates: Partial<Book>) => void;
@@ -192,23 +192,23 @@ interface EditorPageCallbacks {
 ```
 EditorPage:
   RENDER EditorHeader với bookTitle, currentStep, currentLanguage, callbacks
-  RENDER IconRail với activeWorkspace, currentStep
+  RENDER IconRail với activeCreativeSpace, currentStep
 
-  SWITCH activeWorkspace:
-    'manuscripts' → RENDER ManuscriptWorkspace với manuscripts, currentLanguage ⚡
-    'characters'  → RENDER CharactersWorkspace với characters, currentStep
-    'props'       → RENDER PropsWorkspace với props, currentStep
-    'stages'      → RENDER StagesWorkspace với stages, currentStep
-    'spreads'     → RENDER SpreadsWorkspace với spreads, characters, props, stages, currentStep, currentLanguage ⚡
-    'objects'     → RENDER ObjectsWorkspace với spreads
-    'animations'  → RENDER AnimationsWorkspace với spreads, currentLanguage ⚡
-    'flags'       → RENDER FlagsWorkspace với flags
-    'shares'      → RENDER SharesWorkspace với shareLinks
-    'collabs'     → RENDER CollaboratorsWorkspace với collaborations, spreadsCount
-    'config'      → RENDER ConfigWorkspace với book
+  SWITCH activeCreativeSpace:
+    'manuscripts' → RENDER ManuscriptCreativeSpace với manuscripts, currentLanguage ⚡
+    'characters'  → RENDER CharactersCreativeSpace với characters, currentStep
+    'props'       → RENDER PropsCreativeSpace với props, currentStep
+    'stages'      → RENDER StagesCreativeSpace với stages, currentStep
+    'spreads'     → RENDER SpreadsCreativeSpace với spreads, characters, props, stages, currentStep, currentLanguage ⚡
+    'objects'     → RENDER ObjectsCreativeSpace với spreads
+    'animations'  → RENDER AnimationsCreativeSpace với spreads, currentLanguage ⚡
+    'flags'       → RENDER FlagsCreativeSpace với flags
+    'shares'      → RENDER SharesCreativeSpace với shareLinks
+    'collabs'     → RENDER CollaboratorsCreativeSpace với collaborations, spreadsCount
+    'config'      → RENDER ConfigCreativeSpace với book
 
   IF isSidebarOpen:
-    RENDER RightSidebar với bookId, currentStep, activeWorkspace, currentLanguage, contextData, onClose
+    RENDER RightSidebar với bookId, currentStep, activeCreativeSpace, currentLanguage, contextData, onClose
   ELSE:
     RENDER AISidebarToggle với onToggle (floating button bottom-right)
 ```
@@ -249,19 +249,19 @@ interface EditorHeaderLocalState {
 
 ### 2.3 IconRail
 
-**Mục đích:** Sidebar dọc bên trái chứa các icon navigation đến workspace khác nhau. Highlight active workspace. Disable các workspace chưa được unlock theo step.
+**Mục đích:** Sidebar dọc bên trái chứa các icon navigation đến creativeSpace khác nhau. Highlight active creativeSpace. Disable các creativeSpace chưa được unlock theo step.
 
 **Interface:**
 
 ```typescript
 interface IconRailProps {
-  activeWorkspace: WorkspaceType;
+  activeCreativeSpace: CreativeSpaceType;
   currentStep: Step;
-  onWorkspaceChange: (workspace: WorkspaceType) => void;
+  onCreativeSpaceChange: (creativeSpace: CreativeSpaceType) => void;
 }
 
 interface IconRailItem {
-  id: WorkspaceType;
+  id: CreativeSpaceType;
   icon: string;
   label: string;
   enabledFromStep: Step;
@@ -292,16 +292,16 @@ const ICON_RAIL_ITEMS: IconRailItem[] = [
   { id: 'config',      icon: 'Settings',   label: 'Settings',      enabledFromStep: 'idea' },
 ];
 
-function isWorkspaceEnabled(item: IconRailItem, currentStep: Step): boolean {
+function isCreativeSpaceEnabled(item: IconRailItem, currentStep: Step): boolean {
   return STEP_ORDER[currentStep] >= STEP_ORDER[item.enabledFromStep];
 }
 ```
 
 ---
 
-### 2.4 Workspace Components
+### 2.4 CreativeSpace Components
 
-#### 2.4.1 ManuscriptWorkspace
+#### 2.4.1 ManuscriptCreativeSpace
 
 **Mục đích:** Soạn thảo manuscript theo các bước: Brief → Draft → Script → Prose Dummy → Poetry Dummy → Finalization.
 
@@ -312,12 +312,12 @@ function isWorkspaceEnabled(item: IconRailItem, currentStep: Step): boolean {
 ```typescript
 type ManuscriptStepType = 'brief' | 'draft' | 'script' | 'prose_dummy' | 'poetry_dummy' | 'finalization';
 
-interface ManuscriptWorkspaceProps {
+interface ManuscriptCreativeSpaceProps {
   manuscripts: Manuscript[];
   onManuscriptsUpdate: (manuscripts: Manuscript[]) => void;
 }
 
-interface ManuscriptWorkspaceState {
+interface ManuscriptCreativeSpaceState {
   activeStep: ManuscriptStepType;
   editorContent: string;
   promptInput: string;         // For Brief step AI generation
@@ -338,7 +338,7 @@ interface ManuscriptWorkspaceState {
 
 ---
 
-#### 2.4.2 CharactersWorkspace
+#### 2.4.2 CharactersCreativeSpace
 
 **Mục đích:** Quản lý nhân vật: thông tin cơ bản, variants, voices, crops.
 
@@ -347,13 +347,13 @@ interface ManuscriptWorkspaceState {
 **Interface:**
 
 ```typescript
-interface CharactersWorkspaceProps {
+interface CharactersCreativeSpaceProps {
   characters: Character[];
   currentStep: Step;
   onCharactersUpdate: (chars: Character[]) => void;
 }
 
-interface CharactersWorkspaceState {
+interface CharactersCreativeSpaceState {
   selectedCharacterKey: string | null;
   activeTab: 'variants' | 'voices' | 'crops';
 }
@@ -361,7 +361,7 @@ interface CharactersWorkspaceState {
 
 ---
 
-#### 2.4.3 PropsWorkspace
+#### 2.4.3 PropsCreativeSpace
 
 **Mục đích:** Quản lý đạo cụ: states, sounds, crops.
 
@@ -370,13 +370,13 @@ interface CharactersWorkspaceState {
 **Interface:**
 
 ```typescript
-interface PropsWorkspaceProps {
+interface PropsCreativeSpaceProps {
   props: Prop[];
   currentStep: Step;
   onPropsUpdate: (props: Prop[]) => void;
 }
 
-interface PropsWorkspaceState {
+interface PropsCreativeSpaceState {
   selectedPropKey: string | null;
   activeTab: 'states' | 'sounds' | 'crops';
 }
@@ -384,7 +384,7 @@ interface PropsWorkspaceState {
 
 ---
 
-#### 2.4.4 StagesWorkspace
+#### 2.4.4 StagesCreativeSpace
 
 **Mục đích:** Quản lý bối cảnh: settings (temporal, sensory, emotional), sounds.
 
@@ -393,13 +393,13 @@ interface PropsWorkspaceState {
 **Interface:**
 
 ```typescript
-interface StagesWorkspaceProps {
+interface StagesCreativeSpaceProps {
   stages: Stage[];
   currentStep: Step;
   onStagesUpdate: (stages: Stage[]) => void;
 }
 
-interface StagesWorkspaceState {
+interface StagesCreativeSpaceState {
   selectedStageKey: string | null;
   activeTab: 'settings' | 'sounds';
 }
@@ -407,16 +407,16 @@ interface StagesWorkspaceState {
 
 ---
 
-#### 2.4.5 SpreadsWorkspace ⚡
+#### 2.4.5 SpreadsCreativeSpace ⚡
 
 **Mục đích:** Layout visual editor cho các trang đôi (spread). Quản lý images, textboxes.
 
-**Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox content hiển thị theo `currentLanguage`. Workspace lọc `textbox.language[]` và hiển thị entry có `code === currentLanguage.code`.
+**Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox content hiển thị theo `currentLanguage`. CreativeSpace lọc `textbox.language[]` và hiển thị entry có `code === currentLanguage.code`.
 
 **Interface:**
 
 ```typescript
-interface SpreadsWorkspaceProps {
+interface SpreadsCreativeSpaceProps {
   spreads: Spread[];
   characters: Character[];
   props: Prop[];
@@ -426,7 +426,7 @@ interface SpreadsWorkspaceProps {
   onSpreadsUpdate: (spreads: Spread[]) => void;
 }
 
-interface SpreadsWorkspaceState {
+interface SpreadsCreativeSpaceState {
   selectedSpreadNumber: number;
   selectedElementId: string | null;
   zoom: number;
@@ -460,7 +460,7 @@ interface SpreadsWorkspaceState {
 
 ---
 
-#### 2.4.6 ObjectsWorkspace
+#### 2.4.6 ObjectsCreativeSpace
 
 **Mục đích:** Retouch layer management. Điều chỉnh vị trí, kích thước, z-index các object (image) trên spread.
 
@@ -469,12 +469,12 @@ interface SpreadsWorkspaceState {
 **Interface:**
 
 ```typescript
-interface ObjectsWorkspaceProps {
+interface ObjectsCreativeSpaceProps {
   spreads: Spread[];
   onSpreadsUpdate: (spreads: Spread[]) => void;
 }
 
-interface ObjectsWorkspaceState {
+interface ObjectsCreativeSpaceState {
   selectedSpreadNumber: number;
   selectedObjectId: string | null;
   zoom: number;
@@ -483,7 +483,7 @@ interface ObjectsWorkspaceState {
 
 ---
 
-#### 2.4.7 AnimationsWorkspace ⚡
+#### 2.4.7 AnimationsCreativeSpace ⚡
 
 **Mục đích:** Timeline editor cho animations. Quản lý trigger, delay, duration, effect types.
 
@@ -492,13 +492,13 @@ interface ObjectsWorkspaceState {
 **Interface:**
 
 ```typescript
-interface AnimationsWorkspaceProps {
+interface AnimationsCreativeSpaceProps {
   spreads: Spread[];
   currentLanguage: Language;  // ⚡ language-aware
   onSpreadsUpdate: (spreads: Spread[]) => void;
 }
 
-interface AnimationsWorkspaceState {
+interface AnimationsCreativeSpaceState {
   selectedSpreadNumber: number;
   selectedAnimationIndex: number | null;
   isPreviewPlaying: boolean;
@@ -529,7 +529,7 @@ interface AnimationsWorkspaceState {
 
 ---
 
-#### 2.4.8 FlagsWorkspace
+#### 2.4.8 FlagsCreativeSpace
 
 **Mục đích:** Hiển thị và xử lý các vấn đề (quality warnings, consistency issues).
 
@@ -538,13 +538,13 @@ interface AnimationsWorkspaceState {
 **Interface:**
 
 ```typescript
-interface FlagsWorkspaceProps {
+interface FlagsCreativeSpaceProps {
   flags: Flag[];
   onFlagsUpdate: (flags: Flag[]) => void;
   onNavigateToIssue: (flag: Flag) => void;
 }
 
-interface FlagsWorkspaceState {
+interface FlagsCreativeSpaceState {
   filterType: FlagType | 'all';
   filterStatus: FlagStatus | 'all';
 }
@@ -552,7 +552,7 @@ interface FlagsWorkspaceState {
 
 ---
 
-#### 2.4.9 SharesWorkspace
+#### 2.4.9 SharesCreativeSpace
 
 **Mục đích:** Quản lý share links (public preview, client review, team draft).
 
@@ -561,12 +561,12 @@ interface FlagsWorkspaceState {
 **Interface:**
 
 ```typescript
-interface SharesWorkspaceProps {
+interface SharesCreativeSpaceProps {
   shareLinks: ShareLink[];
   onShareLinksUpdate: (links: ShareLink[]) => void;
 }
 
-interface SharesWorkspaceState {
+interface SharesCreativeSpaceState {
   selectedLinkId: string | null;
   isCreatingNew: boolean;
 }
@@ -574,7 +574,7 @@ interface SharesWorkspaceState {
 
 ---
 
-#### 2.4.10 CollaboratorsWorkspace
+#### 2.4.10 CollaboratorsCreativeSpace
 
 **Mục đích:** Quản lý collaborators và permissions (languages, steps, spreads access).
 
@@ -583,13 +583,13 @@ interface SharesWorkspaceState {
 **Interface:**
 
 ```typescript
-interface CollaboratorsWorkspaceProps {
+interface CollaboratorsCreativeSpaceProps {
   collaborations: Collaboration[];
   spreadsCount: number;
   onCollaborationsUpdate: (collabs: Collaboration[]) => void;
 }
 
-interface CollaboratorsWorkspaceState {
+interface CollaboratorsCreativeSpaceState {
   selectedCollabId: string | null;
   isInviting: boolean;
 }
@@ -597,7 +597,7 @@ interface CollaboratorsWorkspaceState {
 
 ---
 
-#### 2.4.11 ConfigWorkspace
+#### 2.4.11 ConfigCreativeSpace
 
 **Mục đích:** Cấu hình book: general, creative, typography, layout, remix, export.
 
@@ -606,12 +606,12 @@ interface CollaboratorsWorkspaceState {
 **Interface:**
 
 ```typescript
-interface ConfigWorkspaceProps {
+interface ConfigCreativeSpaceProps {
   book: Book;
   onBookUpdate: (updates: Partial<Book>) => void;
 }
 
-interface ConfigWorkspaceState {
+interface ConfigCreativeSpaceState {
   activeSection: 'general' | 'creative' | 'typography' | 'layout' | 'remix' | 'export';
 }
 ```
@@ -620,7 +620,7 @@ interface ConfigWorkspaceState {
 
 ### 2.5 RightSidebar (AI Assistant)
 
-**Mục đích:** Panel AI Assistant hỗ trợ người dùng. Contextual với workspace hiện tại. Hiển thị khi `isSidebarOpen = true`, có nút X để đóng.
+**Mục đích:** Panel AI Assistant hỗ trợ người dùng. Contextual với creativeSpace hiện tại. Hiển thị khi `isSidebarOpen = true`, có nút X để đóng.
 
 **Interface:**
 
@@ -629,7 +629,7 @@ interface RightSidebarProps {
   isOpen: boolean;
   bookId: string;
   currentStep: Step;
-  activeWorkspace: WorkspaceType;
+  activeCreativeSpace: CreativeSpaceType;
   currentLanguage: Language;
   contextData?: {
     selectedCharacter?: Character;
@@ -684,11 +684,11 @@ interface AISidebarToggleProps {
 
 ### 3.1 Key Design Decisions
 
-**No Intermediate MainWorkspace Component**
-EditorPage render trực tiếp workspace dựa trên `activeWorkspace`. Lý do: MainWorkspace không có responsibility riêng ngoài routing, giảm props drilling, code đơn giản hơn.
+**No Intermediate MainCreativeSpace Component**
+EditorPage render trực tiếp creativeSpace dựa trên `activeCreativeSpace`. Lý do: MainCreativeSpace không có responsibility riêng ngoài routing, giảm props drilling, code đơn giản hơn.
 
 **State Management**
-EditorPage giữ toàn bộ state chính (book, snapshot, currentLanguage). Các workspace nhận data qua props và báo thay đổi qua callbacks. Đảm bảo single source of truth và dễ implement autosave.
+EditorPage giữ toàn bộ state chính (book, snapshot, currentLanguage). Các creativeSpace nhận data qua props và báo thay đổi qua callbacks. Đảm bảo single source of truth và dễ implement autosave.
 
 **Language as UI State**
 `currentLanguage` là UI state (view preference), không phải data state. Nó quyết định ngôn ngữ nào được hiển thị trong editor, nhưng không thay đổi data structure của textbox.
@@ -705,11 +705,11 @@ Language selector đặt trực tiếp trên header (không trong menu) vì là 
 **Static Language List**
 Danh sách available languages lấy từ constant tĩnh (định nghĩa riêng), không phải từ `book.remix.languages[]`. Đơn giản hóa logic và không phụ thuộc vào book data.
 
-**Workspace Isolation**
-Mỗi workspace có local state riêng (selected item, active tab, filter). State này không cần sync lên EditorPage vì chỉ phục vụ UI của workspace đó.
+**CreativeSpace Isolation**
+Mỗi creativeSpace có local state riêng (selected item, active tab, filter). State này không cần sync lên EditorPage vì chỉ phục vụ UI của creativeSpace đó.
 
 **Conditional Rendering**
-Render duy nhất một workspace tại một thời điểm. Unmount workspace cũ khi chuyển, nhưng EditorPage giữ data nên không mất state.
+Render duy nhất một creativeSpace tại một thời điểm. Unmount creativeSpace cũ khi chuyển, nhưng EditorPage giữ data nên không mất state.
 
 ### 3.2 Step Transition Validation
 
@@ -760,11 +760,11 @@ step       (toast/modal)
 ### 3.3 Initial Language
 Khi load Editor, `currentLanguage` mặc định là `book.original_language` hoặc language đầu tiên trong `AVAILABLE_LANGUAGES`.
 
-### 3.4 Khi nào cần refactor thêm MainWorkspace?
+### 3.4 Khi nào cần refactor thêm MainCreativeSpace?
 
-Cân nhắc tách MainWorkspace nếu xuất hiện nhu cầu:
-- Transition animation giữa các workspace
-- Shared toolbar/header riêng cho workspace area
-- Error boundary riêng (crash workspace không crash toàn app)
-- Lazy loading workspaces (code splitting với Suspense)
-- Workspace state persistence (giữ state khi switch, không unmount)
+Cân nhắc tách MainCreativeSpace nếu xuất hiện nhu cầu:
+- Transition animation giữa các creativeSpace
+- Shared toolbar/header riêng cho creativeSpace area
+- Error boundary riêng (crash creativeSpace không crash toàn app)
+- Lazy loading creativeSpaces (code splitting với Suspense)
+- CreativeSpace state persistence (giữ state khi switch, không unmount)

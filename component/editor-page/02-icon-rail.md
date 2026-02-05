@@ -34,14 +34,14 @@
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                           EditorPage                              │
-│  State: activeWorkspace, currentStep                              │
+│  State: activeCreativeSpace, currentStep                              │
 └───────────────────────────────────┬──────────────────────────────┘
                                     │
                                     ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                           IconRail                                │
 │  ┌─────────────────────────────────────────────────────────────┐ │
-│  │  Props: activeWorkspace, currentStep, onWorkspaceChange     │ │
+│  │  Props: activeCreativeSpace, currentStep, onCreativeSpaceChange     │ │
 │  └─────────────────────────────────────────────────────────────┘ │
 │                                │                                  │
 │    FOR EACH item IN ICON_RAIL_ITEMS:                             │
@@ -90,12 +90,12 @@ Default:                Active:                  Disabled:
 ```typescript
 type Step = 'idea' | 'sketch' | 'illustration' | 'retouch';
 
-type WorkspaceType =
+type CreativeSpaceType =
   | 'manuscripts' | 'characters' | 'props' | 'stages' | 'spreads'
   | 'objects' | 'animations' | 'flags' | 'shares' | 'collabs' | 'config';
 
 interface IconRailItemConfig {
-  id: WorkspaceType;
+  id: CreativeSpaceType;
   icon: string;               // Lucide icon name
   label: string;              // Tooltip text
   enabledFromStep: Step;
@@ -106,9 +106,9 @@ interface IconRailItemConfig {
 
 ```typescript
 interface IconRailProps {
-  activeWorkspace: WorkspaceType;
+  activeCreativeSpace: CreativeSpaceType;
   currentStep: Step;
-  onWorkspaceChange: (workspace: WorkspaceType) => void;
+  onCreativeSpaceChange: (creativeSpace: CreativeSpaceType) => void;
 }
 ```
 
@@ -136,7 +136,7 @@ const ICON_RAIL_ITEMS: IconRailItemConfig[] = [
   { id: 'config',      icon: 'Settings',  label: 'Settings',      enabledFromStep: 'idea' },
 ];
 
-function isWorkspaceEnabled(item: IconRailItemConfig, currentStep: Step): boolean {
+function isCreativeSpaceEnabled(item: IconRailItemConfig, currentStep: Step): boolean {
   return STEP_ORDER[currentStep] >= STEP_ORDER[item.enabledFromStep];
 }
 ```
@@ -148,8 +148,8 @@ IconRail:
   RENDER nav container với flex-col, bg-background, py-2
 
   FOR EACH item IN ICON_RAIL_ITEMS:
-    isEnabled = isWorkspaceEnabled(item, currentStep)
-    isActive = activeWorkspace === item.id
+    isEnabled = isCreativeSpaceEnabled(item, currentStep)
+    isActive = activeCreativeSpace === item.id
 
     RENDER IconRailItem với item, isActive, isEnabled, onClick
 ```
@@ -202,7 +202,7 @@ Theo screenshot: active item có background primary (blue) với icon màu trắ
 Items disabled dựa trên `enabledFromStep`. Disabled items hiển thị (grayed) để user biết sẽ unlock ở step nào.
 
 **Icon Mapping (theo screenshot)**
-| Workspace | Icon (Lucide) | Visual |
+| CreativeSpace | Icon (Lucide) | Visual |
 |-----------|---------------|--------|
 | manuscripts | FileText | Document with lines |
 | characters | Smile | Smiley face |
@@ -233,7 +233,7 @@ Items disabled dựa trên `enabledFromStep`. Disabled items hiển thị (graye
 
 ### 3.4 Step → Enabled Items
 
-| currentStep | Enabled Workspaces |
+| currentStep | Enabled CreativeSpaces |
 |-------------|--------------------|
 | `idea` | manuscripts, flags, shares, collabs, config |
 | `sketch` | + characters, props, stages, spreads |
@@ -242,4 +242,4 @@ Items disabled dựa trên `enabledFromStep`. Disabled items hiển thị (graye
 
 ### 3.5 Edge Case
 
-Nếu `activeWorkspace` bị disable sau khi step regress → auto-switch về `manuscripts`.
+Nếu `activeCreativeSpace` bị disable sau khi step regress → auto-switch về `manuscripts`.
