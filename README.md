@@ -22,6 +22,7 @@ Thiết kế kiến trúc component cho các trang chính.
 | Component | Description |
 |-----------|-------------|
 | [Editor Page](component/editor-page/00-editor-page.md) | Root component của trang editor, quản lý workspace và navigation |
+| [Editor Header](component/editor-page/01-editor-header.md) | Top navigation bar với step breadcrumb, language selector, save status |
 
 ### App Features
 User-facing features và flows.

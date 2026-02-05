@@ -5,6 +5,7 @@
 
 * **Component Design**
   * [Editor Page](component/editor-page/00-editor-page.md)
+  * [Editor Header](component/editor-page/01-editor-header.md)
 
 * **App Features**
   * [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
