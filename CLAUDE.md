@@ -77,11 +77,42 @@ cp template-design/app-template.md app/{feature-group}/{feature-name}.md
 
 ### Component Design
 ```bash
-cp template-design/component-template.md component/{page-name}/{nn}-{component-name}.md
+cp template-design/component-template.md component/{page-name}/{hierarchy}-{component-name}.md
 ```
 - `{page-name}`: tên page (editor-page, dashboard, ...)
-- `{nn}`: số thứ tự 2 chữ số (00, 01, 02, ...)
+- `{hierarchy}`: **Dash hierarchy** thể hiện parent-child relationship
 - `{component-name}`: tên component (kebab-case)
+
+#### Dash Hierarchy Convention
+
+| Level | Format | Ví dụ |
+|-------|--------|-------|
+| Root (page) | `00-{name}` | `00-editor-page.md` |
+| Child of root | `{nn}-{name}` | `01-editor-header.md` |
+| Child of non-root | `{parent-id}-{nn}-{name}` | `01-01-logo.md`, `03-02-01-canvas.md` |
+
+**Quy tắc:**
+- Root component **luôn** bắt đầu bằng `00-`
+- Children trực tiếp của root: `01-`, `02-`, `03-`, ...
+- Children của non-root: ghép id cha + số thứ tự con
+
+**Ví dụ cấu trúc:**
+```
+editor-page/
+├── 00-editor-page.md           # Root (page component)
+├── 01-editor-header.md         # Child of root
+├── 01-01-logo.md               # Child of 01
+├── 02-icon-rail.md             # Child of root
+├── 03-manuscript-workspace.md  # Child of root
+├── 03-01-page-canvas.md        # Child of 03
+└── 03-01-01-layer-panel.md     # Child of 03-01
+```
+
+**Lợi ích:**
+- Root luôn nhận diện qua prefix `00-`
+- Children của root ngắn gọn (không cần prefix `00-`)
+- Hierarchy rõ ràng qua việc ghép id cha
+- Sort tự nhiên theo thứ tự
 
 ---
 

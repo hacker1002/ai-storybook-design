@@ -6,6 +6,8 @@
 * **Component Design**
   * [Editor Page](component/editor-page/00-editor-page.md)
   * [Editor Header](component/editor-page/01-editor-header.md)
+  * [Icon Rail](component/editor-page/02-icon-rail.md)
+  * [Manuscript Workspace](component/editor-page/03-manuscript-workspace.md)
 
 * **App Features**
   * [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
