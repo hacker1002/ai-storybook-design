@@ -30,7 +30,7 @@
 │  │        │  │ FlagsWorkspace        (if flags)        │  │              │  │
 │  │        │  │ SharesWorkspace       (if shares)       │  │              │  │
 │  │        │  │ CollaboratorsWorkspace(if collabs)      │  │              │  │
-│  │        │  │ SettingsWorkspace     (if settings)     │  │              │  │
+│  │        │  │ ConfigWorkspace       (if config)       │  │              │  │
 │  │        │  └─────────────────────────────────────────┘  │              │  │
 │  └────────┴──────────────────────────────────────────────┴──────────────┘  │
 │                                                                              │
@@ -58,7 +58,7 @@
 │                              EditorPage                                       │
 │  ┌─────────────────────────────────────────────────────────────────────────┐ │
 │  │  State: book, snapshot, flags, shareLinks, collaborations               │ │
-│  │         currentStep, activeWorkspace, currentLanguage, hasUnsavedChanges│ │
+│  │         currentStep, activeWorkspace, currentLanguage, saveStatus       │ │
 │  │         isSidebarOpen                                                   │ │
 │  └─────────────────────────────────────────────────────────────────────────┘ │
 │         │              │                              │                │     │
@@ -71,7 +71,7 @@
 │  │ •bookTitle│  │ •active   │  │                              │ │ •isOpen │ │
 │  │ •step     │  │  Workspace│  │  • ManuscriptWorkspace       │ │ •bookId │ │
 │  │ •language │  │ •step     │  │  • CharactersWorkspace       │ │ •step   │ │
-│  │ •unsaved  │  │           │  │  • PropsWorkspace            │ │ •lang   │ │
+│  │ •saveStat │  │           │  │  • PropsWorkspace            │ │ •lang   │ │
 │  │           │  │ Callback: │  │  • StagesWorkspace           │ │ •context│ │
 │  │ Callbacks:│  │ •onChange │  │  • SpreadsWorkspace    ⚡    │ │         │ │
 │  │ •onSave   │  │           │  │  • ObjectsWorkspace          │ │Callback:│ │
@@ -79,7 +79,7 @@
 │  │  Change   │  │           │  │  • FlagsWorkspace            │ └─────────┘ │
 │  │ •onLang   │  │           │  │  • SharesWorkspace           │             │
 │  │  Change   │  │           │  │  • CollaboratorsWorkspace    │ ┌─────────┐ │
-│  │           │  │           │  │  • SettingsWorkspace         │ │AISidebar│ │
+│  │           │  │           │  │  • ConfigWorkspace           │ │AISidebar│ │
 │  └───────────┘  └───────────┘  │                              │ │ Toggle  │ │
 │                                │  ⚡ = receives currentLanguage│ │(floating│ │
 │                                └──────────────────────────────┘ │ button) │ │
@@ -93,10 +93,10 @@ Workspaces được enable dựa trên nguyên tắc "từ step X trở đi" (pr
 
 | Step | Newly Enabled | All Available Workspaces |
 |------|---------------|--------------------------|
-| `manuscript` | manuscripts, spreads⚡, flags, shares, collabs, settings | manuscripts, flags, shares, collabs, settings |
-| `sketch` | characters, props, stages | manuscripts, characters, props, stages, spreads⚡, flags, shares, collabs, settings |
-| `illustration` | (none) | manuscripts, characters, props, stages, spreads⚡, flags, shares, collabs, settings |
-| `retouch` | objects, animations⚡ | manuscripts, characters, props, stages, spreads⚡, objects, animations⚡, flags, shares, collabs, settings |
+| `idea` | manuscripts, flags, shares, collabs, config | manuscripts, flags, shares, collabs, config |
+| `sketch` | characters, props, stages, spreads⚡ | manuscripts, characters, props, stages, spreads⚡, flags, shares, collabs, config |
+| `illustration` | (none) | manuscripts, characters, props, stages, spreads⚡, flags, shares, collabs, config |
+| `retouch` | objects, animations⚡ | manuscripts, characters, props, stages, spreads⚡, objects, animations⚡, flags, shares, collabs, config |
 
 ⚡ = Language-aware workspaces
 
@@ -106,7 +106,7 @@ Workspaces được enable dựa trên nguyên tắc "từ step X trở đi" (pr
 
 | Workspace | Receives `currentLanguage` | How it's used |
 |-----------|---------------------------|---------------|
-| ManuscriptWorkspace | ❌ | Manuscripts are in original language only |
+| ManuscriptWorkspace | ✅ | Manuscript finalization step translate need current language |
 | CharactersWorkspace | ❌ | Character metadata not multilingual |
 | PropsWorkspace | ❌ | Props metadata not multilingual |
 | StagesWorkspace | ❌ | Stage metadata not multilingual |
@@ -116,7 +116,7 @@ Workspaces được enable dựa trên nguyên tắc "từ step X trở đi" (pr
 | FlagsWorkspace | ❌ | Flags are language-agnostic |
 | SharesWorkspace | ❌ | Share links are language-agnostic |
 | CollaboratorsWorkspace | ❌ | Permissions reference languages but don't filter by current |
-| SettingsWorkspace | ❌ | Manages `book.remix.languages[]` but doesn't filter |
+| ConfigWorkspace | ❌ | Manages `book.remix.languages[]` but doesn't filter |
 | **RightSidebar** | ✅ | AI knows which language user is editing |
 
 ---
@@ -135,11 +135,13 @@ interface Language {
   code: string;       // "en_US", "vi_VN", "ja_JP", "ko_KR", "zh_CN"
 }
 
-type Step = 'manuscript' | 'sketch' | 'illustration' | 'retouch';
+type Step = 'idea' | 'sketch' | 'illustration' | 'retouch';
 
 type WorkspaceType =
   | 'manuscripts' | 'characters' | 'props' | 'stages' | 'spreads'
-  | 'objects' | 'animations' | 'flags' | 'shares' | 'collabs' | 'settings';
+  | 'objects' | 'animations' | 'flags' | 'shares' | 'collabs' | 'config';
+
+type SaveStatus = 'unsaved' | 'saving' | 'saved';
 
 // constants/languages.ts
 const AVAILABLE_LANGUAGES: Language[] = [
@@ -170,7 +172,7 @@ interface EditorPageState {
   currentStep: Step;
   activeWorkspace: WorkspaceType;
   currentLanguage: Language;
-  hasUnsavedChanges: boolean;
+  saveStatus: SaveStatus;
   isLoading: boolean;
   isSidebarOpen: boolean;
 }
@@ -193,7 +195,7 @@ EditorPage:
   RENDER IconRail với activeWorkspace, currentStep
 
   SWITCH activeWorkspace:
-    'manuscripts' → RENDER ManuscriptWorkspace với manuscripts
+    'manuscripts' → RENDER ManuscriptWorkspace với manuscripts, currentLanguage ⚡
     'characters'  → RENDER CharactersWorkspace với characters, currentStep
     'props'       → RENDER PropsWorkspace với props, currentStep
     'stages'      → RENDER StagesWorkspace với stages, currentStep
@@ -203,7 +205,7 @@ EditorPage:
     'flags'       → RENDER FlagsWorkspace với flags
     'shares'      → RENDER SharesWorkspace với shareLinks
     'collabs'     → RENDER CollaboratorsWorkspace với collaborations, spreadsCount
-    'settings'    → RENDER SettingsWorkspace với book
+    'config'      → RENDER ConfigWorkspace với book
 
   IF isSidebarOpen:
     RENDER RightSidebar với bookId, currentStep, activeWorkspace, currentLanguage, contextData, onClose
@@ -224,7 +226,7 @@ interface EditorHeaderProps {
   bookTitle: string;
   currentStep: Step;
   currentLanguage: Language;
-  hasUnsavedChanges: boolean;
+  saveStatus: SaveStatus;
   notificationCount: number;
   userPoints: UserPoints;
   editorMode: EditorMode;             // Display only in menu
@@ -270,24 +272,24 @@ interface IconRailItem {
 
 ```typescript
 const STEP_ORDER: Record<Step, number> = {
-  manuscript: 0,
+  idea: 0,
   sketch: 1,
   illustration: 2,
   retouch: 3,
 };
 
 const ICON_RAIL_ITEMS: IconRailItem[] = [
-  { id: 'manuscripts', icon: 'FileText',   label: 'Manuscripts',   enabledFromStep: 'manuscript' },
+  { id: 'manuscripts', icon: 'FileText',   label: 'Manuscripts',   enabledFromStep: 'idea' },
   { id: 'characters',  icon: 'Users',      label: 'Characters',    enabledFromStep: 'sketch' },
   { id: 'props',       icon: 'Package',    label: 'Props',         enabledFromStep: 'sketch' },
   { id: 'stages',      icon: 'Map',        label: 'Stages',        enabledFromStep: 'sketch' },
-  { id: 'spreads',     icon: 'BookOpen',   label: 'Spreads',       enabledFromStep: 'manuscript' },
+  { id: 'spreads',     icon: 'BookOpen',   label: 'Spreads',       enabledFromStep: 'sketch' },
   { id: 'objects',     icon: 'Layers',     label: 'Objects',       enabledFromStep: 'retouch' },
   { id: 'animations',  icon: 'Play',       label: 'Animations',    enabledFromStep: 'retouch' },
-  { id: 'flags',       icon: 'Flag',       label: 'Flags',         enabledFromStep: 'manuscript' },
-  { id: 'shares',      icon: 'Share',      label: 'Share Links',   enabledFromStep: 'manuscript' },
-  { id: 'collabs',     icon: 'UserPlus',   label: 'Collaborators', enabledFromStep: 'manuscript' },
-  { id: 'settings',    icon: 'Settings',   label: 'Settings',      enabledFromStep: 'manuscript' },
+  { id: 'flags',       icon: 'Flag',       label: 'Flags',         enabledFromStep: 'idea' },
+  { id: 'shares',      icon: 'Share',      label: 'Share Links',   enabledFromStep: 'idea' },
+  { id: 'collabs',     icon: 'UserPlus',   label: 'Collaborators', enabledFromStep: 'idea' },
+  { id: 'config',      icon: 'Settings',   label: 'Config',        enabledFromStep: 'idea' },
 ];
 
 function isWorkspaceEnabled(item: IconRailItem, currentStep: Step): boolean {
@@ -301,14 +303,14 @@ function isWorkspaceEnabled(item: IconRailItem, currentStep: Step): boolean {
 
 #### 2.4.1 ManuscriptWorkspace
 
-**Mục đích:** Soạn thảo manuscript theo các bước: Brief → Draft → Script → Prose/Poetry Dummy → Art Direction.
+**Mục đích:** Soạn thảo manuscript theo các bước: Brief → Draft → Script → Prose Dummy → Poetry Dummy → Finalization.
 
-**Language impact:** ❌ Không bị ảnh hưởng (manuscripts là ngôn ngữ gốc)
+**Language impact:** ✅ Manuscript finalization step translate need current language
 
 **Interface:**
 
 ```typescript
-type ManuscriptStepType = 'brief' | 'draft' | 'script' | 'prose_dummy' | 'poetry_dummy' | 'art_direction';
+type ManuscriptStepType = 'brief' | 'draft' | 'script' | 'prose_dummy' | 'poetry_dummy' | 'finalization';
 
 interface ManuscriptWorkspaceProps {
   manuscripts: Manuscript[];
@@ -332,7 +334,7 @@ interface ManuscriptWorkspaceState {
 | Script | doc | Scene-by-scene breakdown |
 | Prose Dummy | dummy | Spread layout với prose text |
 | Poetry Dummy | dummy | Spread layout với poetry text |
-| Art Direction | doc | Visual direction notes |
+| Finalization | dummy | Visual direction notes cho dummy |
 
 ---
 
@@ -595,7 +597,7 @@ interface CollaboratorsWorkspaceState {
 
 ---
 
-#### 2.4.11 SettingsWorkspace
+#### 2.4.11 ConfigWorkspace
 
 **Mục đích:** Cấu hình book: general, creative, typography, layout, remix, export.
 
@@ -604,12 +606,12 @@ interface CollaboratorsWorkspaceState {
 **Interface:**
 
 ```typescript
-interface SettingsWorkspaceProps {
+interface ConfigWorkspaceProps {
   book: Book;
   onBookUpdate: (updates: Partial<Book>) => void;
 }
 
-interface SettingsWorkspaceState {
+interface ConfigWorkspaceState {
   activeSection: 'general' | 'creative' | 'typography' | 'layout' | 'remix' | 'export';
 }
 ```

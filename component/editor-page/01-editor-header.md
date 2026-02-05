@@ -11,7 +11,7 @@
 │                                      EditorHeader                                         │
 │  ┌────────┬────────────────┬────────────────────────┬──────────┬────────────┬─────────┐  │
 │  │MenuBtn │   BookTitle    │     StepBreadcrumb     │SaveStatus│ LangSelect │ NotifBtn│  │
-│  │   ≡    │The Hidden Val..│ [M] > S > I > R        │ ✓ Saved  │ English(US)│   🔔    │  │
+│  │   ≡    │The Hidden Val..│ [I] > S > I > R        │ ✓ Saved  │ English(US)│   🔔    │  │
 │  └────────┴────────────────┴────────────────────────┴──────────┴────────────┴─────────┘  │
 │                                                                                           │
 │  ┌────────────────────────────────┐                                                       │
@@ -22,7 +22,7 @@
 │  │  ├──────────────────────────┤  │                                                       │
 │  │  │      ← Home              │  │                                                       │
 │  │  ├──────────────────────────┤  │                                                       │
-│  │  │   ⚙️ Editor Mode: Edit   │  │  (display only, no submenu)                           │
+│  │  │   ⚙️ Editor Mode: Book    │  │  (display only, no submenu)                           │
 │  │  └──────────────────────────┘  │                                                       │
 │  └────────────────────────────────┘                                                       │
 └──────────────────────────────────────────────────────────────────────────────────────────┘
@@ -34,9 +34,9 @@
 ┌───────────────────────────────────────────────────────────────────────────────────────┐
 │                                     EditorHeader                                       │
 │  ┌─────────────────────────────────────────────────────────────────────────────────┐  │
-│  │  Props: bookTitle, currentStep, currentLanguage, hasUnsavedChanges,             │  │
+│  │  Props: bookTitle, currentStep, currentLanguage, saveStatus,                    │  │
 │  │         notificationCount, userPoints, editorMode                               │  │
-│  │  LocalState: isMenuOpen, isEditingTitle, isSaving                               │  │
+│  │  LocalState: isMenuOpen, isEditingTitle                                         │  │
 │  └─────────────────────────────────────────────────────────────────────────────────┘  │
 │           │                │                  │                │                      │
 │           ▼                ▼                  ▼                ▼                      │
@@ -70,17 +70,17 @@
 ### 1.3 Step Breadcrumb Visual States
 
 ```
-Step: manuscript (active)
+Step: idea (active)
 ┌───────────────────────────────────────────────────────────────┐
-│  [Manuscript]  >  Sketch  >  Illustration  >  Retouch         │
-│   ▲ active        dim         dim             dim             │
-│   (solid bg)      (clickable) (clickable)     (clickable)     │
+│  [Idea]  >  Sketch  >  Illustration  >  Retouch               │
+│   ▲ active   dim         dim             dim                  │
+│   (solid bg) (clickable) (clickable)     (clickable)          │
 └───────────────────────────────────────────────────────────────┘
 
 Step: illustration (active)
 ┌───────────────────────────────────────────────────────────────┐
-│  Manuscript  >  Sketch  >  [Illustration]  >  Retouch         │
-│   clickable     clickable    ▲ active          clickable      │
+│  Idea  >  Sketch  >  [Illustration]  >  Retouch               │
+│  clickable clickable    ▲ active        clickable             │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -95,8 +95,9 @@ Step: illustration (active)
 **Shared Types:**
 
 ```typescript
-type Step = 'manuscript' | 'sketch' | 'illustration' | 'retouch';
+type Step = 'idea' | 'sketch' | 'illustration' | 'retouch';
 type EditorMode = 'edit' | 'read';
+type SaveStatus = 'unsaved' | 'saving' | 'saved';
 
 interface Language {
   name: string;       // "English (US)", "Tiếng Việt"
@@ -116,7 +117,7 @@ interface EditorHeaderProps {
   bookTitle: string;
   currentStep: Step;
   currentLanguage: Language;
-  hasUnsavedChanges: boolean;
+  saveStatus: SaveStatus;
   notificationCount: number;
   userPoints: UserPoints;
   editorMode: EditorMode;              // Display only in menu
@@ -131,7 +132,6 @@ interface EditorHeaderProps {
 interface EditorHeaderState {
   isMenuOpen: boolean;
   isEditingTitle: boolean;
-  isSaving: boolean;
 }
 ```
 
@@ -151,7 +151,7 @@ EditorHeader:
 
     // Right section
     RENDER div.flex.items-center.gap-2
-      RENDER SaveStatus với hasUnsavedChanges, isSaving
+      RENDER SaveStatus với saveStatus
       RENDER LanguageSelector với currentLanguage, onLanguageChange
       RENDER NotificationButton với notificationCount, onNotificationClick
 
@@ -223,20 +223,12 @@ interface StepBreadcrumbProps {
 
 ```typescript
 const STEPS: { id: Step; label: string }[] = [
-  { id: 'manuscript', label: 'Manuscript' },
+  { id: 'idea', label: 'Idea' },
   { id: 'sketch', label: 'Sketch' },
   { id: 'illustration', label: 'Illustration' },
   { id: 'retouch', label: 'Retouch' },
 ];
 ```
-
-**Visual States:**
-
-| State | Style |
-|-------|-------|
-| Active | `bg-primary text-primary-foreground rounded-md px-3 py-1` |
-| Inactive | `text-muted-foreground hover:text-foreground cursor-pointer` |
-| Separator | `>` icon, `text-muted-foreground mx-2` |
 
 ---
 
@@ -248,8 +240,7 @@ const STEPS: { id: Step; label: string }[] = [
 
 ```typescript
 interface SaveStatusProps {
-  hasUnsavedChanges: boolean;
-  isSaving: boolean;
+  saveStatus: SaveStatus;
   onSave: () => void;
 }
 ```
@@ -382,7 +373,7 @@ MenuPopover:
       IF item.type === 'action':
         RENDER MenuItem với icon, label, onClick
       ELSE IF item.type === 'display':
-        RENDER DisplayItem với icon, label, value (e.g., "Editor Mode: Edit")
+        RENDER DisplayItem với icon, label, value (e.g., "Editor Mode: Book")
 ```
 
 ---
