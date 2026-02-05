@@ -96,6 +96,8 @@ cp template-design/component-template.md component/{page-name}/{hierarchy}-{comp
 - Children trực tiếp của root: `01-`, `02-`, `03-`, ...
 - Children của non-root: ghép id cha + số thứ tự con
 
+**Important:** luôn kiểm tra xem số thứ tự của các component cùng cấp (cùng cha) để đặt đúng số thứ tự của component hiện tại
+
 **Ví dụ cấu trúc:**
 ```
 editor-page/

@@ -2,6 +2,16 @@
 
 ---
 
+## [2026-02-05 18:32] Rename manuscripts to manuscript
+
+- **snapshots**: `manuscripts` → `manuscript` (column rename)
+- **JSONB structure**: array `[]` → object `{}`
+- **Data migration**: first array element extracted, empty arrays → empty object
+
+Migration: `../supabase/migrations/20260205000002_rename_manuscripts_to_manuscript.sql`
+
+---
+
 ## [2026-02-05 10:15] Snapshot Structure Refactor
 
 - **snapshots**: `docs[]` → `manuscripts[]`

@@ -87,7 +87,7 @@
 | `tag` | VARCHAR | Tag đánh dấu |
 | `book_id` | UUID | Link đến Book |
 | `save_type` | SMALLINT | manual save hay autobackup |
-| `manuscripts[]` | JSONB | Manuscript documents & dummies |
+| `manuscript` | JSONB | Manuscript documents & dummies (object) |
 | `spreads[]` | JSONB | Các spread/trang truyện |
 | `characters[]` | JSONB | Danh sách nhân vật |
 | `props[]` | JSONB | Danh sách đạo cụ |
@@ -338,7 +338,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 
 ## Chi tiết JSONB structures
 
-### manuscripts[] structure
+### manuscript structure
 ```json
 {
   "docs[]": [{
@@ -361,7 +361,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
       },
       "images[]": [{
         "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
-        "art_note": "art description của dummy",
+        "art_note": "art description của dummy"
       }],
       "textboxes[]": [{
         "[language_key]": {
