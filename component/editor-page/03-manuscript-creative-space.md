@@ -81,7 +81,7 @@
 | `poetry_dummy` | `dummy` | ManuscriptDummyView | Spread grid cho thơ/vần |
 | `finalization` | `dummy` | ManuscriptFinalizationView | Spread grid + Type selector + Translate |
 
-### 1.4 manuscripts[] Data Structure Reference
+### 1.4 manuscript{} Data Structure Reference
 
 ```json
 {
@@ -179,9 +179,9 @@ interface Manuscript {
 
 ```typescript
 interface ManuscriptCreativeSpaceProps {
-  manuscripts: Manuscript;
+  manuscript: Manuscript;           // object, không phải array
   currentLanguage: Language;
-  onManuscriptsUpdate: (manuscripts: Manuscript) => void;
+  onManuscriptUpdate: (manuscript: Manuscript) => void;
 }
 
 interface ManuscriptCreativeSpaceState {
@@ -213,16 +213,16 @@ ManuscriptCreativeSpace:
 
   SWITCH activeStep:
     'brief' | 'draft' | 'script':
-      doc = GET doc from manuscripts.docs WHERE type === activeStep
+      doc = GET doc from manuscript.docs WHERE type === activeStep
       RENDER ManuscriptDocEditor với doc, onContentChange
 
     'prose_dummy' | 'poetry_dummy':
       dummyType = activeStep === 'prose_dummy' ? 'prose' : 'poetry'
-      dummy = GET dummy from manuscripts.dummies WHERE type === dummyType
+      dummy = GET dummy from manuscript.dummies WHERE type === dummyType
       RENDER ManuscriptDummyView với dummy, currentLanguage, onSpreadUpdate
 
     'finalization':
-      dummy = GET dummy from manuscripts.dummies WHERE type === selectedDummyType
+      dummy = GET dummy from manuscript.dummies WHERE type === selectedDummyType
       RENDER ManuscriptFinalizationView với:
         - dummy, currentLanguage
         - onGenerateArtDirection, onTranslate
@@ -558,21 +558,21 @@ Textbox content được lấy theo `textbox[currentLanguage.code]`. Lý do: H�
 
 | Step | Generate Action | Output |
 |------|-----------------|--------|
-| Brief | AI generates story idea | `manuscripts.docs[type='brief'].content` |
-| Draft | AI generates full draft | `manuscripts.docs[type='draft'].content` |
-| Script | AI generates scene script | `manuscripts.docs[type='script'].content` |
-| Prose Dummy | AI generates spread layout | `manuscripts.dummies[type='prose'].spreads[]` |
-| Poetry Dummy | AI generates spread layout | `manuscripts.dummies[type='poetry'].spreads[]` |
+| Brief | AI generates story idea | `manuscript.docs[type='brief'].content` |
+| Draft | AI generates full draft | `manuscript.docs[type='draft'].content` |
+| Script | AI generates scene script | `manuscript.docs[type='script'].content` |
+| Prose Dummy | AI generates spread layout | `manuscript.dummies[type='prose'].spreads[]` |
+| Poetry Dummy | AI generates spread layout | `manuscript.dummies[type='poetry'].spreads[]` |
 | Finalization | AI generates visual descriptions | `snapshot.spreads[]` (copied from dummy + visual_descriptions) |
 
 ### 3.3 Data Sync
 
-**manuscripts[] lives in snapshot**
-- `manuscripts` data là phần của `snapshot.manuscripts[]`
-- Changes được propagate qua `onManuscriptsUpdate` callback lên EditorPage
+**manuscript{} lives in snapshot**
+- `manuscript` data là phần của `snapshot.manuscript` (object, không phải array)
+- Changes được propagate qua `onManuscriptUpdate` callback lên EditorPage
 
 **Finalization Output**
-- Finalization step output đi vào `snapshot.spreads[]`, KHÔNG thay đổi `manuscripts.dummies[]`
+- Finalization step output đi vào `snapshot.spreads[]`, KHÔNG thay đổi `manuscript.dummies[]`
 - Là bước chuyển từ manuscript creativeSpace → spreads creativeSpace
 
 ### 3.4 Spread Interaction (Future Design)

@@ -12,7 +12,7 @@
 ┌────────────────────────────────────────────┐
 │               IconRail                      │
 │  ┌──────────────────────────────────────┐  │
-│  │ IconRailItem - Manuscripts (active)  │  │
+│  │ IconRailItem - Manuscript (active)   │  │
 │  │ IconRailItem - Characters            │  │
 │  │ IconRailItem - Props                 │  │
 │  │ IconRailItem - Stages                │  │
@@ -91,7 +91,7 @@ Default:                Active:                  Disabled:
 type Step = 'idea' | 'sketch' | 'illustration' | 'retouch';
 
 type CreativeSpaceType =
-  | 'manuscripts' | 'characters' | 'props' | 'stages' | 'spreads'
+  | 'manuscript' | 'characters' | 'props' | 'stages' | 'spreads'
   | 'objects' | 'animations' | 'flags' | 'shares' | 'collabs' | 'config';
 
 interface IconRailItemConfig {
@@ -123,7 +123,7 @@ const STEP_ORDER: Record<Step, number> = {
 };
 
 const ICON_RAIL_ITEMS: IconRailItemConfig[] = [
-  { id: 'manuscripts', icon: 'FileText',  label: 'Manuscripts',   enabledFromStep: 'idea' },
+  { id: 'manuscript',  icon: 'FileText',  label: 'Manuscript',    enabledFromStep: 'idea' },
   { id: 'characters',  icon: 'Smile',     label: 'Characters',    enabledFromStep: 'sketch' },
   { id: 'props',       icon: 'Box',       label: 'Props',         enabledFromStep: 'sketch' },
   { id: 'stages',      icon: 'Mountain',  label: 'Stages',        enabledFromStep: 'sketch' },
@@ -204,7 +204,7 @@ Items disabled dựa trên `enabledFromStep`. Disabled items hiển thị (graye
 **Icon Mapping (theo screenshot)**
 | CreativeSpace | Icon (Lucide) | Visual |
 |-----------|---------------|--------|
-| manuscripts | FileText | Document with lines |
+| manuscript | FileText | Document with lines |
 | characters | Smile | Smiley face |
 | props | Box | 3D cube |
 | stages | Mountain | Mountains |
@@ -235,11 +235,7 @@ Items disabled dựa trên `enabledFromStep`. Disabled items hiển thị (graye
 
 | currentStep | Enabled CreativeSpaces |
 |-------------|--------------------|
-| `idea` | manuscripts, flags, shares, collabs, config |
+| `idea` | manuscript, flags, shares, collabs, config |
 | `sketch` | + characters, props, stages, spreads |
 | `illustration` | (same as sketch) |
 | `retouch` | + objects, animations |
-
-### 3.5 Edge Case
-
-Nếu `activeCreativeSpace` bị disable sau khi step regress → auto-switch về `manuscripts`.

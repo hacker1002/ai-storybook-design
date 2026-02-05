@@ -20,7 +20,7 @@
 │  │        │                                               │              │  │
 │  │        │  Conditional Render (trực tiếp):              │   Right      │  │
 │  │        │  ┌─────────────────────────────────────────┐  │   Sidebar    │  │
-│  │  Icon  │  │ ManuscriptCreativeSpace   (if manuscripts) ⚡│  │     (AI)     │  │
+│  │  Icon  │  │ ManuscriptCreativeSpace   (if manuscript) ⚡│  │     (AI)     │  │
 │  │  Rail  │  │ CharactersCreativeSpace   (if characters)   │  │              │  │
 │  │        │  │ PropsCreativeSpace        (if props)        │  │  ┌────────┐  │  │
 │  │        │  │ StagesCreativeSpace       (if stages)       │  │  │   X    │  │  │
@@ -69,7 +69,7 @@
 │  │           │  │           │  │  Rendered directly based on  │ │         │ │
 │  │ Props:    │  │ Props:    │  │  activeCreativeSpace state:      │ │ Props:  │ │
 │  │ •bookTitle│  │ •active   │  │                              │ │ •isOpen │ │
-│  │ •step     │  │  CreativeSpace│  │  • ManuscriptCreativeSpace ⚡     │ │ •bookId │ │
+│  │ •step     │  │CreativeSpace│ │ • ManuscriptCreativeSpace ⚡     │ │ •bookId │ │
 │  │ •language │  │ •step     │  │  • CharactersCreativeSpace       │ │ •step   │ │
 │  │ •saveStat │  │           │  │  • PropsCreativeSpace            │ │ •lang   │ │
 │  │           │  │ Callback: │  │  • StagesCreativeSpace           │ │ •context│ │
@@ -93,10 +93,10 @@ CreativeSpaces được enable dựa trên nguyên tắc "từ step X trở đi"
 
 | Step | Newly Enabled | All Available CreativeSpaces |
 |------|---------------|--------------------------|
-| `idea` | manuscripts, flags, shares, collabs, config | manuscripts, flags, shares, collabs, config |
-| `sketch` | characters, props, stages, spreads⚡ | manuscripts, characters, props, stages, spreads⚡, flags, shares, collabs, config |
-| `illustration` | (none) | manuscripts, characters, props, stages, spreads⚡, flags, shares, collabs, config |
-| `retouch` | objects, animations⚡ | manuscripts, characters, props, stages, spreads⚡, objects, animations⚡, flags, shares, collabs, config |
+| `idea` | manuscript, flags, shares, collabs, config | manuscript, flags, shares, collabs, config |
+| `sketch` | characters, props, stages, spreads⚡ | manuscript, characters, props, stages, spreads⚡, flags, shares, collabs, config |
+| `illustration` | (none) | manuscript, characters, props, stages, spreads⚡, flags, shares, collabs, config |
+| `retouch` | objects, animations⚡ | manuscript, characters, props, stages, spreads⚡, objects, animations⚡, flags, shares, collabs, config |
 
 ⚡ = Language-aware creativeSpaces
 
@@ -138,7 +138,7 @@ interface Language {
 type Step = 'idea' | 'sketch' | 'illustration' | 'retouch';
 
 type CreativeSpaceType =
-  | 'manuscripts' | 'characters' | 'props' | 'stages' | 'spreads'
+  | 'manuscript' | 'characters' | 'props' | 'stages' | 'spreads'
   | 'objects' | 'animations' | 'flags' | 'shares' | 'collabs' | 'config';
 
 type SaveStatus = 'unsaved' | 'saving' | 'saved';
@@ -195,7 +195,7 @@ EditorPage:
   RENDER IconRail với activeCreativeSpace, currentStep
 
   SWITCH activeCreativeSpace:
-    'manuscripts' → RENDER ManuscriptCreativeSpace với manuscripts, currentLanguage ⚡
+    'manuscript' → RENDER ManuscriptCreativeSpace với manuscript, currentLanguage ⚡
     'characters'  → RENDER CharactersCreativeSpace với characters, currentStep
     'props'       → RENDER PropsCreativeSpace với props, currentStep
     'stages'      → RENDER StagesCreativeSpace với stages, currentStep
@@ -279,7 +279,7 @@ const STEP_ORDER: Record<Step, number> = {
 };
 
 const ICON_RAIL_ITEMS: IconRailItem[] = [
-  { id: 'manuscripts', icon: 'FileText',   label: 'Manuscripts',   enabledFromStep: 'idea' },
+  { id: 'manuscript',  icon: 'FileText',   label: 'Manuscript',    enabledFromStep: 'idea' },
   { id: 'characters',  icon: 'Smile',      label: 'Characters',    enabledFromStep: 'sketch' },
   { id: 'props',       icon: 'Box',        label: 'Props',         enabledFromStep: 'sketch' },
   { id: 'stages',      icon: 'Mountain',   label: 'Stages',        enabledFromStep: 'sketch' },
@@ -313,8 +313,9 @@ function isCreativeSpaceEnabled(item: IconRailItem, currentStep: Step): boolean 
 type ManuscriptStepType = 'brief' | 'draft' | 'script' | 'prose_dummy' | 'poetry_dummy' | 'finalization';
 
 interface ManuscriptCreativeSpaceProps {
-  manuscripts: Manuscript[];
-  onManuscriptsUpdate: (manuscripts: Manuscript[]) => void;
+  manuscript: Manuscript;                            // object, không phải array
+  currentLanguage: Language;  // ⚡ language-aware
+  onManuscriptUpdate: (manuscript: Manuscript) => void;
 }
 
 interface ManuscriptCreativeSpaceState {
