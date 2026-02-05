@@ -361,8 +361,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
       },
       "images[]": [{
         "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
-        "art_note": "visual description của dummy",
-        "visual_description": "..."
+        "art_note": "art description của dummy",
       }],
       "textboxes[]": [{
         "[language_key]": {
@@ -396,7 +395,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     "title": "...",
     "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
     "setting": "@stage_key/setting_key",
-    "art_note": "visual description của dummy",
+    "art_note": "art description của dummy",
     "visual_description": "...",
     "negative_prompt": "...",
     "image_references[]": [{ "title": "...", "media_url": "..." }],
@@ -449,7 +448,6 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 - `left_page.type` / `right_page.type`: normal_page, front_matter, back_matter, dedication, ...
 - `left_page.layout` / `right_page.layout`: FK → `template_layouts`, cho phép NULL
 - `background`: màu nền và texture cho spread
-- `images[].art_note`: visual description từ dummy stage
 - `images[].setting`: reference tới stage setting (format: `@<stage_key>/<setting_key>`)
 - `textboxes[].[language_key]`: key là mã ngôn ngữ (e.g., `en_US`, `vi_VN`), mỗi textbox có thể có nhiều language
 - `objects[]`: các object trên spread (character, prop, background, foreground, vfx...)

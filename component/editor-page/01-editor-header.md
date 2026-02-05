@@ -7,72 +7,64 @@
 ### 1.1 Component Hierarchy
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                                    EditorHeader                                      │
-│  ┌────────┬────────────────┬────────────────────────┬──────────┬────────┬────────┐  │
-│  │MenuBtn │   BookTitle    │     StepBreadcrumb     │SaveStatus│NotifBtn│AIToggle│  │
-│  │   ≡    │The Hidden Val..│ M > S > I > R          │ ✓ Saved  │   🔔   │   💬   │  │
-│  └────────┴────────────────┴────────────────────────┴──────────┴────────┴────────┘  │
-│                                                                                      │
-│  ┌────────────────────────────────┐                                                  │
-│  │         MenuPopover            │  (when isMenuOpen = true)                        │
-│  │  ┌──────────────────────────┐  │                                                  │
-│  │  │      PointsDisplay       │  │  750 / 1000 [████████░░]                         │
-│  │  ├──────────────────────────┤  │                                                  │
-│  │  │      ← Home              │  │                                                  │
-│  │  ├──────────────────────────┤  │                                                  │
-│  │  │   🌐 Language        >   │──┼──► LanguageSubmenu                               │
-│  │  ├──────────────────────────┤  │    ┌─────────────────┐                           │
-│  │  │   ⚙️ Editor Mode     >   │──┼──► │ ✓ English (US)  │                           │
-│  │  └──────────────────────────┘  │    │   Tiếng Việt    │                           │
-│  └────────────────────────────────┘    │   日本語         │                           │
-│                                        │   한국어         │                           │
-│                                        │   中文 (简体)    │                           │
-│                                        └─────────────────┘                           │
-└─────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                                      EditorHeader                                         │
+│  ┌────────┬────────────────┬────────────────────────┬──────────┬────────────┬─────────┐  │
+│  │MenuBtn │   BookTitle    │     StepBreadcrumb     │SaveStatus│ LangSelect │ NotifBtn│  │
+│  │   ≡    │The Hidden Val..│ [M] > S > I > R        │ ✓ Saved  │ English(US)│   🔔    │  │
+│  └────────┴────────────────┴────────────────────────┴──────────┴────────────┴─────────┘  │
+│                                                                                           │
+│  ┌────────────────────────────────┐                                                       │
+│  │         MenuPopover            │  (when isMenuOpen = true)                             │
+│  │  ┌──────────────────────────┐  │                                                       │
+│  │  │  ✨ Points    750 / 1000 │  │                                                       │
+│  │  │  [████████████░░░░░░░░]  │  │                                                       │
+│  │  ├──────────────────────────┤  │                                                       │
+│  │  │      ← Home              │  │                                                       │
+│  │  ├──────────────────────────┤  │                                                       │
+│  │  │   ⚙️ Editor Mode: Edit   │  │  (display only, no submenu)                           │
+│  │  └──────────────────────────┘  │                                                       │
+│  └────────────────────────────────┘                                                       │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 1.2 Data Flow
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                                    EditorHeader                                       │
-│  ┌────────────────────────────────────────────────────────────────────────────────┐  │
-│  │  Props: bookTitle, currentStep, currentLanguage, hasUnsavedChanges,            │  │
-│  │         notificationCount, userPoints                                          │  │
-│  │  LocalState: isMenuOpen, activeSubmenu, isEditingTitle, isSaving               │  │
-│  └────────────────────────────────────────────────────────────────────────────────┘  │
-│           │                │                  │                │                     │
-│           ▼                ▼                  ▼                ▼                     │
-│    ┌───────────┐    ┌───────────┐      ┌───────────┐    ┌───────────┐               │
-│    │ MenuBtn   │    │ BookTitle │      │   Step    │    │  Actions  │               │
-│    │           │    │           │      │ Breadcrumb│    │   Group   │               │
-│    │ onClick:  │    │ Props:    │      │           │    │           │               │
-│    │ toggle    │    │ •title    │      │ Props:    │    │ Props:    │               │
-│    │ isMenuOpen│    │ •isEditing│      │ •current  │    │ •unsaved  │               │
-│    │           │    │           │      │  Step     │    │ •notifCnt │               │
-│    │           │    │ Callback: │      │           │    │ •sideOpen │               │
-│    │           │    │ •onEdit   │      │ Callback: │    │           │               │
-│    │           │    │           │      │ •onChange │    │ Callbacks:│               │
-│    └───────────┘    └───────────┘      └───────────┘    │ •onSave   │               │
-│           │                                             │ •onNotif  │               │
-│           ▼                                             │ •onToggle │               │
-│    ┌───────────┐                                        └───────────┘               │
-│    │MenuPopover│                                                                     │
-│    │ Props:    │                                                                     │
-│    │ •isOpen   │                                                                     │
-│    │ •points   │                                                                     │
-│    │ •language │                                                                     │
-│    │ •editorMd │                                                                     │
-│    │ •submenu  │                                                                     │
-│    │           │                                                                     │
-│    │ Callbacks:│                                                                     │
-│    │ •onClose  │                                                                     │
-│    │ •onHome   │                                                                     │
-│    │ •onLang   │                                                                     │
-│    │ •onMode   │                                                                     │
-│    └───────────┘                                                                     │
-└──────────────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│                                     EditorHeader                                       │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐  │
+│  │  Props: bookTitle, currentStep, currentLanguage, hasUnsavedChanges,             │  │
+│  │         notificationCount, userPoints, editorMode                               │  │
+│  │  LocalState: isMenuOpen, isEditingTitle, isSaving                               │  │
+│  └─────────────────────────────────────────────────────────────────────────────────┘  │
+│           │                │                  │                │                      │
+│           ▼                ▼                  ▼                ▼                      │
+│    ┌───────────┐    ┌───────────┐      ┌───────────┐    ┌─────────────────────────┐  │
+│    │ MenuBtn   │    │ BookTitle │      │   Step    │    │     Actions Group       │  │
+│    │           │    │           │      │ Breadcrumb│    │ ┌─────────┬───────────┐ │  │
+│    │ onClick:  │    │ Props:    │      │           │    │ │SaveStat │ LangSelect│ │  │
+│    │ toggle    │    │ •title    │      │ Props:    │    │ ├─────────┼───────────┤ │  │
+│    │ isMenuOpen│    │ •isEditing│      │ •current  │    │ │NotifBtn │           │ │  │
+│    │           │    │           │      │  Step     │    │ └─────────┴───────────┘ │  │
+│    │           │    │ Callback: │      │           │    │                         │  │
+│    │           │    │ •onEdit   │      │ Callback: │    │ Callbacks: onSave,      │  │
+│    │           │    │           │      │ •onChange │    │ onLangChange, onNotif   │  │
+│    └───────────┘    └───────────┘      └───────────┘    └─────────────────────────┘  │
+│           │                                                                           │
+│           ▼                                                                           │
+│    ┌───────────┐                                                                      │
+│    │MenuPopover│                                                                      │
+│    │ Props:    │                                                                      │
+│    │ •isOpen   │                                                                      │
+│    │ •points   │                                                                      │
+│    │ •editorMd │                                                                      │
+│    │           │                                                                      │
+│    │ Callbacks:│                                                                      │
+│    │ •onClose  │                                                                      │
+│    │ •onHome   │                                                                      │
+│    └───────────┘                                                                      │
+└───────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 1.3 Step Breadcrumb Visual States
@@ -98,14 +90,13 @@ Step: illustration (active)
 
 ### 2.1 EditorHeader (Root Component)
 
-**Mục đích:** Top navigation bar. Hiển thị book info, step navigation, và quick actions (save, notifications, AI toggle). Chứa Menu popover để chọn language/editor mode.
+**Mục đích:** Top navigation bar. Hiển thị book info, step navigation, language selector, và quick actions (save, notifications). Chứa Menu popover hiển thị points, home link, và editor mode (display only).
 
 **Shared Types:**
 
 ```typescript
 type Step = 'manuscript' | 'sketch' | 'illustration' | 'retouch';
 type EditorMode = 'edit' | 'read';
-type SubmenuType = 'language' | 'editor_mode' | null;
 
 interface Language {
   name: string;       // "English (US)", "Tiếng Việt"
@@ -128,21 +119,17 @@ interface EditorHeaderProps {
   hasUnsavedChanges: boolean;
   notificationCount: number;
   userPoints: UserPoints;
-  editorMode: EditorMode;
-  isSidebarOpen: boolean;
+  editorMode: EditorMode;              // Display only in menu
   onLanguageChange: (language: Language) => void;
   onTitleEdit: (newTitle: string) => void;
   onStepChange: (step: Step) => void;
   onSave: () => Promise<void>;
   onNotificationClick: () => void;
-  onToggleSidebar: () => void;
-  onEditorModeChange: (mode: EditorMode) => void;
   onNavigateHome: () => void;
 }
 
 interface EditorHeaderState {
   isMenuOpen: boolean;
-  activeSubmenu: SubmenuType;
   isEditingTitle: boolean;
   isSaving: boolean;
 }
@@ -165,8 +152,8 @@ EditorHeader:
     // Right section
     RENDER div.flex.items-center.gap-2
       RENDER SaveStatus với hasUnsavedChanges, isSaving
+      RENDER LanguageSelector với currentLanguage, onLanguageChange
       RENDER NotificationButton với notificationCount, onNotificationClick
-      RENDER AISidebarToggle với isSidebarOpen, onToggleSidebar
 
   IF isMenuOpen:
     RENDER MenuPopover với props, activeSubmenu, callbacks
@@ -297,30 +284,53 @@ interface NotificationButtonProps {
 
 ---
 
-### 2.7 AISidebarToggle
+### 2.7 LanguageSelector
 
-**Mục đích:** Toggle button mở/đóng AI Assistant sidebar.
+**Mục đích:** Dropdown chọn ngôn ngữ hiển thị trong editor. Đặt trực tiếp trên header để dễ truy cập.
 
 **Interface:**
 
 ```typescript
-interface AISidebarToggleProps {
-  isOpen: boolean;
-  onToggle: () => void;
+interface LanguageSelectorProps {
+  currentLanguage: Language;
+  onLanguageChange: (language: Language) => void;
 }
+
+interface LanguageSelectorState {
+  isOpen: boolean;
+}
+
+const AVAILABLE_LANGUAGES: Language[] = [
+  { name: 'English (US)', code: 'en_US' },
+  { name: 'Tiếng Việt', code: 'vi_VN' },
+  { name: '日本語', code: 'ja_JP' },
+  { name: '한국어', code: 'ko_KR' },
+  { name: '中文 (简体)', code: 'zh_CN' },
+];
 ```
 
 **Visual:**
 
-- Icon: `MessageCircle` từ Lucide
-- Active state: `bg-primary text-primary-foreground`
-- Inactive state: `text-muted-foreground hover:text-foreground`
+```
+┌─────────────────────┐
+│ 🌐 English (US)  ▾  │  ← Trigger button
+└─────────────────────┘
+        │
+        ▼
+┌─────────────────────┐
+│ ✓ English (US)      │  ← Dropdown menu
+│   Tiếng Việt        │
+│   日本語             │
+│   한국어             │
+│   中文 (简体)        │
+└─────────────────────┘
+```
 
 ---
 
 ### 2.8 MenuPopover
 
-**Mục đích:** Popover menu chứa navigation, language selector, editor mode. Hỗ trợ nested submenu.
+**Mục đích:** Popover menu chứa points, navigation home, và editor mode display (không thay đổi được).
 
 **Interface:**
 
@@ -328,14 +338,9 @@ interface AISidebarToggleProps {
 interface MenuPopoverProps {
   isOpen: boolean;
   userPoints: UserPoints;
-  currentLanguage: Language;
   editorMode: EditorMode;
-  activeSubmenu: SubmenuType;
   onClose: () => void;
   onNavigateHome: () => void;
-  onLanguageChange: (language: Language) => void;
-  onEditorModeChange: (mode: EditorMode) => void;
-  onSubmenuChange: (submenu: SubmenuType) => void;
 }
 ```
 
@@ -346,28 +351,19 @@ interface MenuItem {
   id: string;
   icon: string;
   label: string;
-  type: 'action' | 'submenu';
-  submenuId?: SubmenuType;
+  type: 'action' | 'display';
+  value?: string;               // For display items
 }
 
 const MENU_ITEMS: MenuItem[] = [
   { id: 'home', icon: 'ArrowLeft', label: 'Home', type: 'action' },
-  { id: 'language', icon: 'Globe', label: 'Language', type: 'submenu', submenuId: 'language' },
-  { id: 'editor_mode', icon: 'Settings2', label: 'Editor Mode', type: 'submenu', submenuId: 'editor_mode' },
+  { id: 'editor_mode', icon: 'Layers', label: 'Editor Mode', type: 'display' },
 ];
 
-const AVAILABLE_LANGUAGES: Language[] = [
-  { name: 'English (US)', code: 'en_US' },
-  { name: 'Tiếng Việt', code: 'vi_VN' },
-  { name: '日本語', code: 'ja_JP' },
-  { name: '한국어', code: 'ko_KR' },
-  { name: '中文 (简体)', code: 'zh_CN' },
-];
-
-const EDITOR_MODES: { id: EditorMode; label: string; description: string }[] = [
-  { id: 'edit', label: 'Edit Mode', description: 'Full editing capabilities' },
-  { id: 'read', label: 'Read Mode', description: 'View only, no changes' },
-];
+const EDITOR_MODE_LABELS: Record<EditorMode, string> = {
+  edit: 'Edit',
+  read: 'Read',
+};
 ```
 
 **Render Structure:**
@@ -385,14 +381,8 @@ MenuPopover:
     FOR item IN MENU_ITEMS:
       IF item.type === 'action':
         RENDER MenuItem với icon, label, onClick
-      ELSE IF item.type === 'submenu':
-        RENDER SubmenuTrigger với icon, label, chevron
-
-    // Submenu (positioned to the right)
-    IF activeSubmenu === 'language':
-      RENDER LanguageSubmenu với languages, current, onChange
-    ELSE IF activeSubmenu === 'editor_mode':
-      RENDER EditorModeSubmenu với modes, current, onChange
+      ELSE IF item.type === 'display':
+        RENDER DisplayItem với icon, label, value (e.g., "Editor Mode: Edit")
 ```
 
 ---
@@ -426,16 +416,19 @@ interface PointsDisplayProps {
 ### 3.1 Key Design Decisions
 
 **Menu State is Local**
-`isMenuOpen` và `activeSubmenu` là local state của EditorHeader. Không cần lift lên EditorPage vì menu chỉ ảnh hưởng UI trong phạm vi EditorHeader.
+`isMenuOpen` là local state của EditorHeader. Không cần lift lên EditorPage vì menu chỉ ảnh hưởng UI trong phạm vi EditorHeader.
 
-**Submenu Positioning**
-Submenu render bên phải của parent menu item khi hover/click. Sử dụng absolute positioning với offset để không overlap với main menu.
+**Language Selector on Header**
+Language selector đặt trực tiếp trên header (không trong menu) vì là action thường xuyên sử dụng khi edit multi-language content. Giảm số click cần thiết.
+
+**Editor Mode Display Only**
+Editor mode được hiển thị trong menu nhưng không thay đổi được từ UI. Mode được xác định bởi permissions hoặc share link context.
 
 **Points from User Context**
 `userPoints` lấy từ user session/context, không phải từ book data. EditorPage truyền xuống như prop.
 
 **Click Outside to Close**
-MenuPopover đóng khi click outside. Sử dụng portal để render popover ở root level, tránh z-index issues.
+MenuPopover và LanguageSelector đóng khi click outside. Sử dụng portal để render popover ở root level, tránh z-index issues.
 
 ### 3.2 Accessibility
 
@@ -449,11 +442,11 @@ MenuPopover đóng khi click outside. Sử dụng portal để render popover �
 | Breakpoint | Behavior |
 |------------|----------|
 | Desktop (>1024px) | Full layout như design |
-| Tablet (768-1024px) | Truncate BookTitle, hide step labels (chỉ hiện icons) |
-| Mobile (<768px) | Hide StepBreadcrumb, show in Menu instead |
+| Tablet (768-1024px) | Truncate BookTitle, hide step labels (chỉ hiện icons), collapse LanguageSelector to icon only |
+| Mobile (<768px) | Hide StepBreadcrumb (show in Menu), LanguageSelector collapse to globe icon |
 
 ### 3.4 Animation
 
 - MenuPopover: `animate-in fade-in-0 zoom-in-95` (150ms)
-- Submenu: `animate-in slide-in-from-left-2` (100ms)
+- LanguageSelector dropdown: `animate-in fade-in-0 zoom-in-95` (150ms)
 - SaveStatus transition: `transition-colors duration-200`

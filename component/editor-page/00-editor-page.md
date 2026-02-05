@@ -11,28 +11,34 @@
 │                              EditorPage                                      │
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
 │  │                           EditorHeader                                 │  │
-│  │  ┌────────┬─────────────┬──────────────────┬────────┬──────┬───────┐  │  │
-│  │  │MenuBtn │ BookTitle   │ Pipeline (Step)  │SaveStat│Notif │MsgBtn │  │  │
-│  │  └────────┴─────────────┴──────────────────┴────────┴──────┴───────┘  │  │
+│  │  ┌────────┬─────────────┬──────────────────┬────────┬────────┬──────┐ │  │
+│  │  │MenuBtn │ BookTitle   │ StepBreadcrumb   │SaveStat│LangSel │Notif │ │  │
+│  │  └────────┴─────────────┴──────────────────┴────────┴────────┴──────┘ │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 │                                                                              │
 │  ┌────────┬──────────────────────────────────────────────┬──────────────┐  │
 │  │        │                                               │              │  │
-│  │        │  Conditional Render (trực tiếp):              │              │  │
-│  │        │  ┌─────────────────────────────────────────┐  │   Right      │  │
-│  │  Icon  │  │ DocumentWorkspace      (if docs)        │  │   Sidebar    │  │
-│  │  Rail  │  │ CharactersWorkspace    (if characters)  │  │     (AI)     │  │
-│  │        │  │ PropsWorkspace         (if props)       │  │              │  │
-│  │        │  │ StagesWorkspace        (if stages)      │  │              │  │
-│  │        │  │ SpreadsWorkspace       (if spreads) ⚡  │  │              │  │
-│  │        │  │ ObjectsWorkspace       (if objects)     │  │              │  │
-│  │        │  │ AnimationsWorkspace    (if animations)⚡ │  │              │  │
-│  │        │  │ FlagsWorkspace         (if flags)       │  │              │  │
-│  │        │  │ SharesWorkspace        (if shares)      │  │              │  │
-│  │        │  │ CollaboratorsWorkspace (if collabs)     │  │              │  │
-│  │        │  │ SettingsWorkspace      (if settings)    │  │              │  │
+│  │        │  Conditional Render (trực tiếp):              │   Right      │  │
+│  │        │  ┌─────────────────────────────────────────┐  │   Sidebar    │  │
+│  │  Icon  │  │ ManuscriptWorkspace   (if manuscripts)  │  │     (AI)     │  │
+│  │  Rail  │  │ CharactersWorkspace   (if characters)   │  │              │  │
+│  │        │  │ PropsWorkspace        (if props)        │  │  ┌────────┐  │  │
+│  │        │  │ StagesWorkspace       (if stages)       │  │  │   X    │  │  │
+│  │        │  │ SpreadsWorkspace      (if spreads) ⚡   │  │  │ close  │  │  │
+│  │        │  │ ObjectsWorkspace      (if objects)      │  │  └────────┘  │  │
+│  │        │  │ AnimationsWorkspace   (if animations) ⚡ │  │              │  │
+│  │        │  │ FlagsWorkspace        (if flags)        │  │              │  │
+│  │        │  │ SharesWorkspace       (if shares)       │  │              │  │
+│  │        │  │ CollaboratorsWorkspace(if collabs)      │  │              │  │
+│  │        │  │ SettingsWorkspace     (if settings)     │  │              │  │
 │  │        │  └─────────────────────────────────────────┘  │              │  │
 │  └────────┴──────────────────────────────────────────────┴──────────────┘  │
+│                                                                              │
+│                                                    ┌─────────────────────┐  │
+│                                                    │ 💬 AISidebarToggle  │  │
+│                                                    │  (floating button)  │  │
+│                                                    │  bottom-right       │  │
+│                                                    └─────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ⚡ = Workspaces affected by currentLanguage
@@ -52,8 +58,8 @@
 │                              EditorPage                                       │
 │  ┌─────────────────────────────────────────────────────────────────────────┐ │
 │  │  State: book, snapshot, flags, shareLinks, collaborations               │ │
-│  │         currentStep, activeWorkspace, currentLanguage,                  │ │
-│  │         isSidebarOpen, hasUnsavedChanges                                │ │
+│  │         currentStep, activeWorkspace, currentLanguage, hasUnsavedChanges│ │
+│  │         isSidebarOpen                                                   │ │
 │  └─────────────────────────────────────────────────────────────────────────┘ │
 │         │              │                              │                │     │
 │         ▼              ▼                              ▼                ▼     │
@@ -63,20 +69,21 @@
 │  │           │  │           │  │  Rendered directly based on  │ │         │ │
 │  │ Props:    │  │ Props:    │  │  activeWorkspace state:      │ │ Props:  │ │
 │  │ •bookTitle│  │ •active   │  │                              │ │ •isOpen │ │
-│  │ •step     │  │  Workspace│  │  • DocumentWorkspace         │ │ •bookId │ │
+│  │ •step     │  │  Workspace│  │  • ManuscriptWorkspace       │ │ •bookId │ │
 │  │ •language │  │ •step     │  │  • CharactersWorkspace       │ │ •step   │ │
-│  │ •unsaved  │  │           │  │  • PropsWorkspace            │ │ •active │ │
-│  │           │  │ Callback: │  │  • StagesWorkspace           │ │  Work.. │ │
-│  │ Callbacks:│  │ •onChange │  │  • SpreadsWorkspace    ⚡    │ │ •lang   │ │
-│  │ •onSave   │  │           │  │  • ObjectsWorkspace          │ │ •context│ │
-│  │ •onStep   │  │           │  │  • AnimationsWorkspace ⚡    │ │         │ │
-│  │  Change   │  │           │  │  • FlagsWorkspace            │ │         │ │
-│  │ •onLang   │  │           │  │  • SharesWorkspace           │ │         │ │
-│  │  Change   │  │           │  │  • CollaboratorsWorkspace    │ └─────────┘ │
-│  │ •onToggle │  │           │  │  • SettingsWorkspace         │             │
-│  │  Sidebar  │  │           │  │                              │             │
-│  └───────────┘  └───────────┘  │  ⚡ = receives currentLanguage│             │
-│                                └──────────────────────────────┘             │
+│  │ •unsaved  │  │           │  │  • PropsWorkspace            │ │ •lang   │ │
+│  │           │  │ Callback: │  │  • StagesWorkspace           │ │ •context│ │
+│  │ Callbacks:│  │ •onChange │  │  • SpreadsWorkspace    ⚡    │ │         │ │
+│  │ •onSave   │  │           │  │  • ObjectsWorkspace          │ │Callback:│ │
+│  │ •onStep   │  │           │  │  • AnimationsWorkspace ⚡    │ │ •onClose│ │
+│  │  Change   │  │           │  │  • FlagsWorkspace            │ └─────────┘ │
+│  │ •onLang   │  │           │  │  • SharesWorkspace           │             │
+│  │  Change   │  │           │  │  • CollaboratorsWorkspace    │ ┌─────────┐ │
+│  │           │  │           │  │  • SettingsWorkspace         │ │AISidebar│ │
+│  └───────────┘  └───────────┘  │                              │ │ Toggle  │ │
+│                                │  ⚡ = receives currentLanguage│ │(floating│ │
+│                                └──────────────────────────────┘ │ button) │ │
+│                                                                  └─────────┘ │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -86,10 +93,10 @@ Workspaces được enable dựa trên nguyên tắc "từ step X trở đi" (pr
 
 | Step | Newly Enabled | All Available Workspaces |
 |------|---------------|--------------------------|
-| `manuscript` | docs, spreads⚡, flags, shares, collabs, settings | docs, flags, shares, collabs, settings |
-| `sketch` | characters, props, stages | docs, characters, props, stages, spreads⚡, flags, shares, collabs, settings |
-| `illustration` | (none) | docs, characters, props, stages, spreads⚡, flags, shares, collabs, settings |
-| `retouch` | objects, animations⚡ | docs, characters, props, stages, spreads⚡, objects, animations⚡, flags, shares, collabs, settings |
+| `manuscript` | manuscripts, spreads⚡, flags, shares, collabs, settings | manuscripts, flags, shares, collabs, settings |
+| `sketch` | characters, props, stages | manuscripts, characters, props, stages, spreads⚡, flags, shares, collabs, settings |
+| `illustration` | (none) | manuscripts, characters, props, stages, spreads⚡, flags, shares, collabs, settings |
+| `retouch` | objects, animations⚡ | manuscripts, characters, props, stages, spreads⚡, objects, animations⚡, flags, shares, collabs, settings |
 
 ⚡ = Language-aware workspaces
 
@@ -99,11 +106,11 @@ Workspaces được enable dựa trên nguyên tắc "từ step X trở đi" (pr
 
 | Workspace | Receives `currentLanguage` | How it's used |
 |-----------|---------------------------|---------------|
-| DocumentWorkspace | ❌ | Docs are in original language only |
+| ManuscriptWorkspace | ❌ | Manuscripts are in original language only |
 | CharactersWorkspace | ❌ | Character metadata not multilingual |
 | PropsWorkspace | ❌ | Props metadata not multilingual |
 | StagesWorkspace | ❌ | Stage metadata not multilingual |
-| **SpreadsWorkspace** | ✅ | Filter `textbox.language[]` by `currentLanguage.code` |
+| **SpreadsWorkspace** | ✅ | Filter `textbox.[language_code]` by `currentLanguage.code` |
 | ObjectsWorkspace | ❌ | Only displays image objects, not textboxes |
 | **AnimationsWorkspace** | ✅ | Show textbox names/preview in selected language |
 | FlagsWorkspace | ❌ | Flags are language-agnostic |
@@ -131,7 +138,7 @@ interface Language {
 type Step = 'manuscript' | 'sketch' | 'illustration' | 'retouch';
 
 type WorkspaceType =
-  | 'docs' | 'characters' | 'props' | 'stages' | 'spreads'
+  | 'manuscripts' | 'characters' | 'props' | 'stages' | 'spreads'
   | 'objects' | 'animations' | 'flags' | 'shares' | 'collabs' | 'settings';
 
 // constants/languages.ts
@@ -163,9 +170,9 @@ interface EditorPageState {
   currentStep: Step;
   activeWorkspace: WorkspaceType;
   currentLanguage: Language;
-  isSidebarOpen: boolean;
   hasUnsavedChanges: boolean;
   isLoading: boolean;
+  isSidebarOpen: boolean;
 }
 
 interface EditorPageCallbacks {
@@ -186,7 +193,7 @@ EditorPage:
   RENDER IconRail với activeWorkspace, currentStep
 
   SWITCH activeWorkspace:
-    'docs'        → RENDER DocumentWorkspace với documents
+    'manuscripts' → RENDER ManuscriptWorkspace với manuscripts
     'characters'  → RENDER CharactersWorkspace với characters, currentStep
     'props'       → RENDER PropsWorkspace với props, currentStep
     'stages'      → RENDER StagesWorkspace với stages, currentStep
@@ -199,14 +206,16 @@ EditorPage:
     'settings'    → RENDER SettingsWorkspace với book
 
   IF isSidebarOpen:
-    RENDER RightSidebar với bookId, currentStep, activeWorkspace, currentLanguage, contextData
+    RENDER RightSidebar với bookId, currentStep, activeWorkspace, currentLanguage, contextData, onClose
+  ELSE:
+    RENDER AISidebarToggle với onToggle (floating button bottom-right)
 ```
 
 ---
 
 ### 2.2 EditorHeader
 
-**Mục đích:** Navigation bar phía trên. Hiển thị thông tin book, điều hướng giữa các step, và các action nhanh (save, notifications, toggle AI). Chứa Menu popover để chọn language.
+**Mục đích:** Navigation bar phía trên. Hiển thị thông tin book, điều hướng giữa các step, language selector, và các action nhanh (save, notifications). Chứa Menu popover hiển thị points, home link, và editor mode (display only).
 
 **Interface:**
 
@@ -217,19 +226,20 @@ interface EditorHeaderProps {
   currentLanguage: Language;
   hasUnsavedChanges: boolean;
   notificationCount: number;
+  userPoints: UserPoints;
+  editorMode: EditorMode;             // Display only in menu
   onLanguageChange: (language: Language) => void;
   onTitleEdit: (newTitle: string) => void;
   onStepChange: (step: Step) => void;
   onSave: () => Promise<void>;
   onNotificationClick: () => void;
-  onToggleSidebar: () => void;
+  onNavigateHome: () => void;
 }
 
 interface EditorHeaderLocalState {
   isEditingTitle: boolean;
   isSaving: boolean;
   isMenuOpen: boolean;
-  activeSubmenu: 'language' | 'editor_mode' | null;
 }
 ```
 
@@ -267,17 +277,17 @@ const STEP_ORDER: Record<Step, number> = {
 };
 
 const ICON_RAIL_ITEMS: IconRailItem[] = [
-  { id: 'docs',       icon: 'FileText',    label: 'Documents',     enabledFromStep: 'manuscript' },
-  { id: 'characters', icon: 'Users',       label: 'Characters',    enabledFromStep: 'sketch' },
-  { id: 'props',      icon: 'Package',     label: 'Props',         enabledFromStep: 'sketch' },
-  { id: 'stages',     icon: 'Map',         label: 'Stages',        enabledFromStep: 'sketch' },
-  { id: 'spreads',    icon: 'BookOpen',    label: 'Spreads',       enabledFromStep: 'manuscript' },
-  { id: 'objects',    icon: 'Layers',      label: 'Objects',       enabledFromStep: 'retouch' },
-  { id: 'animations', icon: 'Play',        label: 'Animations',    enabledFromStep: 'retouch' },
-  { id: 'flags',      icon: 'Flag',        label: 'Flags',         enabledFromStep: 'manuscript' },
-  { id: 'shares',     icon: 'Share',       label: 'Share Links',   enabledFromStep: 'manuscript' },
-  { id: 'collabs',    icon: 'UserPlus',    label: 'Collaborators', enabledFromStep: 'manuscript' },
-  { id: 'settings',   icon: 'Settings',    label: 'Settings',      enabledFromStep: 'manuscript' },
+  { id: 'manuscripts', icon: 'FileText',   label: 'Manuscripts',   enabledFromStep: 'manuscript' },
+  { id: 'characters',  icon: 'Users',      label: 'Characters',    enabledFromStep: 'sketch' },
+  { id: 'props',       icon: 'Package',    label: 'Props',         enabledFromStep: 'sketch' },
+  { id: 'stages',      icon: 'Map',        label: 'Stages',        enabledFromStep: 'sketch' },
+  { id: 'spreads',     icon: 'BookOpen',   label: 'Spreads',       enabledFromStep: 'manuscript' },
+  { id: 'objects',     icon: 'Layers',     label: 'Objects',       enabledFromStep: 'retouch' },
+  { id: 'animations',  icon: 'Play',       label: 'Animations',    enabledFromStep: 'retouch' },
+  { id: 'flags',       icon: 'Flag',       label: 'Flags',         enabledFromStep: 'manuscript' },
+  { id: 'shares',      icon: 'Share',      label: 'Share Links',   enabledFromStep: 'manuscript' },
+  { id: 'collabs',     icon: 'UserPlus',   label: 'Collaborators', enabledFromStep: 'manuscript' },
+  { id: 'settings',    icon: 'Settings',   label: 'Settings',      enabledFromStep: 'manuscript' },
 ];
 
 function isWorkspaceEnabled(item: IconRailItem, currentStep: Step): boolean {
@@ -289,25 +299,40 @@ function isWorkspaceEnabled(item: IconRailItem, currentStep: Step): boolean {
 
 ### 2.4 Workspace Components
 
-#### 2.4.1 DocumentWorkspace
+#### 2.4.1 ManuscriptWorkspace
 
-**Mục đích:** Soạn thảo manuscript và các tài liệu hỗ trợ (story outline, author notes, research).
+**Mục đích:** Soạn thảo manuscript theo các bước: Brief → Draft → Script → Prose/Poetry Dummy → Art Direction.
 
-**Language impact:** ❌ Không bị ảnh hưởng (docs là ngôn ngữ gốc)
+**Language impact:** ❌ Không bị ảnh hưởng (manuscripts là ngôn ngữ gốc)
 
 **Interface:**
 
 ```typescript
-interface DocumentWorkspaceProps {
-  documents: Doc[];
-  onDocumentsUpdate: (docs: Doc[]) => void;
+type ManuscriptStepType = 'brief' | 'draft' | 'script' | 'prose_dummy' | 'poetry_dummy' | 'art_direction';
+
+interface ManuscriptWorkspaceProps {
+  manuscripts: Manuscript[];
+  onManuscriptsUpdate: (manuscripts: Manuscript[]) => void;
 }
 
-interface DocumentWorkspaceState {
-  activeDocId: string;
+interface ManuscriptWorkspaceState {
+  activeStep: ManuscriptStepType;
   editorContent: string;
+  promptInput: string;         // For Brief step AI generation
+  isGenerating: boolean;
 }
 ```
+
+**Manuscript Steps:**
+
+| Step | Type | Description |
+|------|------|-------------|
+| Brief | doc | Prompt input + AI generate story idea |
+| Draft | doc | Full narrative draft |
+| Script | doc | Scene-by-scene breakdown |
+| Prose Dummy | dummy | Spread layout với prose text |
+| Poetry Dummy | dummy | Spread layout với poetry text |
+| Art Direction | doc | Visual direction notes |
 
 ---
 
@@ -412,25 +437,24 @@ interface SpreadsWorkspaceState {
 {
   "textboxes": [
     {
-      "key": "tb_001",
-      "language": [
-        {
-          "code": "en_US",
-          "text": "Once upon a time...",
-          "geometry": { "x": 10, "y": 80, "w": 80, "h": 15, "rotation": 0 },
-          "typography": { "size": 16, "font": "...", "color": "..." }
-        },
-        {
-          "code": "vi_VN",
-          "text": "Ngày xửa ngày xưa...",
-          "geometry": { "x": 10, "y": 80, "w": 80, "h": 15, "rotation": 0 },
-          "typography": { "size": 16, "font": "...", "color": "..." }
-        }
-      ]
+      "id": "tb_001",
+      "title": "Opening narration",
+      "en_US": {
+        "text": "Once upon a time...",
+        "geometry": { "x": 10, "y": 80, "w": 80, "h": 15, "rotation": 0 },
+        "typography": { "size": 16, "font": "...", "color": "..." }
+      },
+      "vi_VN": {
+        "text": "Ngày xửa ngày xưa...",
+        "geometry": { "x": 10, "y": 80, "w": 80, "h": 15, "rotation": 0 },
+        "typography": { "size": 16, "font": "...", "color": "..." }
+      }
     }
   ]
 }
 ```
+
+**Note:** Language content accessed via `textbox[currentLanguage.code]` instead of filtering array.
 
 ---
 
@@ -459,7 +483,7 @@ interface ObjectsWorkspaceState {
 
 #### 2.4.7 AnimationsWorkspace ⚡
 
-**Mục đích:** Timeline editor cho animations. Quản lý trigger, delay, duration.
+**Mục đích:** Timeline editor cho animations. Quản lý trigger, delay, duration, effect types.
 
 **Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Animation list hiển thị textbox name/content theo `currentLanguage`.
 
@@ -478,6 +502,28 @@ interface AnimationsWorkspaceState {
   isPreviewPlaying: boolean;
 }
 ```
+
+**Animation Effect Structure:**
+
+```json
+{
+  "animations": [
+    {
+      "target_id": "img_001",
+      "trigger": "tap",
+      "delay": 0,
+      "duration": 500,
+      "loop": 1,
+      "effect": {
+        "type": "moving",
+        "geometry": { "x": 100, "y": 50, "w": 200, "h": 150 }
+      }
+    }
+  ]
+}
+```
+
+**Effect Types:** `fade_in`, `fade_out`, `scale`, `rotate`, `moving`
 
 ---
 
@@ -572,7 +618,7 @@ interface SettingsWorkspaceState {
 
 ### 2.5 RightSidebar (AI Assistant)
 
-**Mục đích:** Panel AI Assistant hỗ trợ người dùng. Contextual với workspace hiện tại.
+**Mục đích:** Panel AI Assistant hỗ trợ người dùng. Contextual với workspace hiện tại. Hiển thị khi `isSidebarOpen = true`, có nút X để đóng.
 
 **Interface:**
 
@@ -602,6 +648,36 @@ interface RightSidebarState {
 
 ---
 
+### 2.6 AISidebarToggle
+
+**Mục đích:** Floating button ở góc dưới bên phải để mở AI Assistant sidebar. Hiển thị khi right sidebar đang đóng, ẩn đi khi right sidebar open.
+
+**Interface:**
+
+```typescript
+interface AISidebarToggleProps {
+  onToggle: () => void;
+}
+```
+
+**Visual:**
+
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│                                         │
+│                                         │
+│                                         │
+│                                         │
+│                                 ┌─────┐ │
+│                                 │ 💬  │ │  ← Floating button
+│                                 └─────┘ │     position: fixed
+│                                         │     bottom-right
+└─────────────────────────────────────────┘
+```
+
+---
+
 ## 3. Technical Notes
 
 ### 3.1 Key Design Decisions
@@ -617,6 +693,12 @@ EditorPage giữ toàn bộ state chính (book, snapshot, currentLanguage). Các
 
 **Menu State is Local**
 `isMenuOpen` là local state của EditorHeader, không cần lift lên EditorPage vì menu chỉ ảnh hưởng trong phạm vi EditorHeader.
+
+**Language Selector on Header**
+Language selector đặt trực tiếp trên header (không trong menu) vì là action thường xuyên sử dụng khi edit multi-language content. Giảm số click cần thiết từ 3 xuống 2.
+
+**AI Sidebar Toggle as Floating Button**
+`AISidebarToggle` là floating button ở góc dưới bên phải, hiển thị khi sidebar đóng. Khi sidebar mở, button ẩn đi và thay bằng nút X trong sidebar header để đóng. Pattern này phổ biến cho chat/assistant UI.
 
 **Static Language List**
 Danh sách available languages lấy từ constant tĩnh (định nghĩa riêng), không phải từ `book.remix.languages[]`. Đơn giản hóa logic và không phụ thuộc vào book data.
