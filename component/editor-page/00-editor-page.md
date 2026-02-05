@@ -238,10 +238,10 @@ interface EditorHeaderProps {
   onNavigateHome: () => void;
 }
 
-interface EditorHeaderLocalState {
-  isEditingTitle: boolean;
-  isSaving: boolean;
+interface EditorHeaderState {
   isMenuOpen: boolean;
+  isEditingTitle: boolean;
+  editTitleValue: string;  // local value khi đang edit
 }
 ```
 
@@ -260,7 +260,7 @@ interface IconRailProps {
   onCreativeSpaceChange: (creativeSpace: CreativeSpaceType) => void;
 }
 
-interface IconRailItem {
+interface IconRailItemConfig {
   id: CreativeSpaceType;
   icon: string;
   label: string;
@@ -278,7 +278,7 @@ const STEP_ORDER: Record<Step, number> = {
   retouch: 3,
 };
 
-const ICON_RAIL_ITEMS: IconRailItem[] = [
+const ICON_RAIL_ITEMS: IconRailItemConfig[] = [
   { id: 'manuscript',  icon: 'FileText',   label: 'Manuscript',    enabledFromStep: 'idea' },
   { id: 'characters',  icon: 'Smile',      label: 'Characters',    enabledFromStep: 'sketch' },
   { id: 'props',       icon: 'Box',        label: 'Props',         enabledFromStep: 'sketch' },
@@ -292,7 +292,7 @@ const ICON_RAIL_ITEMS: IconRailItem[] = [
   { id: 'config',      icon: 'Settings',   label: 'Settings',      enabledFromStep: 'idea' },
 ];
 
-function isCreativeSpaceEnabled(item: IconRailItem, currentStep: Step): boolean {
+function isCreativeSpaceEnabled(item: IconRailItemConfig, currentStep: Step): boolean {
   return STEP_ORDER[currentStep] >= STEP_ORDER[item.enabledFromStep];
 }
 ```
@@ -311,6 +311,7 @@ function isCreativeSpaceEnabled(item: IconRailItem, currentStep: Step): boolean 
 
 ```typescript
 type ManuscriptStepType = 'brief' | 'draft' | 'script' | 'prose_dummy' | 'poetry_dummy' | 'finalization';
+type DummyType = 'prose' | 'poetry';
 
 interface ManuscriptCreativeSpaceProps {
   manuscript: Manuscript;                            // object, không phải array
@@ -320,9 +321,9 @@ interface ManuscriptCreativeSpaceProps {
 
 interface ManuscriptCreativeSpaceState {
   activeStep: ManuscriptStepType;
-  editorContent: string;
-  promptInput: string;         // For Brief step AI generation
+  promptInput: string;
   isGenerating: boolean;
+  selectedDummyType: DummyType;  // For Finalization step source selection
 }
 ```
 

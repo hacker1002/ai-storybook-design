@@ -76,7 +76,7 @@
 |-------|--------|----------|-------------|
 | `active` | Solid bg, highlight | Không click | Step hiện tại đang làm việc |
 | `completed` | Normal text, có check | Click → quay lại | Step đã hoàn thành, có thể quay lại |
-| `inactive` | Dim/muted, opacity 50% | Click → đi tiếp | Step chưa mở khóa |
+| `inactive` | Dim/muted, opacity 50% | Click → skip ahead | Step chưa đến, user có thể skip ahead |
 
 ```
 Step: idea (active) - Step đầu tiên
@@ -112,7 +112,7 @@ Step: retouch (active) - Có thể quay lại tất cả steps trước
 ├─────────────────────────────────────────────────────────────────────┤
 │  active       │ primary     │ white       │ none   │ default       │
 │  completed    │ transparent │ primary     │ ✓      │ pointer       │
-│  inactive     │ transparent │ muted (50%) │ none   │ not-allowed   │
+│  inactive     │ transparent │ muted (50%) │ none   │ pointer       │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
