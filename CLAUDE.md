@@ -90,6 +90,7 @@ cp template-design/component-template.md component/{page-name}/{nn}-{component-n
 ### Phạm vi thiết kế
 - **Chỉ thiết kế 2 tầng:** Component cha + các component con trực tiếp
 - **KHÔNG thiết kế:** Sub-components của children (sẽ có file riêng)
+- **Nếu đã có thiết kế component cha:** Tuân thủ theo thiết kế component cha khi thiết kế
 
 ### Nội dung bắt buộc
 
@@ -125,6 +126,8 @@ cp template-design/component-template.md component/{page-name}/{nn}-{component-n
 | Callback props | on + Verb | `onSave`, `onChange` |
 | Boolean props | is/has + Adj | `isOpen`, `hasChanges` |
 | Handler functions | handle + Verb | `handleSave` |
+
+**Cố gắng** đặt tên component 1 cách rõ ràng, dễ hiểu, tránh nhập nhằng
 
 ### Annotations
 

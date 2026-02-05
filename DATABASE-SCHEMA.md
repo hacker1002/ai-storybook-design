@@ -87,7 +87,7 @@
 | `tag` | VARCHAR | Tag đánh dấu |
 | `book_id` | UUID | Link đến Book |
 | `save_type` | SMALLINT | manual save hay autobackup |
-| `docs[]` | JSONB | Các tài liệu |
+| `manuscripts[]` | JSONB | Manuscript documents & dummies |
 | `spreads[]` | JSONB | Các spread/trang truyện |
 | `characters[]` | JSONB | Danh sách nhân vật |
 | `props[]` | JSONB | Danh sách đạo cụ |
@@ -338,33 +338,57 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 
 ## Chi tiết JSONB structures
 
-### docs[] structure
+### manuscripts[] structure
 ```json
 {
-  "type": 0,
-  "title": "manuscript | story_structure | artistic_imagery | moral_lesson",
-  "content": "...",
-  "url": "..."
+  "docs[]": [{
+    "type": "brief | draft | script",
+    "content": "..."
+  }],
+  "dummies[]": [{
+    "type": "prose | poetry",
+    "spreads[]": [{
+      "layout": "uuid",
+      "left_page": {
+        "number": 1,
+        "type": "normal_page",
+        "layout": "uuid"
+      },
+      "right_page": {
+        "number": 2,
+        "type": "normal_page",
+        "layout": "uuid"
+      },
+      "images[]": [{
+        "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
+        "art_note": "visual description của dummy",
+        "visual_description": "..."
+      }],
+      "textboxes[]": [{
+        "[language_key]": {
+          "text": "...",
+          "geometry": { "x": 0, "y": 0, "w": 100, "h": 50 },
+          "typography": { "size": 16, "color": "#000" }
+        }
+      }]
+    }]
+  }]
 }
 ```
 
-- `type`: 0 = hệ thống đọc/sửa, 1 = user đọc/sửa, 2 = user chỉ đọc
-- 4 loại docs theo title:
-
-| Type | Mô tả |
-|------|-------|
-| `manuscript` | Cốt truyện hoàn chỉnh |
-| `story_structure` | Cấu trúc truyện - three-act, conflicts, pacing |
-| `artistic_imagery` | Hình tượng nghệ thuật - metaphors, symbols |
-| `moral_lesson` | Bài học đạo đức - themes, emotional journey |
+- `docs[].type`: `brief` = ý tưởng ngắn, `draft` = bản nháp, `script` = kịch bản hoàn chỉnh
+- `dummies[].type`: `prose` = văn xuôi, `poetry` = thơ/vần
+- `dummies[].spreads[].layout`: FK → `template_layouts`, cho phép NULL
+- `[language_key]`: key là mã ngôn ngữ (e.g., `en_US`, `vi_VN`, `zh_CN`)
 
 ### spreads[] structure
 ```json
 {
   "type": 1,
   "number": 1,
-  "left_page": { "number": 1, "type": "normal_page" },
-  "right_page": { "number": 2, "type": "normal_page" },
+  "layout": "uuid",
+  "left_page": { "number": 1, "type": "normal_page", "layout": "uuid" },
+  "right_page": { "number": 2, "type": "normal_page", "layout": "uuid" },
   "manuscript": "cốt truyện của spread",
   "tiny_sketch_media_url": "...",
   "background": { "color": "#fff", "texture": "..." },
@@ -372,6 +396,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     "title": "...",
     "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
     "setting": "@stage_key/setting_key",
+    "art_note": "visual description của dummy",
     "visual_description": "...",
     "negative_prompt": "...",
     "image_references[]": [{ "title": "...", "media_url": "..." }],
@@ -382,11 +407,11 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
   "textboxes[]": [{
     "id": "...",
     "title": "...",
-    "language[]": [{
+    "[language_key]": {
       "text": "...",
       "geometry": { "x": 0, "y": 0, "w": 100, "h": 100, "rotation": 0 },
       "typography": { "size": 16, "weight": 400, "style": "normal", "family": "...", "color": "#000", "line_height": 1.5, "letter_spacing": 0, "decoration": "none", "text_align": "left", "text_transform": "none" }
-    }],
+    },
     "fill": { "color": "...", "opacity": 1 },
     "outline": { "color": "...", "width": 1, "radius": 0, "type": "solid" },
     "audio": { "script": "...", "media_url": "...", "speed": 1, "emotion": "...", "voice": "..." }
@@ -407,23 +432,33 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     "order": 1,
     "target_id": "...",
     "target_type": "textbox | object",
-    "action_type": "appear | exit | emphasis | read-along",
+    "effect": {
+      "type": "appear | exit | emphasis | read-along | moving",
+      "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 }
+    },
     "trigger_type": "on_click | with_previous | after_previous",
     "delay": 0,
-    "duration": 1000
+    "duration": 1000,
+    "loop": 0
   }]
 }
 ```
 
 - `type`: 1 = dps (double page spread), 0 = non-dps (2 trang nhỏ)
+- `layout`: FK → `template_layouts`, cho phép NULL
 - `left_page.type` / `right_page.type`: normal_page, front_matter, back_matter, dedication, ...
+- `left_page.layout` / `right_page.layout`: FK → `template_layouts`, cho phép NULL
 - `background`: màu nền và texture cho spread
-- `setting`: reference tới stage setting (format: `@<stage_key>/<setting_key>`)
+- `images[].art_note`: visual description từ dummy stage
+- `images[].setting`: reference tới stage setting (format: `@<stage_key>/<setting_key>`)
+- `textboxes[].[language_key]`: key là mã ngôn ngữ (e.g., `en_US`, `vi_VN`), mỗi textbox có thể có nhiều language
 - `objects[]`: các object trên spread (character, prop, background, foreground, vfx...)
   - `geometry`: vị trí tương đối trên ảnh gốc (%), quy đổi ra vị trí trên spread cho animation
 - `animations[]`: animation cho textbox và object
-  - `action_type`: appear (xuất hiện), exit (biến mất), emphasis (nhấn mạnh), read-along (đọc theo)
+  - `effect.type`: appear (xuất hiện), exit (biến mất), emphasis (nhấn mạnh), read-along (đọc theo), moving (di chuyển)
+  - `effect.geometry`: vị trí đích cho animation moving (x, y, w, h)
   - `trigger_type`: on_click (khi click), with_previous (cùng lúc với trước), after_previous (sau cái trước)
+  - `loop`: số lần lặp animation (0 = không lặp)
 
 ### characters[] structure
 ```json
