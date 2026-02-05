@@ -20,11 +20,11 @@
 │  │        │                                               │              │  │
 │  │        │  Conditional Render (trực tiếp):              │   Right      │  │
 │  │        │  ┌─────────────────────────────────────────┐  │   Sidebar    │  │
-│  │  Icon  │  │ ManuscriptWorkspace   (if manuscripts)  │  │     (AI)     │  │
+│  │  Icon  │  │ ManuscriptWorkspace   (if manuscripts) ⚡│  │     (AI)     │  │
 │  │  Rail  │  │ CharactersWorkspace   (if characters)   │  │              │  │
 │  │        │  │ PropsWorkspace        (if props)        │  │  ┌────────┐  │  │
 │  │        │  │ StagesWorkspace       (if stages)       │  │  │   X    │  │  │
-│  │        │  │ SpreadsWorkspace      (if spreads) ⚡   │  │  │ close  │  │  │
+│  │        │  │ SpreadsWorkspace      (if spreads) ⚡    │  │  │ close  │  │  │
 │  │        │  │ ObjectsWorkspace      (if objects)      │  │  └────────┘  │  │
 │  │        │  │ AnimationsWorkspace   (if animations) ⚡ │  │              │  │
 │  │        │  │ FlagsWorkspace        (if flags)        │  │              │  │
@@ -55,7 +55,7 @@
                                            │
                                            ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                              EditorPage                                       │
+│                              EditorPage                                      │
 │  ┌─────────────────────────────────────────────────────────────────────────┐ │
 │  │  State: book, snapshot, flags, shareLinks, collaborations               │ │
 │  │         currentStep, activeWorkspace, currentLanguage, saveStatus       │ │
@@ -69,13 +69,13 @@
 │  │           │  │           │  │  Rendered directly based on  │ │         │ │
 │  │ Props:    │  │ Props:    │  │  activeWorkspace state:      │ │ Props:  │ │
 │  │ •bookTitle│  │ •active   │  │                              │ │ •isOpen │ │
-│  │ •step     │  │  Workspace│  │  • ManuscriptWorkspace       │ │ •bookId │ │
+│  │ •step     │  │  Workspace│  │  • ManuscriptWorkspace ⚡     │ │ •bookId │ │
 │  │ •language │  │ •step     │  │  • CharactersWorkspace       │ │ •step   │ │
 │  │ •saveStat │  │           │  │  • PropsWorkspace            │ │ •lang   │ │
 │  │           │  │ Callback: │  │  • StagesWorkspace           │ │ •context│ │
-│  │ Callbacks:│  │ •onChange │  │  • SpreadsWorkspace    ⚡    │ │         │ │
+│  │ Callbacks:│  │ •onChange │  │  • SpreadsWorkspace    ⚡     │ │         │ │
 │  │ •onSave   │  │           │  │  • ObjectsWorkspace          │ │Callback:│ │
-│  │ •onStep   │  │           │  │  • AnimationsWorkspace ⚡    │ │ •onClose│ │
+│  │ •onStep   │  │           │  │  • AnimationsWorkspace ⚡     │ │ •onClose│ │
 │  │  Change   │  │           │  │  • FlagsWorkspace            │ └─────────┘ │
 │  │ •onLang   │  │           │  │  • SharesWorkspace           │             │
 │  │  Change   │  │           │  │  • CollaboratorsWorkspace    │ ┌─────────┐ │
@@ -83,8 +83,8 @@
 │  └───────────┘  └───────────┘  │                              │ │ Toggle  │ │
 │                                │  ⚡ = receives currentLanguage│ │(floating│ │
 │                                └──────────────────────────────┘ │ button) │ │
-│                                                                  └─────────┘ │
-└──────────────────────────────────────────────────────────────────────────────┘
+│                                                                 └─────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 1.3 Step ↔ Workspace Mapping

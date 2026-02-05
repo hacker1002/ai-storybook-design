@@ -123,6 +123,16 @@ interface [ChildComponent1]State {
 }
 ```
 
+**Visual:**
+
+```
+┌─────────────────────┐
+│  [Simple ASCII      │
+│   diagram showing   │
+│   component layout] │
+└─────────────────────┘
+```
+
 ---
 
 ### 2.3 [ChildComponent2]
@@ -151,6 +161,17 @@ const [CONFIG_ITEMS]: [ConfigItem][] = [
 function [helperFunction](param: ParamType): ReturnType {
   return /* logic */;
 }
+```
+
+**Visual States:**
+
+```
+Default:              Selected:             Disabled:
+┌───────────────┐     ┌───────────────┐     ┌───────────────┐
+│ ○ Item 1      │     │ ● Item 1      │     │ ○ Item 1      │
+│ ○ Item 2      │     │ ○ Item 2      │     │ ○ Item 2      │
+└───────────────┘     └───────────────┘     └───────────────┘
+                           ▲ active              (dimmed)
 ```
 
 ---
@@ -190,6 +211,18 @@ interface [ChildComponent3]State {
     }
   ]
 }
+```
+
+**Visual:**
+
+```
+┌───────────────────────────────────────┐
+│ ┌─────────┐  ┌─────────┐  ┌─────────┐ │
+│ │ Item 1  │  │ Item 2  │  │ Item 3  │ │
+│ │  [img]  │  │  [img]  │  │  [img]  │ │
+│ └─────────┘  └─────────┘  └─────────┘ │
+│              ▲ selected               │
+└───────────────────────────────────────┘
 ```
 
 ---

@@ -96,7 +96,7 @@ Step: illustration (active)
 
 ```typescript
 type Step = 'idea' | 'sketch' | 'illustration' | 'retouch';
-type EditorMode = 'edit' | 'read';
+type EditorMode = 'book' | 'asset';  // Maps to books.type: 1=book, 0=asset
 type SaveStatus = 'unsaved' | 'saving' | 'saved';
 
 interface Language {
@@ -173,7 +173,13 @@ interface MenuButtonProps {
 }
 ```
 
-**Visual:** Icon `Menu` (☰) từ Lucide, 24x24px.
+**Visual:**
+
+```
+┌─────┐
+│  ≡  │
+└─────┘
+```
 
 ---
 
@@ -195,6 +201,16 @@ interface BookTitleProps {
 interface BookTitleState {
   editValue: string;
 }
+```
+
+**Visual:**
+
+```
+Default:                      Editing:
+┌──────────────────────┐      ┌──────────────────────┐
+│ The Hidden Valley... │  →   │ The Hidden Valley█   │
+└──────────────────────┘      └──────────────────────┘
+       (click)                     (input mode)
 ```
 
 **Behavior:**
@@ -270,8 +286,13 @@ interface NotificationButtonProps {
 
 **Visual:**
 
-- Icon: `Bell` từ Lucide
-- Badge: Hiển thị nếu count > 0, max display "9+"
+```
+No notifications:     Has notifications:
+┌─────┐               ┌─────┐
+│ 🔔  │               │ 🔔³ │
+└─────┘               └─────┘
+                         ▲ badge (max "9+")
+```
 
 ---
 
@@ -303,18 +324,17 @@ const AVAILABLE_LANGUAGES: Language[] = [
 **Visual:**
 
 ```
-┌─────────────────────┐
-│ 🌐 English (US)  ▾  │  ← Trigger button
-└─────────────────────┘
-        │
-        ▼
-┌─────────────────────┐
-│ ✓ English (US)      │  ← Dropdown menu
-│   Tiếng Việt        │
-│   日本語             │
-│   한국어             │
-│   中文 (简体)        │
-└─────────────────────┘
+Closed:                       Open:
+┌─────────────────────┐       ┌─────────────────────┐
+│ 🌐 English (US)  ▾  │       │ 🌐 English (US)  ▴  │
+└─────────────────────┘       └─────────────────────┘
+                              ┌─────────────────────┐
+                              │ ✓ English (US)      │
+                              │   Tiếng Việt        │
+                              │   日本語             │
+                              │   한국어             │
+                              │   中文 (简体)        │
+                              └─────────────────────┘
 ```
 
 ---
@@ -352,8 +372,8 @@ const MENU_ITEMS: MenuItem[] = [
 ];
 
 const EDITOR_MODE_LABELS: Record<EditorMode, string> = {
-  edit: 'Edit',
-  read: 'Read',
+  book: 'Book',
+  asset: 'Asset',
 };
 ```
 
