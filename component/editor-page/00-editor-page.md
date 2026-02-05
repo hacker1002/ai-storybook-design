@@ -1,4 +1,4 @@
-# Editor Page: Top-Level Component Architecture
+# EditorPage: Component Design
 
 ---
 
@@ -121,9 +121,9 @@ CreativeSpaces được enable dựa trên nguyên tắc "từ step X trở đi"
 
 ---
 
-## 2. Component Designs
+## 2. Root Component Design
 
-### 2.1 EditorPage (Root Component)
+### 2.1 Overview
 
 **Mục đích:** Container gốc điều phối toàn bộ Editor. Quản lý state toàn cục, fetch data từ API, và render trực tiếp các component con bao gồm creativeSpace.
 
@@ -153,7 +153,7 @@ const AVAILABLE_LANGUAGES: Language[] = [
 ];
 ```
 
-**Interface:**
+### 2.2 Interface
 
 ```typescript
 interface EditorPageProps {
@@ -188,7 +188,8 @@ interface EditorPageCallbacks {
 }
 ```
 
-**Render Logic (pseudo):**
+### 2.3 Render Logic (pseudo)
+
 ```
 EditorPage:
   RENDER EditorHeader với bookTitle, currentStep, currentLanguage, callbacks
@@ -215,11 +216,18 @@ EditorPage:
 
 ---
 
-### 2.2 EditorHeader
+## 3. Child Components Interface
 
-**Mục đích:** Navigation bar phía trên. Hiển thị thông tin book, điều hướng giữa các step, language selector, và các action nhanh (save, notifications). Chứa Menu popover hiển thị points, home link, và editor mode (display only).
+> **Lưu ý:** Section này chỉ định nghĩa **props và callbacks** (contract giữa parent-child).
+> State và logic chi tiết của mỗi child sẽ được thiết kế trong file riêng của component đó.
 
-**Interface:**
+### 3.1 EditorHeader
+
+📄 **Doc:** [`01-editor-header.md`](./01-editor-header.md)
+
+**Mục đích:** Top navigation bar. Hiển thị book info, step navigation, language selector, và quick actions.
+
+**Props & Callbacks:**
 
 ```typescript
 interface EditorHeaderProps {
@@ -229,7 +237,7 @@ interface EditorHeaderProps {
   saveStatus: SaveStatus;
   notificationCount: number;
   userPoints: UserPoints;
-  editorMode: EditorMode;             // Display only in menu
+  editorMode: EditorMode;
   onLanguageChange: (language: Language) => void;
   onTitleEdit: (newTitle: string) => void;
   onStepChange: (step: Step) => void;
@@ -237,21 +245,17 @@ interface EditorHeaderProps {
   onNotificationClick: () => void;
   onNavigateHome: () => void;
 }
-
-interface EditorHeaderState {
-  isMenuOpen: boolean;
-  isEditingTitle: boolean;
-  editTitleValue: string;  // local value khi đang edit
-}
 ```
 
 ---
 
-### 2.3 IconRail
+### 3.2 IconRail
 
-**Mục đích:** Sidebar dọc bên trái chứa các icon navigation đến creativeSpace khác nhau. Highlight active creativeSpace. Disable các creativeSpace chưa được unlock theo step.
+📄 **Doc:** [`02-icon-rail.md`](./02-icon-rail.md)
 
-**Interface:**
+**Mục đích:** Sidebar navigation dọc bên trái chứa icons để chuyển giữa các CreativeSpace.
+
+**Props & Callbacks:**
 
 ```typescript
 interface IconRailProps {
@@ -259,94 +263,39 @@ interface IconRailProps {
   currentStep: Step;
   onCreativeSpaceChange: (creativeSpace: CreativeSpaceType) => void;
 }
-
-interface IconRailItemConfig {
-  id: CreativeSpaceType;
-  icon: string;
-  label: string;
-  enabledFromStep: Step;
-}
-```
-
-**Configuration:**
-
-```typescript
-const STEP_ORDER: Record<Step, number> = {
-  idea: 0,
-  sketch: 1,
-  illustration: 2,
-  retouch: 3,
-};
-
-const ICON_RAIL_ITEMS: IconRailItemConfig[] = [
-  { id: 'manuscript',  icon: 'FileText',   label: 'Manuscript',    enabledFromStep: 'idea' },
-  { id: 'characters',  icon: 'Smile',      label: 'Characters',    enabledFromStep: 'sketch' },
-  { id: 'props',       icon: 'Box',        label: 'Props',         enabledFromStep: 'sketch' },
-  { id: 'stages',      icon: 'Mountain',   label: 'Stages',        enabledFromStep: 'sketch' },
-  { id: 'spreads',     icon: 'BookOpen',   label: 'Spreads',       enabledFromStep: 'sketch' },
-  { id: 'objects',     icon: 'Layers',     label: 'Objects',       enabledFromStep: 'retouch' },
-  { id: 'animations',  icon: 'Zap',        label: 'Animations',    enabledFromStep: 'retouch' },
-  { id: 'flags',       icon: 'Flag',       label: 'Flags',         enabledFromStep: 'idea' },
-  { id: 'shares',      icon: 'Share2',     label: 'Share Links',   enabledFromStep: 'idea' },
-  { id: 'collabs',     icon: 'Users',      label: 'Collaborators', enabledFromStep: 'idea' },
-  { id: 'config',      icon: 'Settings',   label: 'Settings',      enabledFromStep: 'idea' },
-];
-
-function isCreativeSpaceEnabled(item: IconRailItemConfig, currentStep: Step): boolean {
-  return STEP_ORDER[currentStep] >= STEP_ORDER[item.enabledFromStep];
-}
 ```
 
 ---
 
-### 2.4 CreativeSpace Components
+### 3.3 ManuscriptCreativeSpace ⚡
 
-#### 2.4.1 ManuscriptCreativeSpace
+📄 **Doc:** [`03-manuscript-creative-space.md`](./03-manuscript-creative-space.md)
 
 **Mục đích:** Soạn thảo manuscript theo các bước: Brief → Draft → Script → Prose Dummy → Poetry Dummy → Finalization.
 
 **Language impact:** ✅ Manuscript finalization step translate need current language
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
-type ManuscriptStepType = 'brief' | 'draft' | 'script' | 'prose_dummy' | 'poetry_dummy' | 'finalization';
-type DummyType = 'prose' | 'poetry';
-
 interface ManuscriptCreativeSpaceProps {
-  manuscript: Manuscript;                            // object, không phải array
+  manuscript: Manuscript;
   currentLanguage: Language;  // ⚡ language-aware
   onManuscriptUpdate: (manuscript: Manuscript) => void;
 }
-
-interface ManuscriptCreativeSpaceState {
-  activeStep: ManuscriptStepType;
-  promptInput: string;
-  isGenerating: boolean;
-  selectedDummyType: DummyType;  // For Finalization step source selection
-}
 ```
-
-**Manuscript Steps:**
-
-| Step | Type | Description |
-|------|------|-------------|
-| Brief | doc | Prompt input + AI generate story idea |
-| Draft | doc | Full narrative draft |
-| Script | doc | Scene-by-scene breakdown |
-| Prose Dummy | dummy | Spread layout với prose text |
-| Poetry Dummy | dummy | Spread layout với poetry text |
-| Finalization | dummy | Visual direction notes cho dummy |
 
 ---
 
-#### 2.4.2 CharactersCreativeSpace
+### 3.4 CharactersCreativeSpace
+
+📄 **Doc:** [`04-characters-creative-space.md`](./04-characters-creative-space.md)
 
 **Mục đích:** Quản lý nhân vật: thông tin cơ bản, variants, voices, crops.
 
 **Language impact:** ❌ Không bị ảnh hưởng
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface CharactersCreativeSpaceProps {
@@ -354,22 +303,19 @@ interface CharactersCreativeSpaceProps {
   currentStep: Step;
   onCharactersUpdate: (chars: Character[]) => void;
 }
-
-interface CharactersCreativeSpaceState {
-  selectedCharacterKey: string | null;
-  activeTab: 'variants' | 'voices' | 'crops';
-}
 ```
 
 ---
 
-#### 2.4.3 PropsCreativeSpace
+### 3.5 PropsCreativeSpace
+
+📄 **Doc:** [`05-props-creative-space.md`](./05-props-creative-space.md)
 
 **Mục đích:** Quản lý đạo cụ: states, sounds, crops.
 
 **Language impact:** ❌ Không bị ảnh hưởng
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface PropsCreativeSpaceProps {
@@ -377,22 +323,19 @@ interface PropsCreativeSpaceProps {
   currentStep: Step;
   onPropsUpdate: (props: Prop[]) => void;
 }
-
-interface PropsCreativeSpaceState {
-  selectedPropKey: string | null;
-  activeTab: 'states' | 'sounds' | 'crops';
-}
 ```
 
 ---
 
-#### 2.4.4 StagesCreativeSpace
+### 3.6 StagesCreativeSpace
+
+📄 **Doc:** [`06-stages-creative-space.md`](./06-stages-creative-space.md)
 
 **Mục đích:** Quản lý bối cảnh: settings (temporal, sensory, emotional), sounds.
 
 **Language impact:** ❌ Không bị ảnh hưởng
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface StagesCreativeSpaceProps {
@@ -400,22 +343,19 @@ interface StagesCreativeSpaceProps {
   currentStep: Step;
   onStagesUpdate: (stages: Stage[]) => void;
 }
-
-interface StagesCreativeSpaceState {
-  selectedStageKey: string | null;
-  activeTab: 'settings' | 'sounds';
-}
 ```
 
 ---
 
-#### 2.4.5 SpreadsCreativeSpace ⚡
+### 3.7 SpreadsCreativeSpace ⚡
+
+📄 **Doc:** [`07-spreads-creative-space.md`](./07-spreads-creative-space.md)
 
 **Mục đích:** Layout visual editor cho các trang đôi (spread). Quản lý images, textboxes.
 
-**Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox content hiển thị theo `currentLanguage`. CreativeSpace lọc `textbox.language[]` và hiển thị entry có `code === currentLanguage.code`.
+**Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox content hiển thị theo `currentLanguage`
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface SpreadsCreativeSpaceProps {
@@ -427,15 +367,9 @@ interface SpreadsCreativeSpaceProps {
   currentLanguage: Language;  // ⚡ language-aware
   onSpreadsUpdate: (spreads: Spread[]) => void;
 }
-
-interface SpreadsCreativeSpaceState {
-  selectedSpreadNumber: number;
-  selectedElementId: string | null;
-  zoom: number;
-}
 ```
 
-**Textbox Language Structure:**
+**Data Structure (textbox language):**
 
 ```json
 {
@@ -443,55 +377,43 @@ interface SpreadsCreativeSpaceState {
     {
       "id": "tb_001",
       "title": "Opening narration",
-      "en_US": {
-        "text": "Once upon a time...",
-        "geometry": { "x": 10, "y": 80, "w": 80, "h": 15, "rotation": 0 },
-        "typography": { "size": 16, "font": "...", "color": "..." }
-      },
-      "vi_VN": {
-        "text": "Ngày xửa ngày xưa...",
-        "geometry": { "x": 10, "y": 80, "w": 80, "h": 15, "rotation": 0 },
-        "typography": { "size": 16, "font": "...", "color": "..." }
-      }
+      "en_US": { "text": "Once upon a time...", "geometry": {...}, "typography": {...} },
+      "vi_VN": { "text": "Ngày xửa ngày xưa...", "geometry": {...}, "typography": {...} }
     }
   ]
 }
 ```
 
-**Note:** Language content accessed via `textbox[currentLanguage.code]` instead of filtering array.
-
 ---
 
-#### 2.4.6 ObjectsCreativeSpace
+### 3.8 ObjectsCreativeSpace
+
+📄 **Doc:** [`08-objects-creative-space.md`](./08-objects-creative-space.md)
 
 **Mục đích:** Retouch layer management. Điều chỉnh vị trí, kích thước, z-index các object (image) trên spread.
 
-**Language impact:** ❌ Không bị ảnh hưởng (chỉ hiển thị image objects, không hiển thị textbox)
+**Language impact:** ❌ Không bị ảnh hưởng (chỉ image objects)
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface ObjectsCreativeSpaceProps {
   spreads: Spread[];
   onSpreadsUpdate: (spreads: Spread[]) => void;
 }
-
-interface ObjectsCreativeSpaceState {
-  selectedSpreadNumber: number;
-  selectedObjectId: string | null;
-  zoom: number;
-}
 ```
 
 ---
 
-#### 2.4.7 AnimationsCreativeSpace ⚡
+### 3.9 AnimationsCreativeSpace ⚡
+
+📄 **Doc:** [`09-animations-creative-space.md`](./09-animations-creative-space.md)
 
 **Mục đích:** Timeline editor cho animations. Quản lý trigger, delay, duration, effect types.
 
-**Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Animation list hiển thị textbox name/content theo `currentLanguage`.
+**Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Animation list hiển thị textbox name/content theo `currentLanguage`
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface AnimationsCreativeSpaceProps {
@@ -499,45 +421,19 @@ interface AnimationsCreativeSpaceProps {
   currentLanguage: Language;  // ⚡ language-aware
   onSpreadsUpdate: (spreads: Spread[]) => void;
 }
-
-interface AnimationsCreativeSpaceState {
-  selectedSpreadNumber: number;
-  selectedAnimationIndex: number | null;
-  isPreviewPlaying: boolean;
-}
 ```
-
-**Animation Effect Structure:**
-
-```json
-{
-  "animations": [
-    {
-      "target_id": "img_001",
-      "trigger": "tap",
-      "delay": 0,
-      "duration": 500,
-      "loop": 1,
-      "effect": {
-        "type": "moving",
-        "geometry": { "x": 100, "y": 50, "w": 200, "h": 150 }
-      }
-    }
-  ]
-}
-```
-
-**Effect Types:** `fade_in`, `fade_out`, `scale`, `rotate`, `moving`
 
 ---
 
-#### 2.4.8 FlagsCreativeSpace
+### 3.10 FlagsCreativeSpace
+
+📄 **Doc:** [`10-flags-creative-space.md`](./10-flags-creative-space.md)
 
 **Mục đích:** Hiển thị và xử lý các vấn đề (quality warnings, consistency issues).
 
 **Language impact:** ❌ Không bị ảnh hưởng
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface FlagsCreativeSpaceProps {
@@ -545,44 +441,38 @@ interface FlagsCreativeSpaceProps {
   onFlagsUpdate: (flags: Flag[]) => void;
   onNavigateToIssue: (flag: Flag) => void;
 }
-
-interface FlagsCreativeSpaceState {
-  filterType: FlagType | 'all';
-  filterStatus: FlagStatus | 'all';
-}
 ```
 
 ---
 
-#### 2.4.9 SharesCreativeSpace
+### 3.11 SharesCreativeSpace
+
+📄 **Doc:** [`11-shares-creative-space.md`](./11-shares-creative-space.md)
 
 **Mục đích:** Quản lý share links (public preview, client review, team draft).
 
 **Language impact:** ❌ Không bị ảnh hưởng
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface SharesCreativeSpaceProps {
   shareLinks: ShareLink[];
   onShareLinksUpdate: (links: ShareLink[]) => void;
 }
-
-interface SharesCreativeSpaceState {
-  selectedLinkId: string | null;
-  isCreatingNew: boolean;
-}
 ```
 
 ---
 
-#### 2.4.10 CollaboratorsCreativeSpace
+### 3.12 CollaboratorsCreativeSpace
+
+📄 **Doc:** [`12-collaborators-creative-space.md`](./12-collaborators-creative-space.md)
 
 **Mục đích:** Quản lý collaborators và permissions (languages, steps, spreads access).
 
-**Language impact:** ❌ Không bị ảnh hưởng (nhưng hiển thị danh sách languages trong permissions)
+**Language impact:** ❌ Không bị ảnh hưởng
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface CollaboratorsCreativeSpaceProps {
@@ -590,41 +480,38 @@ interface CollaboratorsCreativeSpaceProps {
   spreadsCount: number;
   onCollaborationsUpdate: (collabs: Collaboration[]) => void;
 }
-
-interface CollaboratorsCreativeSpaceState {
-  selectedCollabId: string | null;
-  isInviting: boolean;
-}
 ```
 
 ---
 
-#### 2.4.11 ConfigCreativeSpace
+### 3.13 ConfigCreativeSpace
+
+📄 **Doc:** [`13-config-creative-space.md`](./13-config-creative-space.md)
 
 **Mục đích:** Cấu hình book: general, creative, typography, layout, remix, export.
 
-**Language impact:** ❌ Không bị ảnh hưởng (nhưng Remix section quản lý `book.remix.languages[]`)
+**Language impact:** ❌ Không bị ảnh hưởng (Remix section quản lý `book.remix.languages[]`)
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface ConfigCreativeSpaceProps {
   book: Book;
   onBookUpdate: (updates: Partial<Book>) => void;
 }
-
-interface ConfigCreativeSpaceState {
-  activeSection: 'general' | 'creative' | 'typography' | 'layout' | 'remix' | 'export';
-}
 ```
 
 ---
 
-### 2.5 RightSidebar (AI Assistant)
+### 3.14 RightSidebar (AI Assistant) ⚡
 
-**Mục đích:** Panel AI Assistant hỗ trợ người dùng. Contextual với creativeSpace hiện tại. Hiển thị khi `isSidebarOpen = true`, có nút X để đóng.
+📄 **Doc:** [`14-right-sidebar.md`](./14-right-sidebar.md)
 
-**Interface:**
+**Mục đích:** Panel AI Assistant hỗ trợ người dùng. Contextual với creativeSpace hiện tại.
+
+**Language impact:** ✅ AI biết user đang edit ngôn ngữ nào
+
+**Props & Callbacks:**
 
 ```typescript
 interface RightSidebarProps {
@@ -641,22 +528,17 @@ interface RightSidebarProps {
   };
   onClose: () => void;
 }
-
-interface RightSidebarState {
-  conversationId: string | null;
-  messages: AIMessage[];
-  isLoading: boolean;
-  inputValue: string;
-}
 ```
 
 ---
 
-### 2.6 AISidebarToggle
+### 3.15 AISidebarToggle
 
-**Mục đích:** Floating button ở góc dưới bên phải để mở AI Assistant sidebar. Hiển thị khi right sidebar đang đóng, ẩn đi khi right sidebar open.
+📄 **Doc:** *(inline, không cần file riêng)*
 
-**Interface:**
+**Mục đích:** Floating button ở góc dưới bên phải để mở AI Assistant sidebar.
+
+**Props & Callbacks:**
 
 ```typescript
 interface AISidebarToggleProps {
@@ -669,10 +551,6 @@ interface AISidebarToggleProps {
 ```
 ┌─────────────────────────────────────────┐
 │                                         │
-│                                         │
-│                                         │
-│                                         │
-│                                         │
 │                                 ┌─────┐ │
 │                                 │ 💬  │ │  ← Floating button
 │                                 └─────┘ │     position: fixed
@@ -682,9 +560,9 @@ interface AISidebarToggleProps {
 
 ---
 
-## 3. Technical Notes
+## 4. Technical Notes
 
-### 3.1 Key Design Decisions
+### 4.1 Key Design Decisions
 
 **No Intermediate MainCreativeSpace Component**
 EditorPage render trực tiếp creativeSpace dựa trên `activeCreativeSpace`. Lý do: MainCreativeSpace không có responsibility riêng ngoài routing, giảm props drilling, code đơn giản hơn.
@@ -695,44 +573,27 @@ EditorPage giữ toàn bộ state chính (book, snapshot, currentLanguage). Các
 **Language as UI State**
 `currentLanguage` là UI state (view preference), không phải data state. Nó quyết định ngôn ngữ nào được hiển thị trong editor, nhưng không thay đổi data structure của textbox.
 
-**Menu State is Local**
-`isMenuOpen` là local state của EditorHeader, không cần lift lên EditorPage vì menu chỉ ảnh hưởng trong phạm vi EditorHeader.
-
-**Language Selector on Header**
-Language selector đặt trực tiếp trên header (không trong menu) vì là action thường xuyên sử dụng khi edit multi-language content. Giảm số click cần thiết từ 3 xuống 2.
-
 **AI Sidebar Toggle as Floating Button**
-`AISidebarToggle` là floating button ở góc dưới bên phải, hiển thị khi sidebar đóng. Khi sidebar mở, button ẩn đi và thay bằng nút X trong sidebar header để đóng. Pattern này phổ biến cho chat/assistant UI.
+`AISidebarToggle` là floating button ở góc dưới bên phải, hiển thị khi sidebar đóng. Khi sidebar mở, button ẩn đi và thay bằng nút X trong sidebar header để đóng.
 
 **Static Language List**
-Danh sách available languages lấy từ constant tĩnh (định nghĩa riêng), không phải từ `book.remix.languages[]`. Đơn giản hóa logic và không phụ thuộc vào book data.
+Danh sách available languages lấy từ constant tĩnh, không phải từ `book.remix.languages[]`.
 
 **CreativeSpace Isolation**
-Mỗi creativeSpace có local state riêng (selected item, active tab, filter). State này không cần sync lên EditorPage vì chỉ phục vụ UI của creativeSpace đó.
+Mỗi creativeSpace có local state riêng (selected item, active tab, filter). State này không cần sync lên EditorPage.
 
 **Conditional Rendering**
 Render duy nhất một creativeSpace tại một thời điểm. Unmount creativeSpace cũ khi chuyển, nhưng EditorPage giữ data nên không mất state.
 
-### 3.2 Step Transition Validation
-
-**Mục đích:** Kiểm tra dữ liệu bắt buộc trước khi cho phép chuyển step trong pipeline.
-
-**Interface:**
+### 4.2 Step Transition Validation
 
 ```typescript
 interface ValidationResult {
   valid: boolean;
-  missingFields?: string[];  // Field IDs để UI highlight
-  message?: string;          // User-facing message
+  missingFields?: string[];
+  message?: string;
 }
 
-interface StepTransitionRule {
-  from: Step;
-  to: Step;
-  validate: (book: Book, snapshot: Snapshot) => ValidationResult;
-}
-
-// Helper function
 function canTransitionToStep(
   from: Step,
   to: Step,
@@ -757,12 +618,11 @@ Update     Show feedback
 step       (toast/modal)
 ```
 
-**Note:** Validation rules được định nghĩa sau. Chi tiết các required fields cho mỗi transition sẽ được thiết kế riêng.
+### 4.3 Initial Language
 
-### 3.3 Initial Language
 Khi load Editor, `currentLanguage` mặc định là `book.original_language` hoặc language đầu tiên trong `AVAILABLE_LANGUAGES`.
 
-### 3.4 Khi nào cần refactor thêm MainCreativeSpace?
+### 4.4 Khi nào cần refactor thêm MainCreativeSpace?
 
 Cân nhắc tách MainCreativeSpace nếu xuất hiện nhu cầu:
 - Transition animation giữa các creativeSpace

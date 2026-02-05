@@ -77,11 +77,20 @@ Default:                Active:                  Disabled:
                         white icon              cursor: not-allowed
 ```
 
+### 1.4 Step → Enabled Items
+
+| currentStep | Enabled CreativeSpaces |
+|-------------|--------------------|
+| `idea` | manuscript, flags, shares, collabs, config |
+| `sketch` | + characters, props, stages, spreads |
+| `illustration` | (same as sketch) |
+| `retouch` | + objects, animations |
+
 ---
 
-## 2. Component Designs
+## 2. Root Component Design
 
-### 2.1 IconRail (Root Component)
+### 2.1 Overview
 
 **Mục đích:** Sidebar navigation dọc bên trái Editor. Render trực tiếp 11 IconRailItem với 2 separators.
 
@@ -102,7 +111,7 @@ interface IconRailItemConfig {
 }
 ```
 
-**Interface:**
+### 2.2 Interface
 
 ```typescript
 interface IconRailProps {
@@ -112,7 +121,7 @@ interface IconRailProps {
 }
 ```
 
-**Configuration:**
+### 2.3 Configuration
 
 ```typescript
 const STEP_ORDER: Record<Step, number> = {
@@ -141,7 +150,7 @@ function isCreativeSpaceEnabled(item: IconRailItemConfig, currentStep: Step): bo
 }
 ```
 
-**Render Logic (pseudo):**
+### 2.4 Render Logic (pseudo)
 
 ```
 IconRail:
@@ -152,15 +161,70 @@ IconRail:
     isActive = activeCreativeSpace === item.id
 
     RENDER IconRailItem với item, isActive, isEnabled, onClick
+
+    // Separators
+    IF item.id === 'stages':
+      RENDER Separator
+    IF item.id === 'animations':
+      RENDER Separator
+```
+
+### 2.5 Visual
+
+```
+┌────────────────────┐
+│  ┌──────────────┐  │
+│  │ 📄 Manuscript │  │  ← active (blue bg, white icon)
+│  └──────────────┘  │
+│  ┌──────────────┐  │
+│  │ 😊 Characters │  │
+│  └──────────────┘  │
+│  ┌──────────────┐  │
+│  │ 📦 Props      │  │
+│  └──────────────┘  │
+│  ┌──────────────┐  │
+│  │ ⛰️ Stages     │  │
+│  └──────────────┘  │
+│  ────────────────  │  ← Separator
+│  ┌──────────────┐  │
+│  │ 📖 Spreads    │  │
+│  └──────────────┘  │
+│  ┌──────────────┐  │
+│  │ 📚 Objects    │  │  ← disabled (grayed)
+│  └──────────────┘  │
+│  ┌──────────────┐  │
+│  │ ⚡ Animations │  │  ← disabled (grayed)
+│  └──────────────┘  │
+│  ────────────────  │  ← Separator
+│  ┌──────────────┐  │
+│  │ 🚩 Flags      │  │
+│  └──────────────┘  │
+│  ┌──────────────┐  │
+│  │ 🔗 Shares     │  │
+│  └──────────────┘  │
+│  ┌──────────────┐  │
+│  │ 👥 Collabs    │  │
+│  └──────────────┘  │
+│  ┌──────────────┐  │
+│  │ ⚙️ Settings   │  │
+│  └──────────────┘  │
+└────────────────────┘
 ```
 
 ---
 
-### 2.2 IconRailItem
+## 3. Child Components Interface
+
+> **Lưu ý:** Section này chỉ định nghĩa **props và callbacks** (contract giữa parent-child).
+> State và logic chi tiết của mỗi child sẽ được thiết kế trong file riêng của component đó.
+
+### 3.1 IconRailItem
+
+📄 **Doc:** *(inline, không cần file riêng)*
 
 **Mục đích:** Icon button đơn lẻ. Handle active/hover/disabled states, show tooltip on hover.
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface IconRailItemProps {
@@ -188,9 +252,9 @@ Normal (enabled):        Active:                  Hover:
 
 ---
 
-## 3. Technical Notes
+## 4. Technical Notes
 
-### 3.1 Key Design Decisions
+### 4.1 Key Design Decisions
 
 **Flat Structure**
 Render 11 items trực tiếp, không có intermediate group component. Đơn giản, dễ maintain.
@@ -201,7 +265,8 @@ Theo screenshot: active item có background primary (blue) với icon màu trắ
 **Progressive Unlock**
 Items disabled dựa trên `enabledFromStep`. Disabled items hiển thị (grayed) để user biết sẽ unlock ở step nào.
 
-**Icon Mapping (theo screenshot)**
+### 4.2 Icon Mapping (theo screenshot)
+
 | CreativeSpace | Icon (Lucide) | Visual |
 |-----------|---------------|--------|
 | manuscript | FileText | Document with lines |
@@ -216,26 +281,17 @@ Items disabled dựa trên `enabledFromStep`. Disabled items hiển thị (graye
 | collabs | Users | Multiple people |
 | config | Settings | Gear |
 
-### 3.2 Separator Positions
+### 4.3 Separator Positions
 
 | After Item | Position | Visual Gap |
 |------------|----------|------------|
 | `stages` (index 3) | After item 4 | Horizontal line |
 | `animations` (index 6) | After item 7 | Horizontal line + larger gap |
 
-### 3.3 Accessibility
+### 4.4 Accessibility
 
 - `role="navigation"` on container
 - `aria-current="page"` for active item
 - `aria-label` = item label
 - `aria-disabled="true"` for disabled items
 - Keyboard: Arrow keys navigate, Enter/Space select
-
-### 3.4 Step → Enabled Items
-
-| currentStep | Enabled CreativeSpaces |
-|-------------|--------------------|
-| `idea` | manuscript, flags, shares, collabs, config |
-| `sketch` | + characters, props, stages, spreads |
-| `illustration` | (same as sketch) |
-| `retouch` | + objects, animations |

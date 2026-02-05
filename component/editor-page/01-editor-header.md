@@ -118,9 +118,9 @@ Step: retouch (active) - Có thể quay lại tất cả steps trước
 
 ---
 
-## 2. Component Designs
+## 2. Root Component Design
 
-### 2.1 EditorHeader (Root Component)
+### 2.1 Overview
 
 **Mục đích:** Top navigation bar. Hiển thị book info, step navigation, language selector, và quick actions (save, notifications). Chứa Menu popover hiển thị points, home link, và editor mode (display only).
 
@@ -142,7 +142,7 @@ interface UserPoints {
 }
 ```
 
-**Interface:**
+### 2.2 Interface
 
 ```typescript
 interface EditorHeaderProps {
@@ -168,7 +168,7 @@ interface EditorHeaderState {
 }
 ```
 
-**Render Logic (pseudo):**
+### 2.3 Render Logic (pseudo)
 
 ```
 EditorHeader:
@@ -202,16 +202,33 @@ EditorHeader:
       RENDER NotificationButton với notificationCount, onNotificationClick
 
   IF isMenuOpen:
-    RENDER MenuPopover với props, activeSubmenu, callbacks
+    RENDER MenuPopover với props, callbacks
+```
+
+### 2.4 Visual
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  ┌────────┐  ┌────────────────┐  ┌────────────────────────┐  ┌──────┐ ┌────────┐ ┌────┐ │
+│  │   ≡    │  │ The Hidden...  │  │ [I] > S > I > R        │  │✓ Saved│ │ 🌐 EN ▾ │ │ 🔔 │ │
+│  └────────┘  └────────────────┘  └────────────────────────┘  └──────┘ └────────┘ └────┘ │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### 2.2 MenuButton
+## 3. Child Components Interface
+
+> **Lưu ý:** Section này chỉ định nghĩa **props và callbacks** (contract giữa parent-child).
+> State và logic chi tiết của mỗi child sẽ được thiết kế trong file riêng của component đó.
+
+### 3.1 MenuButton
+
+📄 **Doc:** *(inline, không cần file riêng)*
 
 **Mục đích:** Hamburger icon button mở Menu popover.
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface MenuButtonProps {
@@ -229,80 +246,30 @@ interface MenuButtonProps {
 
 ---
 
-### 2.3 StepBreadcrumb
+### 3.2 StepBreadcrumb
+
+📄 **Doc:** [`01-01-step-breadcrumb.md`](./01-01-step-breadcrumb.md)
 
 **Mục đích:** Breadcrumb navigation giữa 4 steps. Click step trước hoặc sau để chuyển step.
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
-type StepState = 'active' | 'completed' | 'inactive';
-
 interface StepBreadcrumbProps {
   currentStep: Step;
   onStepChange: (step: Step) => void;
 }
 ```
 
-**Configuration:**
-
-```typescript
-const STEPS: { id: Step; label: string }[] = [
-  { id: 'idea', label: 'Idea' },
-  { id: 'sketch', label: 'Sketch' },
-  { id: 'illustration', label: 'Illustration' },
-  { id: 'retouch', label: 'Retouch' },
-];
-
-const STEP_ORDER: Record<Step, number> = {
-  idea: 0,
-  sketch: 1,
-  illustration: 2,
-  retouch: 3,
-};
-
-// Xác định state của mỗi step
-function getStepState(step: Step, currentStep: Step): StepState {
-  const stepIndex = STEP_ORDER[step];
-  const currentIndex = STEP_ORDER[currentStep];
-
-  if (stepIndex === currentIndex) return 'active';
-  if (stepIndex < currentIndex) return 'completed';
-  return 'inactive';
-}
-```
-
-**Render Logic (pseudo):**
-
-```
-StepBreadcrumb:
-  FOR step IN STEPS:
-    stepState = getStepState(step.id, currentStep)
-
-    RENDER step item với:
-      IF stepState === 'active':
-        - cursor: default
-        - không có onClick
-      ELSE IF stepState === 'completed':
-        - text: primary color
-        - cursor: pointer
-        - onClick: onStepChange(step.id)
-      ELSE (inactive):
-        - text: muted (opacity 50%)
-        - cursor: pointer
-        - onClick: onStepChange(step.id)
-
-    IF không phải step cuối:
-      RENDER separator ">"
-```
-
 ---
 
-### 2.4 SaveStatus
+### 3.3 SaveStatus
+
+📄 **Doc:** *(inline, không cần file riêng)*
 
 **Mục đích:** Indicator hiển thị trạng thái save.
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface SaveStatusProps {
@@ -321,11 +288,13 @@ interface SaveStatusProps {
 
 ---
 
-### 2.5 NotificationButton
+### 3.4 NotificationButton
+
+📄 **Doc:** *(inline, không cần file riêng)*
 
 **Mục đích:** Bell icon với badge count, mở notification panel.
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface NotificationButtonProps {
@@ -346,29 +315,19 @@ No notifications:     Has notifications:
 
 ---
 
-### 2.6 LanguageSelector
+### 3.5 LanguageSelector
+
+📄 **Doc:** [`01-02-language-selector.md`](./01-02-language-selector.md)
 
 **Mục đích:** Dropdown chọn ngôn ngữ hiển thị trong editor. Đặt trực tiếp trên header để dễ truy cập.
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface LanguageSelectorProps {
   currentLanguage: Language;
   onLanguageChange: (language: Language) => void;
 }
-
-interface LanguageSelectorState {
-  isOpen: boolean;
-}
-
-const AVAILABLE_LANGUAGES: Language[] = [
-  { name: 'English (US)', code: 'en_US' },
-  { name: 'Tiếng Việt', code: 'vi_VN' },
-  { name: '日本語', code: 'ja_JP' },
-  { name: '한국어', code: 'ko_KR' },
-  { name: '中文 (简体)', code: 'zh_CN' },
-];
 ```
 
 **Visual:**
@@ -389,11 +348,13 @@ Closed:                       Open:
 
 ---
 
-### 2.7 MenuPopover
+### 3.6 MenuPopover
 
-**Mục đích:** Popover menu chứa points, navigation home, và editor mode display (không thay đổi được).
+📄 **Doc:** [`01-03-menu-popover.md`](./01-03-menu-popover.md)
 
-**Interface:**
+**Mục đích:** Popover menu chứa points, navigation home, và editor mode display.
+
+**Props & Callbacks:**
 
 ```typescript
 interface MenuPopoverProps {
@@ -405,54 +366,28 @@ interface MenuPopoverProps {
 }
 ```
 
-**Menu Items Configuration:**
-
-```typescript
-interface MenuItem {
-  id: string;
-  icon: string;
-  label: string;
-  type: 'action' | 'display';
-  value?: string;               // For display items
-}
-
-const MENU_ITEMS: MenuItem[] = [
-  { id: 'home', icon: 'ArrowLeft', label: 'Home', type: 'action' },
-  { id: 'editor_mode', icon: 'Layers', label: 'Editor Mode', type: 'display' },
-];
-
-const EDITOR_MODE_LABELS: Record<EditorMode, string> = {
-  book: 'Book',
-  asset: 'Asset',
-};
-```
-
-**Render Structure:**
+**Visual:**
 
 ```
-MenuPopover:
-  RENDER Popover container (w-64, shadow-lg, rounded-lg)
-
-    // Points section
-    RENDER PointsDisplay với userPoints
-
-    RENDER Separator
-
-    // Menu items
-    FOR item IN MENU_ITEMS:
-      IF item.type === 'action':
-        RENDER MenuItem với icon, label, onClick
-      ELSE IF item.type === 'display':
-        RENDER DisplayItem với icon, label, value (e.g., "Editor Mode: Book")
+┌─────────────────────────────────┐
+│  ✨ Points        750 / 1000    │
+│  [████████████░░░░░░░░]  75%    │
+├─────────────────────────────────┤
+│      ← Home                     │
+├─────────────────────────────────┤
+│   ⚙️ Editor Mode: Book           │
+└─────────────────────────────────┘
 ```
 
 ---
 
-### 2.8 PointsDisplay
+### 3.7 PointsDisplay
+
+📄 **Doc:** *(inline trong MenuPopover)*
 
 **Mục đích:** Hiển thị user points với progress bar trong MenuPopover.
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface PointsDisplayProps {
@@ -461,20 +396,11 @@ interface PointsDisplayProps {
 }
 ```
 
-**Visual:**
-
-```
-┌─────────────────────────────────┐
-│  ✨ Points        750 / 1000    │
-│  [████████████░░░░░░░░]  75%    │
-└─────────────────────────────────┘
-```
-
 ---
 
-## 3. Technical Notes
+## 4. Technical Notes
 
-### 3.1 Key Design Decisions
+### 4.1 Key Design Decisions
 
 **Menu State is Local**
 `isMenuOpen` là local state của EditorHeader. Không cần lift lên EditorPage vì menu chỉ ảnh hưởng UI trong phạm vi EditorHeader.
@@ -491,14 +417,14 @@ Editor mode được hiển thị trong menu nhưng không thay đổi được 
 **Click Outside to Close**
 MenuPopover và LanguageSelector đóng khi click outside. Sử dụng portal để render popover ở root level, tránh z-index issues.
 
-### 3.2 Accessibility
+### 4.2 Accessibility
 
 - MenuButton: `aria-expanded`, `aria-haspopup="menu"`
 - MenuPopover: `role="menu"`, keyboard navigation (↑↓ arrows, Enter, Escape)
 - StepBreadcrumb: `aria-current="step"` cho active step
 - All interactive elements: visible focus states
 
-### 3.3 Responsive Behavior
+### 4.3 Responsive Behavior
 
 | Breakpoint | Behavior |
 |------------|----------|
@@ -506,7 +432,7 @@ MenuPopover và LanguageSelector đóng khi click outside. Sử dụng portal đ
 | Tablet (768-1024px) | Truncate BookTitle, hide step labels (chỉ hiện icons), collapse LanguageSelector to icon only |
 | Mobile (<768px) | Hide StepBreadcrumb (show in Menu), LanguageSelector collapse to globe icon |
 
-### 3.4 Animation
+### 4.4 Animation
 
 - MenuPopover: `animate-in fade-in-0 zoom-in-95` (150ms)
 - LanguageSelector dropdown: `animate-in fade-in-0 zoom-in-95` (150ms)

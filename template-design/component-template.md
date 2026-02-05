@@ -12,9 +12,9 @@
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │                      [ChildComponent1]                     │  │
 │  └───────────────────────────────────────────────────────────┘  │
-│  ┌─────────────┬─────────────────────────────┬───────────────┐  │
-│  │ [Child2]    │        [Child3]             │   [Child4]    │  │
-│  └─────────────┴─────────────────────────────┴───────────────┘  │
+│  ┌─────────────┬─────────────────────────────────┬───────────┐  │
+│  │ [Child2]    │        [Child3]                 │  [Child4] │  │
+│  └─────────────┴─────────────────────────────────┴───────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -50,9 +50,9 @@
 
 ---
 
-## 2. Component Designs
+## 2. Root Component Design
 
-### 2.1 [ComponentName] (Root Component)
+### 2.1 Overview
 
 **Mục đích:** [Mô tả ngắn gọn nhiệm vụ của component]
 
@@ -67,7 +67,7 @@ interface [SharedInterface] {
 }
 ```
 
-**Interface:**
+### 2.2 Interface
 
 ```typescript
 interface [ComponentName]Props {
@@ -89,7 +89,7 @@ interface [ComponentName]Callbacks {
 }
 ```
 
-**Render Logic (pseudo):**
+### 2.3 Render Logic (pseudo)
 
 ```
 [ComponentName]:
@@ -104,42 +104,81 @@ interface [ComponentName]Callbacks {
     RENDER [OptionalChild] với props
 ```
 
+### 2.4 Visual
+
+```
+┌─────────────────────────────────────────┐
+│ ┌─────────────────────────────────────┐ │
+│ │         [ChildComponent1]           │ │
+│ └─────────────────────────────────────┘ │
+│ ┌─────────┐ ┌───────────────┐ ┌───────┐ │
+│ │ Child2  │ │    Child3     │ │Child4 │ │
+│ └─────────┘ └───────────────┘ └───────┘ │
+└─────────────────────────────────────────┘
+```
+
+**Visual States (nếu component có nhiều trạng thái UI):**
+
+```
+Default:              Loading:              Error:
+┌───────────────┐     ┌───────────────┐     ┌───────────────┐
+│ [content]     │     │ ⏳ Loading... │     │ ⚠️ Error msg  │
+│               │     │               │     │ [Retry]       │
+└───────────────┘     └───────────────┘     └───────────────┘
+
+Selected:             Disabled:
+┌───────────────┐     ┌───────────────┐
+│ ● [content]   │     │ [content]     │
+│   ▲ active    │     │   (dimmed)    │
+└───────────────┘     └───────────────┘
+```
+
 ---
 
-### 2.2 [ChildComponent1]
+## 3. Child Components Interface
 
-**Mục đích:** [Mô tả nhiệm vụ]
+> **Lưu ý:** Section này chỉ định nghĩa **props và callbacks** (contract giữa parent-child).
+> State và logic chi tiết của mỗi child sẽ được thiết kế trong file riêng của component đó.
 
-**Interface:**
+### 3.1 [ChildComponent1]
+
+📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component1}.md`](./component/{page-name}/{hierarchy}-{child-component1}.md)
+**(Important) vẫn thêm link doc tới child component kể cả chưa có doc**
+
+**Mục đích:** [Mô tả nhiệm vụ - 1 câu]
+
+**Props & Callbacks:**
 
 ```typescript
 interface [ChildComponent1]Props {
+  // Data từ parent
   data: DataType;
-  onAction: (param: ParamType) => void;
-}
+  isEnabled: boolean;
 
-interface [ChildComponent1]State {
-  localState: StateType;
+  // Callbacks về parent
+  onAction: (param: ParamType) => void;
+  onStatusChange: (status: StatusType) => void;
 }
 ```
 
-**Visual:**
+**Visual (optional - nếu cần clarify layout):**
 
 ```
 ┌─────────────────────┐
-│  [Simple ASCII      │
-│   diagram showing   │
-│   component layout] │
+│  [Simple sketch]    │
 └─────────────────────┘
 ```
 
 ---
 
-### 2.3 [ChildComponent2]
+### 3.2 [ChildComponent2]
 
-**Mục đích:** [Mô tả nhiệm vụ]
+📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component2}.md`](./component/{page-name}/{hierarchy}-{child-component2}.md)
+**(Important) vẫn thêm link doc tới child component kể cả chưa có doc**
 
-**Interface:**
+**Mục đích:** [Mô tả nhiệm vụ - 1 câu]
+
+**Props & Callbacks:**
 
 ```typescript
 interface [ChildComponent2]Props {
@@ -150,39 +189,18 @@ interface [ChildComponent2]Props {
 }
 ```
 
-**Configuration:**
-
-```typescript
-const [CONFIG_ITEMS]: [ConfigItem][] = [
-  { id: 'item1', icon: 'Icon1', label: 'Label 1' },
-  { id: 'item2', icon: 'Icon2', label: 'Label 2' },
-];
-
-function [helperFunction](param: ParamType): ReturnType {
-  return /* logic */;
-}
-```
-
-**Visual States:**
-
-```
-Default:              Selected:             Disabled:
-┌───────────────┐     ┌───────────────┐     ┌───────────────┐
-│ ○ Item 1      │     │ ● Item 1      │     │ ○ Item 1      │
-│ ○ Item 2      │     │ ○ Item 2      │     │ ○ Item 2      │
-└───────────────┘     └───────────────┘     └───────────────┘
-                           ▲ active              (dimmed)
-```
-
 ---
 
-### 2.4 [ChildComponent3]
+### 3.3 [ChildComponent3]
 
-**Mục đích:** [Mô tả nhiệm vụ]
+📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component3}.md`](./component/{page-name}/{hierarchy}-{child-component3}.md)
+**(Important) vẫn thêm link doc tới child component kể cả chưa có doc**
 
-**Some special impact:** ✅ **BỊ ẢNH HƯỞNG** — [Giải thích 1 số logic global ảnh hưởng tới component]
+**Mục đích:** [Mô tả nhiệm vụ - 1 câu]
 
-**Interface:**
+**Special Impact:** ✅ **BỊ ẢNH HƯỞNG** — [Giải thích logic global ảnh hưởng tới component]
+
+**Props & Callbacks:**
 
 ```typescript
 interface [ChildComponent3]Props {
@@ -190,14 +208,9 @@ interface [ChildComponent3]Props {
   currentLanguage: Language;  // ⚡ language-aware
   onDataUpdate: (data: DataType) => void;
 }
-
-interface [ChildComponent3]State {
-  selectedId: string | null;
-  zoom: number;
-}
 ```
 
-**Data Structure:**
+**Data Structure (nếu cần clarify format):**
 
 ```json
 {
@@ -213,23 +226,11 @@ interface [ChildComponent3]State {
 }
 ```
 
-**Visual:**
-
-```
-┌───────────────────────────────────────┐
-│ ┌─────────┐  ┌─────────┐  ┌─────────┐ │
-│ │ Item 1  │  │ Item 2  │  │ Item 3  │ │
-│ │  [img]  │  │  [img]  │  │  [img]  │ │
-│ └─────────┘  └─────────┘  └─────────┘ │
-│              ▲ selected               │
-└───────────────────────────────────────┘
-```
-
 ---
 
-## 3. Technical Notes
+## 4. Technical Notes
 
-### 3.1 Key Design Decisions
+### 4.1 Key Design Decisions
 
 **[Decision Title 1]**
 [Mô tả quyết định]. Lý do: [giải thích tại sao].
@@ -237,13 +238,6 @@ interface [ChildComponent3]State {
 **[Decision Title 2]**
 [Mô tả quyết định]. Lý do: [giải thích tại sao].
 
-### 3.2 [Note Title]
+### 4.2 [Note Title]
 
 [Ghi chú bổ sung nếu cần]
-
-### 3.3 Khi nào cần refactor?
-
-Cân nhắc refactor nếu xuất hiện nhu cầu:
-- [Điều kiện 1]
-- [Điều kiện 2]
-- [Điều kiện 3]

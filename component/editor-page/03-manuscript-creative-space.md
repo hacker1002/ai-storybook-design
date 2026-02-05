@@ -48,7 +48,7 @@
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                           ManuscriptCreativeSpace                         │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  State: activeStep, promptInput, isGenerating                        │   │
+│  │  State: activeStep, promptInput, isGenerating, selectedDummyType    │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │         │                    │                              │               │
 │         ▼                    ▼                              ▼               │
@@ -57,15 +57,16 @@
 │  │               │   │                   │   │                          │  │
 │  │ Props:        │   │ Props:            │   │ Props:                   │  │
 │  │ • activeStep  │   │ • doc             │   │ • dummy                  │  │
-│  │ • stepConfig  │   │ • onContentChange │   │ • columnsPerRow          │  │
-│  │ • promptInput │   │                   │   │ • currentLanguage ⚡      │  │
-│  │ • isGenerating│   │                   │   │                          │  │
+│  │ • promptInput │   │ • onContentChange │   │ • columnsPerRow          │  │
+│  │ • isGenerating│   │                   │   │ • currentLanguage ⚡      │  │
+│  │ • selectedType│   │                   │   │                          │  │
 │  │               │   │                   │   │ Callbacks:               │  │
 │  │ Callbacks:    │   │                   │   │ • onSpreadSelect         │  │
 │  │ • onStepChange│   │                   │   │ • onSpreadAdd            │  │
 │  │ • onPrompt    │   │                   │   │ • onSpreadUpdate         │  │
 │  │    Change     │   │                   │   │ • onTranslate            │  │
 │  │ • onGenerate  │   │                   │   │ • onGenerateArtDirection │  │
+│  │ • onTypeChange│   │                   │   │                          │  │
 │  └───────────────┘   └───────────────────┘   └──────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -110,9 +111,9 @@
 
 ---
 
-## 2. Component Designs
+## 2. Root Component Design
 
-### 2.1 ManuscriptCreativeSpace (Root Component)
+### 2.1 Overview
 
 **Mục đích:** Container chính cho manuscript editing workflow. Quản lý navigation giữa các bước, prompt input, và render content tương ứng với step.
 
@@ -175,12 +176,12 @@ interface Manuscript {
 }
 ```
 
-**Interface:**
+### 2.2 Interface
 
 ```typescript
 interface ManuscriptCreativeSpaceProps {
   manuscript: Manuscript;           // object, không phải array
-  currentLanguage: Language;
+  currentLanguage: Language;        // ⚡ language-aware
   onManuscriptUpdate: (manuscript: Manuscript) => void;
 }
 
@@ -202,7 +203,7 @@ interface ManuscriptCreativeSpaceCallbacks {
 }
 ```
 
-**Render Logic (pseudo):**
+### 2.3 Render Logic (pseudo)
 
 ```
 ManuscriptCreativeSpace:
@@ -228,13 +229,40 @@ ManuscriptCreativeSpace:
         - onGenerateArtDirection, onTranslate
 ```
 
+### 2.4 Visual
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────┐  ┌──────────────────────────────────────────────┐ │
+│  │ ◻ Brief          >  │  │                                              │ │
+│  │ ◻ Draft          >  │  │      [Main Content Area]                     │ │
+│  │ ◻ Script         >  │  │                                              │ │
+│  │ ◼ Prose Dummy    ∨  │  │      - DocEditor for doc steps               │ │
+│  │   ┌───────────────┐ │  │      - DummyView for dummy steps             │ │
+│  │   │ PROMPT        │ │  │      - FinalizationView for final step       │ │
+│  │   │ ...           │ │  │                                              │ │
+│  │   │ [Generate ✨] │ │  │                                              │ │
+│  │   └───────────────┘ │  │                                              │ │
+│  │ ◻ Poetry Dummy   >  │  │                                              │ │
+│  │ ◻ Finalization   >  │  │                                              │ │
+│  └─────────────────────┘  └──────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
 ---
 
-### 2.2 ManuscriptStepsSidebar
+## 3. Child Components Interface
+
+> **Lưu ý:** Section này chỉ định nghĩa **props và callbacks** (contract giữa parent-child).
+> State và logic chi tiết của mỗi child sẽ được thiết kế trong file riêng của component đó.
+
+### 3.1 ManuscriptStepsSidebar
+
+📄 **Doc:** [`03-01-manuscript-steps-sidebar.md`](./03-01-manuscript-steps-sidebar.md)
 
 **Mục đích:** Left sidebar chứa step navigation và prompt input panel. Hiển thị danh sách các bước, cho phép chuyển đổi, và nhập prompt để generate content.
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface ManuscriptStepsSidebarProps {
@@ -247,31 +275,6 @@ interface ManuscriptStepsSidebarProps {
   onGenerate: () => void;
   onDummyTypeChange: (type: DummyType) => void;
 }
-
-interface ManuscriptStepsSidebarState {
-  expandedStep: ManuscriptStepType | null;
-}
-```
-
-**Configuration:**
-
-```typescript
-interface StepConfig {
-  id: ManuscriptStepType;
-  icon: string;
-  label: string;
-  generateLabel: string;
-  showTypeSelector: boolean;
-}
-
-const MANUSCRIPT_STEPS: StepConfig[] = [
-  { id: 'brief',        icon: 'FileText',  label: 'Brief',         generateLabel: 'Generate',             showTypeSelector: false },
-  { id: 'draft',        icon: 'FileText',  label: 'Draft',         generateLabel: 'Generate',             showTypeSelector: false },
-  { id: 'script',       icon: 'FileText',  label: 'Script',        generateLabel: 'Generate',             showTypeSelector: false },
-  { id: 'prose_dummy',  icon: 'Grid',      label: 'Prose Dummy',   generateLabel: 'Generate',             showTypeSelector: false },
-  { id: 'poetry_dummy', icon: 'Grid',      label: 'Poetry Dummy',  generateLabel: 'Generate',             showTypeSelector: false },
-  { id: 'finalization', icon: 'Sparkles',  label: 'Finalization',  generateLabel: 'Generate Art Direction', showTypeSelector: true },
-];
 ```
 
 **Visual:**
@@ -280,64 +283,37 @@ const MANUSCRIPT_STEPS: StepConfig[] = [
 ┌──────────────────────────┐
 │ Manuscript Steps         │
 ├──────────────────────────┤
-│ 📄 Brief              >  │  ← Collapsed (chevron right)
+│ 📄 Brief              >  │  ← Collapsed
 ├──────────────────────────┤
 │ 📄 Draft              >  │
 ├──────────────────────────┤
-│ 📄 Script             >  │
-├──────────────────────────┤
-│ ▦ Prose Dummy         ∨  │  ← Expanded (chevron down)
+│ ▦ Prose Dummy         ∨  │  ← Expanded
 │  ┌────────────────────┐  │
 │  │ PROMPT             │  │
 │  ├────────────────────┤  │
-│  │ Enter your prompt  │  │
-│  │ for this          │  │
-│  │ manuscript...      │  │
+│  │ Enter prompt...    │  │
 │  ├────────────────────┤  │
-│  │ ✨ Generate        │  │  ← Blue button
+│  │ ✨ Generate        │  │
 │  └────────────────────┘  │
-├──────────────────────────┤
-│ ▦ Poetry Dummy        >  │
 ├──────────────────────────┤
 │ ✨ Finalization       >  │
-└──────────────────────────┘
-
-Finalization Expanded:
-┌──────────────────────────┐
-│ ✨ Finalization       ∨  │
-│  ┌────────────────────┐  │
-│  │ TYPE               │  │
-│  ├────────────────────┤  │
-│  │ Prose           ∨  │  │  ← Dropdown
-│  └────────────────────┘  │
-│  ┌────────────────────┐  │
-│  │ PROMPT             │  │
-│  ├────────────────────┤  │
-│  │ Enter your prompt  │  │
-│  │ ...                │  │
-│  ├────────────────────┤  │
-│  │ ✨ Generate Art    │  │
-│  │    Direction       │  │
-│  └────────────────────┘  │
 └──────────────────────────┘
 ```
 
 ---
 
-### 2.3 ManuscriptDocEditor
+### 3.2 ManuscriptDocEditor
+
+📄 **Doc:** [`03-02-manuscript-doc-editor.md`](./03-02-manuscript-doc-editor.md)
 
 **Mục đích:** Rich text/Markdown editor cho các bước doc (Brief, Draft, Script). Hỗ trợ formatting cơ bản.
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface ManuscriptDocEditorProps {
   doc: ManuscriptDoc | null;
   onContentChange: (content: string) => void;
-}
-
-interface ManuscriptDocEditorState {
-  // Local editor state managed by editor library
 }
 ```
 
@@ -350,21 +326,7 @@ interface ManuscriptDocEditorState {
 │                                                                     │
 │  # Manuscript                                                       │
 │                                                                     │
-│  The mist clung to the jagged edges of the peaks like a            │
-│  tattered shroud. Below, the valley remained a secret,              │
-│  whispered only in the campfire tales of the bravest nomads.        │
-│                                                                     │
-│  **Characters present:**                                            │
-│  • Elara (The Apprentice)                                           │
-│  • Malakor (The Ancient)                                            │
-│                                                                     │
-│  ## Scene 1: The Arrival                                            │
-│                                                                     │
-│  Elara stepped cautiously over the mossy stones of the             │
-│  forgotten path. Her breath came in short, white puffs.            │
-│                                                                     │
-│  > "Do not look back, child," Malakor's voice rasped from          │
-│  > the shadows of his heavy cowl. "The past here has teeth."       │
+│  The mist clung to the jagged edges of the peaks...                │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -385,13 +347,15 @@ interface ManuscriptDocEditorState {
 
 ---
 
-### 2.4 ManuscriptDummyView
+### 3.3 ManuscriptDummyView
+
+📄 **Doc:** [`03-03-manuscript-dummy-view.md`](./03-03-manuscript-dummy-view.md)
 
 **Mục đích:** Grid view hiển thị page spreads cho Prose Dummy và Poetry Dummy steps. Cho phép add/select/edit spreads.
 
 **Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox text hiển thị theo `currentLanguage.code`
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface ManuscriptDummyViewProps {
@@ -401,71 +365,36 @@ interface ManuscriptDummyViewProps {
   onSpreadAdd: () => void;
   onSpreadUpdate: (spreadIndex: number, spread: DummySpread) => void;
 }
-
-interface ManuscriptDummyViewState {
-  columnsPerRow: number;
-  selectedSpreadIndex: number | null;
-}
 ```
 
 **Visual:**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  ─  4 / row  +                                                      │  ← Columns control
+│  ─  4 / row  +                                                      │
 ├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
 │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐                │
 │  │ 0 │ 1   │  │ 2 │ 3   │  │ 4 │ 5   │  │ 6 │ 7   │                │
-│  │   │     │  │   │     │  │   │     │  │   │     │                │
-│  │   │     │  │   │     │  │   │     │  │   │     │                │
 │  └─────────┘  └─────────┘  └─────────┘  └─────────┘                │
 │   Page 1-2     Page 3-4     Page 5-6     Page 7-8                   │
 │                                                                     │
 │  ┌─────────┐  ┌───────────────┐                                     │
-│  │ 8 │ 9   │  │               │                                     │
-│  │   │     │  │      +        │  ← New Spread button                │
-│  │   │     │  │               │                                     │
+│  │ 8 │ 9   │  │      +        │  ← New Spread button                │
 │  └─────────┘  └───────────────┘                                     │
-│   Page 9-10    New Spread                                           │
-│                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
-
-Selected Spread:
-┌─────────────────┐
-│ ┌─────┬───────┐ │  ← Border highlight (blue)
-│ │ 0   │   1   │ │
-│ │     │       │ │
-│ │     │       │ │
-│ └─────┴───────┘ │
-└─────────────────┘
-```
-
-**Spread Card Content:**
-
-```
-┌───────────────────────────┐
-│ ┌──────────┬────────────┐ │
-│ │ Page 0   │  Page 1    │ │
-│ │ ┌──────┐ │ ┌────────┐ │ │  ← Image placeholders
-│ │ │ img  │ │ │  img   │ │ │
-│ │ └──────┘ │ └────────┘ │ │
-│ │          │ ┌────────┐ │ │  ← Textbox preview
-│ │          │ │ text...│ │ │
-│ │          │ └────────┘ │ │
-│ └──────────┴────────────┘ │
-└───────────────────────────┘
 ```
 
 ---
 
-### 2.5 ManuscriptFinalizationView
+### 3.4 ManuscriptFinalizationView
+
+📄 **Doc:** [`03-04-manuscript-finalization-view.md`](./03-04-manuscript-finalization-view.md)
 
 **Mục đích:** View cho Finalization step. Hiển thị spread grid từ selected dummy source, có thêm Translate button ở header. Generate Art Direction sẽ tạo visual_description và save ra snapshot.spreads[].
 
 **Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox text hiển thị và translate theo `currentLanguage.code`
 
-**Interface:**
+**Props & Callbacks:**
 
 ```typescript
 interface ManuscriptFinalizationViewProps {
@@ -477,36 +406,17 @@ interface ManuscriptFinalizationViewProps {
   onSpreadUpdate: (spreadIndex: number, spread: DummySpread) => void;
   onTranslate: (targetLanguage: Language) => Promise<void>;
 }
-
-interface ManuscriptFinalizationViewState {
-  columnsPerRow: number;
-  selectedSpreadIndex: number | null;
-  isTranslating: boolean;
-  translateTargetLanguage: Language | null;
-}
 ```
 
 **Visual:**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  ─  4 / row  +                                     🌐 Translate     │  ← Header with Translate button
+│  ─  4 / row  +                                     🌐 Translate     │
 ├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
 │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐                │
 │  │ 0 │ 1   │  │ 2 │ 3   │  │ 4 │ 5   │  │ 6 │ 7   │                │
-│  │   │     │  │   │     │  │   │     │  │   │     │                │
-│  │   │     │  │   │     │  │   │     │  │   │     │                │
 │  └─────────┘  └─────────┘  └─────────┘  └─────────┘                │
-│   Page 1-2     Page 3-4     Page 5-6     Page 7-8                   │
-│                                                                     │
-│  ┌─────────┐  ┌───────────────┐                                     │
-│  │ 8 │ 9   │  │               │                                     │
-│  │   │     │  │      +        │                                     │
-│  │   │     │  │               │                                     │
-│  └─────────┘  └───────────────┘                                     │
-│   Page 9-10    New Spread                                           │
-│                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -535,9 +445,9 @@ Click "Generate Art Direction" (in sidebar)
 
 ---
 
-## 3. Technical Notes
+## 4. Technical Notes
 
-### 3.1 Key Design Decisions
+### 4.1 Key Design Decisions
 
 **Sidebar Collapsible Steps**
 Mỗi step trong sidebar có thể expand/collapse. Khi expand, hiển thị prompt input panel. Lý do: Tiết kiệm không gian, tập trung vào step đang làm việc.
@@ -549,12 +459,12 @@ Chỉ một step được expand và active tại một thời điểm. Lý do: 
 Finalization step có dropdown chọn source dummy (Prose/Poetry). Lý do: User có thể tạo cả 2 loại dummy và chọn 1 để finalize.
 
 **Spread Grid Responsive**
-`columnsPerRow` state cho phép user điều chỉnh số cột. Default 4. Lý do: Phù hợp với screen sizes khác nhau, dễ overview hoặc focus.
+`columnsPerRow` state cho phép user điều chỉnh số cột. Default 4. Lý do: Phù hợp với screen sizes khác nhau.
 
 **Language-aware Textbox Display**
 Textbox content được lấy theo `textbox[currentLanguage.code]`. Lý do: Hỗ trợ multi-language editing.
 
-### 3.2 Generate Flow
+### 4.2 Generate Flow
 
 | Step | Generate Action | Output |
 |------|-----------------|--------|
@@ -565,7 +475,7 @@ Textbox content được lấy theo `textbox[currentLanguage.code]`. Lý do: H�
 | Poetry Dummy | AI generates spread layout | `manuscript.dummies[type='poetry'].spreads[]` |
 | Finalization | AI generates visual descriptions | `snapshot.spreads[]` (copied from dummy + visual_descriptions) |
 
-### 3.3 Data Sync
+### 4.3 Data Sync
 
 **manuscript{} lives in snapshot**
 - `manuscript` data là phần của `snapshot.manuscript` (object, không phải array)
@@ -575,15 +485,15 @@ Textbox content được lấy theo `textbox[currentLanguage.code]`. Lý do: H�
 - Finalization step output đi vào `snapshot.spreads[]`, KHÔNG thay đổi `manuscript.dummies[]`
 - Là bước chuyển từ manuscript creativeSpace → spreads creativeSpace
 
-### 3.4 Spread Interaction (Future Design)
+### 4.4 Spread Interaction (Future Design)
 
 Khi click vào spread trong Dummy/Finalization view:
 - Highlight selected spread
 - Allow add text + drag/drop image and text
 
-**Note:** Chi tiết spread editing interaction sẽ được thiết kế riêng trong component design khác (e.g., `02-dummy-spread-editor.md`).
+**Note:** Chi tiết spread editing interaction sẽ được thiết kế riêng.
 
-### 3.5 Khi nào cần refactor?
+### 4.5 Khi nào cần refactor?
 
 Cân nhắc refactor nếu xuất hiện nhu cầu:
 - Complex spread editing inline (không dùng modal)
