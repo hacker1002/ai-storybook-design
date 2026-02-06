@@ -10,9 +10,9 @@
 ┌───────────────────────────────────────────────────────────────────────────────┐
 │                           ManuscriptCreativeSpace                             │
 │  ┌───────────────────────────┬─────────────────────────────────────────────┐  │
-│  │   ManuscriptStepsSidebar  │              Main Content                   │  │
+│  │   Steps Sidebar (inline)  │              Main Content                   │  │
 │  │  ┌──────────────────┐     │  ┌───────────────────────────────────────┐  │  │
-│  │  │   StepList       │     │  │                                       │  │  │
+│  │  │   StepItem[]     │     │  │                                       │  │  │
 │  │  │  • Brief      >  │     │  │   SWITCH activeStep:                  │  │  │
 │  │  │  • Draft      >  │     │  │                                       │  │  │
 │  │  │  • Script     >  │     │  │   'brief'|'draft'|'script':           │  │  │
@@ -40,24 +40,29 @@
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │                            ManuscriptCreativeSpace                               │
 │  ┌────────────────────────────────────────────────────────────────────────────┐  │
-│  │  Props: manuscript, currentLanguage ⚡, onManuscriptUpdate                  │  │
+│  │  Props:                                                                     │  │
+│  │  • manuscript, currentLanguage ⚡                                           │  │
+│  │  • snapshotSpreads (DummySpread[])                                         │  │
+│  │  Callbacks: onManuscriptUpdate, onSnapshotSpreadsUpdate                    │  │
 │  ├────────────────────────────────────────────────────────────────────────────┤  │
 │  │  State: activeStep, promptInput, isGenerating, selectedDummyType           │  │
 │  └────────────────────────────────────────────────────────────────────────────┘  │
 │         │                      │                                │                │
 │         ▼                      ▼                                ▼                │
 │  ┌────────────────┐   ┌─────────────────┐   ┌───────────────────────────────┐   │
-│  │ StepsSidebar   │   │   DocEditor     │   │   DummyView / Finalization    │   │
-│  │                │   │                 │   │                               │   │
-│  │ Props:         │   │ Props:          │   │ Props:                        │   │
-│  │ • activeStep   │   │ • doc           │   │ • spreads                     │   │
-│  │ • promptInput  │   │                 │   │ • currentLanguage ⚡           │   │
-│  │ • isGenerating │   │ Callbacks:      │   │                               │   │
-│  │ • selectedType │   │ • onContent     │   │ Callbacks:                    │   │
-│  │                │   │   Change        │   │ • onSpreadSelect              │   │
-│  │ Callbacks:     │   │                 │   │ • onSpreadAdd                 │   │
-│  │ • onStepChange │   └─────────────────┘   │ • onSpreadUpdate              │   │
-│  │ • onPrompt     │                         │ • onSpreadReorder             │   │
+│  │ StepItem[]     │   │   DocEditor     │   │   ManuscriptSpreadView        │   │
+│  │ (inline)       │   │                 │   │   (Dummy / Finalization)      │   │
+│  │                │   │ Props:          │   │                               │   │
+│  │ Props:         │   │ • doc           │   │ Props:                        │   │
+│  │ • step         │   │                 │   │ • spreads (DummySpread[])     │   │
+│  │ • isActive     │   │ Callback:       │   │ • mode ('dummy'|'finalize')   │   │
+│  │ • promptInput  │   │ • onContent     │   │ • currentLanguage ⚡           │   │
+│  │ • isGenerating │   │   Change        │   │                               │   │
+│  │ • selectedType │   │                 │   │ Callback:                     │   │
+│  │                │   └─────────────────┘   │ • onSpreadsChange             │   │
+│  │ Callbacks:     │                         │   (spreads: DummySpread[])    │   │
+│  │ • onStepClick  │                         │                               │   │
+│  │ • onPrompt     │                         │                               │   │
 │  │   Change       │                         │                               │   │
 │  │ • onGenerate   │                         │                               │   │
 │  │ • onDummyType  │                         │                               │   │
@@ -76,33 +81,6 @@
 | `prose_dummy` | `spread` | ManuscriptSpreadView (mode=dummy) | Spread view + editor cho văn xuôi |
 | `poetry_dummy` | `spread` | ManuscriptSpreadView (mode=dummy) | Spread view + editor cho thơ/vần |
 | `finalization` | `spread` | ManuscriptSpreadView (mode=finalize) | Spread view + editor for final text adjustments |
-
-### 1.4 manuscript{} Data Structure Reference
-
-```json
-{
-  "docs[]": [
-    { "type": "brief", "content": "markdown text..." },
-    { "type": "draft", "content": "markdown text..." },
-    { "type": "script", "content": "markdown text..." }
-  ],
-  "dummies[]": [
-    {
-      "type": "prose",
-      "spreads[]": [
-        {
-          "layout": "uuid",
-          "left_page": { "number": 0, "type": "normal_page", "layout": "uuid" },
-          "right_page": { "number": 1, "type": "normal_page", "layout": "uuid" },
-          "images[]": [{ "geometry": {...}, "art_note": "..." }],
-          "textboxes[]": [{ "[lang_code]": { "text": "...", "geometry": {...}, "typography": {...} } }]
-        }
-      ]
-    },
-    { "type": "poetry", "spreads[]": [...] }
-  ]
-}
-```
 
 ---
 
@@ -145,8 +123,8 @@ interface DummyPage {
 
 interface DummyImage {
   geometry: Geometry;
-  art_note: string;
-  visual_description?: string;
+  art_note: string;              // Used in dummy mode (drafting)
+  visual_description?: string;   // Used in finalize mode (generated by AI art direction)
 }
 
 interface DummyTextbox {
@@ -175,15 +153,16 @@ interface Manuscript {
 
 ```typescript
 interface ManuscriptCreativeSpaceProps {
+  currentLanguage: Language;        // ⚡ language-aware
+
   // Manuscript data (for Brief, Draft, Script, Prose/Poetry Dummy)
   manuscript: Manuscript;
-  currentLanguage: Language;        // ⚡ language-aware
   onManuscriptUpdate: (manuscript: Manuscript) => void;
 
   // Snapshot spreads (for Finalization step only)
-  snapshotSpreads: SpreadViewSpread[];
-  onSnapshotSpreadsUpdate: (spreadIndex: number, spread: SpreadViewSpread) => void;
-  onSnapshotSpreadsReorder: (oldIndex: number, newIndex: number) => void;
+  // Note: Uses DummySpread type - same structure, only `visual_description` differs
+  snapshotSpreads: DummySpread[];
+  onSnapshotSpreadsUpdate: (spreads: DummySpread[]) => void;
 }
 
 interface ManuscriptCreativeSpaceState {
@@ -193,14 +172,39 @@ interface ManuscriptCreativeSpaceState {
   selectedDummyType: DummyType;  // For Finalization step source selection
 }
 
-interface ManuscriptCreativeSpaceCallbacks {
-  onStepChange: (step: ManuscriptStepType) => void;
-  onPromptChange: (prompt: string) => void;
-  onGenerate: (step: ManuscriptStepType, prompt: string) => Promise<void>;
-  onDocContentChange: (docType: string, content: string) => void;
-  onDummyUpdate: (dummyType: DummyType, spreads: DummySpread[]) => void;
-  onDummySpreadReorder: (dummyType: DummyType, oldIndex: number, newIndex: number) => void;
-  onGenerateArtDirection: (sourceDummyType: DummyType, prompt: string) => Promise<void>;
+// Steps configuration (rendered inline, no intermediate component)
+interface StepConfig {
+  id: ManuscriptStepType;
+  label: string;
+  icon: 'doc' | 'grid' | 'finalize';
+  showDummyTypeSelector: boolean;
+}
+
+const STEPS_CONFIG: StepConfig[] = [
+  { id: 'brief', label: 'Brief', icon: 'doc', showDummyTypeSelector: false },
+  { id: 'draft', label: 'Draft', icon: 'doc', showDummyTypeSelector: false },
+  { id: 'script', label: 'Script', icon: 'doc', showDummyTypeSelector: false },
+  { id: 'prose_dummy', label: 'Prose Dummy', icon: 'grid', showDummyTypeSelector: false },
+  { id: 'poetry_dummy', label: 'Poetry Dummy', icon: 'grid', showDummyTypeSelector: false },
+  { id: 'finalization', label: 'Finalization', icon: 'finalize', showDummyTypeSelector: true },
+];
+
+// Internal handlers
+interface ManuscriptCreativeSpaceHandlers {
+  // UI state handlers
+  handleStepChange: (step: ManuscriptStepType) => void;
+  handlePromptChange: (prompt: string) => void;
+  handleDummyTypeChange: (type: DummyType) => void;
+  handleGenerate: () => void;
+
+  // Doc changes - updates whole manuscript via onManuscriptUpdate
+  handleDocContentChange: (docType: string, content: string) => void;
+
+  // Dummy spread changes - updates whole manuscript via onManuscriptUpdate
+  handleDummySpreadsChange: (dummyType: DummyType, spreads: DummySpread[]) => void;
+
+  // Snapshot spread changes - updates whole array via onSnapshotSpreadsUpdate
+  handleSnapshotSpreadsChange: (spreads: DummySpread[]) => void;
 }
 ```
 
@@ -208,15 +212,27 @@ interface ManuscriptCreativeSpaceCallbacks {
 
 ```
 ManuscriptCreativeSpace:
-  RENDER ManuscriptStepsSidebar với:
-    - activeStep, promptInput, isGenerating
-    - selectedDummyType (visible only for finalization)
-    - callbacks: onStepChange, onPromptChange, onGenerate, onDummyTypeChange
+  // Sidebar (inline, no intermediate component)
+  RENDER aside.manuscript-steps-sidebar:
+    RENDER header "Manuscript Steps"
+    FOR EACH step IN STEPS_CONFIG:
+      isActive = activeStep === step.id
+      RENDER StepItem với:
+        - step config
+        - isActive
+        - promptInput
+        - isGenerating
+        - selectedDummyType
+        - callbacks: onStepClick → handleStepChange(step.id),
+                     onPromptChange, onGenerate, onDummyTypeChange
 
+  // Main content area
   SWITCH activeStep:
     'brief' | 'draft' | 'script':
       doc = GET doc from manuscript.docs WHERE type === activeStep
-      RENDER ManuscriptDocEditor với doc, onContentChange
+      RENDER ManuscriptDocEditor với:
+        - doc
+        - onContentChange: (content) => handleDocContentChange(activeStep, content)
 
     'prose_dummy' | 'poetry_dummy':
       dummyType = activeStep === 'prose_dummy' ? 'prose' : 'poetry'
@@ -225,18 +241,30 @@ ManuscriptCreativeSpace:
         - spreads: dummy.spreads
         - mode: 'dummy'
         - currentLanguage
-        - onSpreadSelect, onSpreadAdd, onSpreadUpdate, onSpreadReorder
+        - onSpreadsChange: (spreads) => handleDummySpreadsChange(dummyType, spreads)
+        // NOTE: Component handles add/update/reorder internally, passes whole spreads array
 
     'finalization':
       RENDER ManuscriptSpreadView với:
         - spreads: snapshotSpreads      // From props, NOT manuscript.dummies
         - mode: 'finalize'
         - currentLanguage
-        - onSpreadSelect: handleSpreadSelect
-        - onSpreadUpdate: onSnapshotSpreadsUpdate
-        - onSpreadReorder: onSnapshotSpreadsReorder
-        // NOTE: No onSpreadAdd in finalize mode
+        - onSpreadsChange: handleSnapshotSpreadsChange
+        // NOTE: No add in finalize mode (handled inside ManuscriptSpreadView)
+        // NOTE: Component handles update/reorder internally, passes whole spreads array
         // NOTE: Translation handled at EditorPage level via TranslationNotAvailableDialog
+
+  // Handler implementations
+  handleDocContentChange(docType, content):
+    updatedDocs = manuscript.docs.map(d => d.type === docType ? {...d, content} : d)
+    onManuscriptUpdate({...manuscript, docs: updatedDocs})
+
+  handleDummySpreadsChange(dummyType, spreads):
+    updatedDummies = manuscript.dummies.map(d => d.type === dummyType ? {...d, spreads} : d)
+    onManuscriptUpdate({...manuscript, dummies: updatedDummies})
+
+  handleSnapshotSpreadsChange(spreads):
+    onSnapshotSpreadsUpdate(spreads)
 ```
 
 ### 2.4 Visual
@@ -266,21 +294,22 @@ ManuscriptCreativeSpace:
 > **Lưu ý:** Section này chỉ định nghĩa **props và callbacks** (contract giữa parent-child).
 > State và logic chi tiết của mỗi child sẽ được thiết kế trong file riêng của component đó.
 
-### 3.1 ManuscriptStepsSidebar
+### 3.1 StepItem
 
-📄 **Doc:** [03-01-manuscript-steps-sidebar.md](component/editor-page/03-01-manuscript-steps-sidebar.md)
+📄 **Doc:** [03-01-step-item.md](component/editor-page/03-01-step-item.md)
 
-**Mục đích:** Left sidebar chứa step navigation và prompt input panel. Hiển thị danh sách các bước, cho phép chuyển đổi, và nhập prompt để generate content.
+**Mục đích:** Single step row với collapsible PromptPanel. Hiển thị step header và expand/collapse để hiện prompt input.
 
 **Props & Callbacks:**
 
 ```typescript
-interface ManuscriptStepsSidebarProps {
-  activeStep: ManuscriptStepType;
+interface StepItemProps {
+  step: StepConfig;
+  isActive: boolean;
   promptInput: string;
   isGenerating: boolean;
   selectedDummyType: DummyType;
-  onStepChange: (step: ManuscriptStepType) => void;
+  onStepClick: () => void;
   onPromptChange: (prompt: string) => void;
   onGenerate: () => void;
   onDummyTypeChange: (type: DummyType) => void;
@@ -290,24 +319,24 @@ interface ManuscriptStepsSidebarProps {
 **Visual:**
 
 ```
-┌──────────────────────────┐
-│ Manuscript Steps         │
-├──────────────────────────┤
-│ 📄 Brief              >  │  ← Collapsed
-├──────────────────────────┤
-│ 📄 Draft              >  │
-├──────────────────────────┤
-│ ▦ Prose Dummy         ∨  │  ← Expanded
-│  ┌────────────────────┐  │
-│  │ PROMPT             │  │
-│  ├────────────────────┤  │
-│  │ Enter prompt...    │  │
-│  ├────────────────────┤  │
-│  │ ✨ Generate        │  │
-│  └────────────────────┘  │
-├──────────────────────────┤
-│ ✨ Finalization       >  │
-└──────────────────────────┘
+Collapsed:
+┌──────────────────────────────────┐
+│ 📄 Brief                       > │  ← Click to expand
+└──────────────────────────────────┘
+
+Expanded:
+┌──────────────────────────────────┐
+│ 📄 Brief                       ∨ │  ← Click to collapse
+│  ┌────────────────────────────┐  │
+│  │ PROMPT                     │  │
+│  │ ┌────────────────────────┐ │  │
+│  │ │ Enter your prompt...   │ │  │
+│  │ └────────────────────────┘ │  │
+│  │ ┌────────────────────────┐ │  │
+│  │ │      ✨ Generate       │ │  │
+│  │ └────────────────────────┘ │  │
+│  └────────────────────────────┘  │
+└──────────────────────────────────┘
 ```
 
 ---
@@ -379,16 +408,21 @@ interface ManuscriptDocEditorProps {
 
 ```typescript
 interface ManuscriptSpreadViewProps {
-  spreads: SpreadViewSpread[];
+  spreads: DummySpread[];
   mode: 'dummy' | 'finalize';
   currentLanguage: Language;
 
-  onSpreadSelect?: (spreadIndex: number) => void;
-  onSpreadAdd?: () => void;              // Not called in finalize mode
-  onSpreadUpdate?: (spreadIndex: number, spread: SpreadViewSpread) => void;
-  onSpreadReorder?: (oldIndex: number, newIndex: number) => void;
+  // Single callback for all spread changes (add, update, reorder, delete)
+  // Component handles operations internally and passes updated array
+  onSpreadsChange: (spreads: DummySpread[]) => void;
 }
 ```
+
+**Internal operations (handled by component, output via onSpreadsChange):**
+- Add spread: `onSpreadsChange([...spreads, newSpread])` (dummy mode only)
+- Update spread: `onSpreadsChange(spreads.map((s, i) => i === idx ? updated : s))`
+- Reorder spreads: `onSpreadsChange(reorderedSpreads)`
+- Delete spread: `onSpreadsChange(spreads.filter((_, i) => i !== idx))`
 
 **Key Features:**
 
@@ -470,11 +504,10 @@ interface ManuscriptSpreadViewProps {
   spreads={snapshotSpreads}
   mode="finalize"
   currentLanguage={currentLanguage}
-  onSpreadSelect={handleSpreadSelect}
-  onSpreadUpdate={handleSpreadUpdate}
-  onSpreadReorder={handleSpreadReorder}
+  onSpreadsChange={handleSnapshotSpreadsChange}
 />
-// NOTE: Translation now handled at EditorPage level via TranslationNotAvailableDialog
+// NOTE: Single callback for all changes (update, reorder)
+// NOTE: Translation handled at EditorPage level via TranslationNotAvailableDialog
 ```
 
 ---

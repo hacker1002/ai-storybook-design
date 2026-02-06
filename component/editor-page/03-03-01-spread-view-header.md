@@ -17,7 +17,7 @@
 │                              SpreadViewHeader                                    │
 │  ┌───────────────┐                                       ┌────────────────────┐ │
 │  │  ViewToggle   │                                       │  DualPurposeSlider │ │
-│  │  [☐] ⚏       │                                       │  ─ ●────── + 100%  │ │
+│  │  [⚏]         │                                       │  ─ ●────── + 100%  │ │
 │  └───────────────┘                                       └────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -35,8 +35,8 @@
 **Grid Mode:**
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│  [⚏]  ☑ Show full spread view                             ─ ●────────── + 4    │
-│   ↑ icon  ↑ checkbox                                      └→ Columns (1-6)     │
+│  [⚏]                                                      ─ ●────────── + 4    │
+│   ↑ toggle (tooltip: "Show full spread view")             └→ Columns (1-6)     │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -75,10 +75,9 @@ SpreadViewHeader:
   RENDER Container (flex row, justify-between, align-center):
 
     // Left section
-    RENDER ViewToggle icon button
-    IF viewMode === 'grid':
-      RENDER Checkbox "Show full spread view" (checked):
-        - onChange: onViewModeToggle
+    RENDER ViewToggle icon button với:
+      - tooltip: "Show full spread view"
+      - onClick: onViewModeToggle
 
     // Center section (spacer)
 
@@ -110,7 +109,7 @@ SpreadViewHeader:
 │  ╔═══╗                                                   ┌─────────────────────┐ │
 │  ║ ⚏ ║                                                   │ ─  ●──────  + 100%  │ │
 │  ╚═══╝                                                   └─────────────────────┘ │
-│    ↑ View toggle icon                                       ↑ Zoom slider        │
+│    ↑ View toggle (tooltip: "Show full spread view")         ↑ Zoom slider        │
 │    (click to switch to grid)                                (25%-200%)           │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -119,11 +118,11 @@ SpreadViewHeader:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ╔═══╗  ☑ Show full spread view                          ┌─────────────────────┐ │
+│  ╔═══╗                                                   ┌─────────────────────┐ │
 │  ║ ⚏ ║                                                   │ ─  ●──────  +   4   │ │
 │  ╚═══╝                                                   └─────────────────────┘ │
-│    ↑ View toggle   ↑ Checkbox (uncheck to exit grid)        ↑ Columns slider     │
-│                                                             (1-6)                │
+│    ↑ View toggle (tooltip: "Show full spread view")         ↑ Columns slider     │
+│    (click to switch to edit)                                (1-6)                │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -160,7 +159,7 @@ Grid Mode (Columns):
 
 ### 3.1 ViewToggle
 
-**Mục đích:** Icon button + optional checkbox để switch giữa Edit và Grid modes.
+**Mục đích:** Icon button để switch giữa Edit và Grid modes, với tooltip "Show full spread view".
 
 **Props:**
 
@@ -175,13 +174,14 @@ interface ViewToggleProps {
 
 ```
 Edit Mode:                              Grid Mode:
-┌─────────────────┐                     ┌─────────────────────────────────┐
-│  ╔═══╗          │                     │  ╔═══╗  ☑ Show full spread view │
-│  ║ ⚏ ║  ← icon  │                     │  ║ ⚏ ║                          │
-│  ╚═══╝          │                     │  ╚═══╝                          │
-│                 │                     │    ↑     ↑ Checkbox visible     │
-│  Click → Grid   │                     │  Click/Uncheck → Edit mode      │
-└─────────────────┘                     └─────────────────────────────────┘
+┌─────────────────────────────┐         ┌─────────────────────────────────┐
+│  ╔═══╗  ← icon              │         │  ╔═══╗  ← icon                  │
+│  ║ ⚏ ║                      │         │  ║ ⚏ ║                          │
+│  ╚═══╝                      │         │  ╚═══╝                          │
+│  Click → Grid               │         │  Click → Edit                   │
+│  (tooltip: "Show full       │         │  (tooltip: "Show full           │
+│   spread view")             │         │   spread view")                 │
+└─────────────────────────────┘         └─────────────────────────────────┘
 ```
 
 ### 3.2 DualPurposeSlider
@@ -202,26 +202,10 @@ interface DualPurposeSliderProps {
 
 **Config by Mode:**
 
-```typescript
-const SLIDER_CONFIG = {
-  edit: {
-    min: 25,
-    max: 200,
-    step: 25,
-    getValue: (props) => props.zoomLevel,
-    formatLabel: (value) => `${value}%`,
-    onChange: (props) => props.onZoomChange,
-  },
-  grid: {
-    min: 1,
-    max: 6,
-    step: 1,
-    getValue: (props) => props.columnsPerRow,
-    formatLabel: (value) => `${value}`,
-    onChange: (props) => props.onColumnsChange,
-  },
-};
-```
+| Mode | Min | Max | Step | Label |
+|------|-----|-----|------|-------|
+| Edit | 25 | 200 | 25 | `{value}%` |
+| Grid | 1 | 6 | 1 | `{value}` |
 
 ---
 
@@ -236,11 +220,11 @@ Slider changes behavior based on viewMode:
 
 Lý do: Space-efficient UI, cùng 1 slider phục vụ 2 mục đích khác nhau theo context.
 
-**View Toggle with Checkbox**
-- Edit mode: Only icon button visible
-- Grid mode: Icon + "Show full spread view" checkbox
+**View Toggle with Tooltip**
+- Edit mode: Icon button with tooltip "Show full spread view"
+- Grid mode: Icon button with tooltip "Show full spread view"
 
-Lý do: Checkbox làm rõ đang ở grid mode, uncheck để quay về edit mode.
+Lý do: Simple toggle icon, tooltip cung cấp context về action.
 
 **Zoom Applies to SpreadCanvas Only**
 Zoom level chỉ ảnh hưởng SpreadCanvas trong edit mode, không ảnh hưởng thumbnails. Lý do: Thumbnails cần consistent size để navigate.
@@ -248,64 +232,9 @@ Zoom level chỉ ảnh hưởng SpreadCanvas trong edit mode, không ảnh hư�
 > **Note:** Translation is handled at EditorPage level via `TranslationNotAvailableDialog`.
 > See [01-04-translation-not-available-dialog.md](component/editor-page/01-04-translation-not-available-dialog.md).
 
-### 4.2 Styling
+### 4.2 Accessibility
 
-```css
-.spread-view-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
-  background: var(--surface-secondary);
-  border-bottom: 1px solid var(--border-color);
-  height: 48px;
-}
-
-.view-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.view-toggle-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 14px;
-}
-
-.dual-slider {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.dual-slider-track {
-  width: 120px;
-}
-
-.dual-slider-value {
-  min-width: 40px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-```
-
-### 4.3 Accessibility
-
-```typescript
-const toggleA11y = (viewMode: ViewMode) => ({
-  role: 'button',
-  'aria-pressed': viewMode === 'grid',
-  'aria-label': viewMode === 'edit' ? 'Switch to grid view' : 'Switch to edit view',
-});
-
-const sliderA11y = (viewMode: ViewMode, value: number) => ({
-  role: 'slider',
-  'aria-label': viewMode === 'edit' ? 'Zoom level' : 'Columns per row',
-  'aria-valuemin': viewMode === 'edit' ? 25 : 1,
-  'aria-valuemax': viewMode === 'edit' ? 200 : 6,
-  'aria-valuenow': value,
-  'aria-valuetext': viewMode === 'edit' ? `${value}%` : `${value} columns`,
-});
-```
+| Element | Role | ARIA attributes |
+|---------|------|-----------------|
+| Toggle | `button` | `aria-pressed`, `aria-label="Switch to grid/edit view"` |
+| Slider | `slider` | `aria-label`, `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, `aria-valuetext` |

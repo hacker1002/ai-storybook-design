@@ -298,9 +298,15 @@ interface IconRailProps {
 
 ```typescript
 interface ManuscriptCreativeSpaceProps {
-  manuscript: Manuscript;
   currentLanguage: Language;  // ⚡ language-aware
+
+  // Manuscript data (Brief, Draft, Script, Prose/Poetry Dummy)
+  manuscript: Manuscript;
   onManuscriptUpdate: (manuscript: Manuscript) => void;
+
+  // Snapshot spreads (Finalization step only)
+  snapshotSpreads: DummySpread[];
+  onSnapshotSpreadsUpdate: (spreads: DummySpread[]) => void;
 }
 ```
 

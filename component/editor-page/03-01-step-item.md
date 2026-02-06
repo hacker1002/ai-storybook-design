@@ -1,5 +1,7 @@
 # StepItem: Component Design
 
+> **Parent:** [ManuscriptCreativeSpace](component/editor-page/03-manuscript-creative-space.md) (rendered inline via STEPS_CONFIG iteration)
+
 ---
 
 ## 1. Diagrams
