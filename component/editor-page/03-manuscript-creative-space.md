@@ -363,8 +363,8 @@ interface ManuscriptDocEditorProps {
 **Mục đích:** Unified spread view cho cả Dummy và Finalization steps. Hiển thị spread editor với horizontal filmstrip, hoặc grid view với adjustable columns.
 
 **Data source:**
-- `mode='dummy'`: `manuscript.dummies[].spreads[]`
-- `mode='finalize'`: `snapshot.spreads[]`
+- `mode='dummy'`: `manuscript.dummies[].spreads[]` (drafting & layout planning)
+- `mode='finalize'`: `snapshot.spreads[]` directly (NOT from manuscript - final assets for export pipelines)
 
 **Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox text hiển thị theo `currentLanguage.code`
 
@@ -512,8 +512,9 @@ Textbox content được lấy theo `textbox[currentLanguage.code]`. Lý do: H�
 - Changes được propagate qua `onManuscriptUpdate` callback lên EditorPage
 
 **Finalization Output**
-- Finalization step output đi vào `snapshot.spreads[]`, KHÔNG thay đổi `manuscript.dummies[]`
-- Là bước chuyển từ manuscript creativeSpace → spreads creativeSpace
+- Finalization đọc/ghi trực tiếp vào `snapshot.spreads[]`, KHÔNG liên quan đến `manuscript.dummies[]`
+- Là bước cuối trong manuscript flow để tạo complete assets + spreads
+- Output được sử dụng bởi các downstream pipelines: PDF export, ePub, Video, etc.
 
 ### 4.4 Spread Interaction (Future Design)
 

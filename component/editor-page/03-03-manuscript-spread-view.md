@@ -107,11 +107,14 @@
 
 | Feature | mode='dummy' | mode='finalize' |
 |---------|--------------|-----------------|
-| Data source | `manuscript.dummies[].spreads[]` | `snapshot.spreads[]` |
-| Drag-drop reorder | ✅ Yes | ✅ Yes (NEW) |
+| Data source | `manuscript.dummies[].spreads[]` | `snapshot.spreads[]` (NOT from manuscript) |
+| Purpose | Drafting & layout planning | Final assets for export pipelines |
+| Drag-drop reorder | ✅ Yes | ✅ Yes |
 | Click to edit | ✅ Yes (inline editor) | ✅ Yes (inline editor) |
 | Add spread | ✅ Button visible | ❌ No button |
 | Image display | `art_note` | `visual_description` |
+
+> **Note:** Finalization is the final step to produce complete assets + spreads for downstream pipelines (PDF export, ePub, Video, etc.). Data is read/written directly to `snapshot.spreads[]`, independent of `manuscript.dummies[]`.
 
 ---
 
