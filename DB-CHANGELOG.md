@@ -2,6 +2,21 @@
 
 ---
 
+## [2026-02-06 10:55] Rename flags to issues & Update animations
+
+- **flags**: đổi tên thành `issues`
+- **issues.type**: 1-15 (xem Issue Types reference table trong DATABASE-SCHEMA.md)
+  - 1-4: Visual, 5-7: Logic & Thời gian, 8-10: Văn bản - Hình ảnh, 11-13: Nhân vật, 14-15: Kỹ thuật
+- **issues.status**: 0=not_fixed, 1=fixed, 2=skipped
+- **JSONB spreads[].animations[].effect**:
+  - Di chuyển `delay`, `duration`, `loop` vào trong `effect`
+  - Thêm: `amount`, `direction`
+  - `effect.type`: 1-27 (xem Animation Effect Types reference table trong DATABASE-SCHEMA.md)
+
+Migration: `../supabase/migrations/20260206000001_rename_flags_to_issues.sql`
+
+---
+
 ## [2026-02-05 18:32] Rename manuscripts to manuscript
 
 - **snapshots**: `manuscripts` → `manuscript` (column rename)

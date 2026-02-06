@@ -93,18 +93,37 @@
 | `props[]` | JSONB | Danh sách đạo cụ |
 | `stages[]` | JSONB | Danh sách bối cảnh |
 
-## Bảng Flags
+## Bảng Issues
 Bảng lưu các vấn đề tồn đọng trong book.
 
 | Field | Type | Mô tả |
 |-------|------|-------|
 | `id` | UUID | Primary key |
-| `user_id` | UUID | ID người tạo flag |
+| `user_id` | UUID | ID người tạo issue |
 | `book_id` | UUID | Link đến Book |
 | `title` | VARCHAR | Tiêu đề vấn đề |
 | `content` | TEXT | Mô tả chi tiết vấn đề |
-| `type` | SMALLINT | 0: consistency, 1: plot, 2: age_inappropriate, 3: other |
-| `status` | SMALLINT | 0: open, 1: in_progress, 2: resolved, 3: ignored |
+| `type` | SMALLINT | 1-15, xem bảng Issue Types bên dưới |
+| `status` | SMALLINT | 0: not_fixed, 1: fixed, 2: skipped |
+
+**Issue Types:**
+| ID | Type | Group | Severity |
+|----|------|-------|----------|
+| 1 | Thiết kế nhân vật | Visual | Major |
+| 2 | Đạo cụ & Bối cảnh | Visual | Major |
+| 3 | Vị trí tương đối | Visual | Medium |
+| 4 | Bảng màu (Palette) | Visual | Minor |
+| 5 | Dòng thời gian | Logic & Thời gian | Critical |
+| 6 | Di chuyển (Teleport) | Logic & Thời gian | Critical |
+| 7 | Vật lý & Sinh học | Logic & Thời gian | Critical |
+| 8 | Nội dung mô tả | Văn bản - Hình ảnh | Critical |
+| 9 | Số lượng | Văn bản - Hình ảnh | Major |
+| 10 | Hành động | Văn bản - Hình ảnh | Major |
+| 11 | Giọng điệu (Tone) | Nhân vật (Lore) | Minor |
+| 12 | Kỹ năng/Tri thức | Nhân vật (Lore) | Critical |
+| 13 | Động cơ & Tính cách | Nhân vật (Lore) | Major |
+| 14 | Vùng an toàn (Bleed) | Kỹ thuật (Format) | Major |
+| 15 | Bố cục (Layout) | Kỹ thuật (Format) | Major |
 
 ## Bảng Users & Profiles
 
@@ -431,14 +450,16 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     "order": 1,
     "target_id": "...",
     "target_type": "textbox | object",
-    "effect": {
-      "type": "appear | exit | emphasis | read-along | moving",
-      "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 }
-    },
     "trigger_type": "on_click | with_previous | after_previous",
-    "delay": 0,
-    "duration": 1000,
-    "loop": 0
+    "effect": {
+      "type": 1,
+      "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
+      "delay": 0,
+      "duration": 1000,
+      "loop": 0,
+      "amount": 1,
+      "direction": "left | right | up | down"
+    }
   }]
 }
 ```
@@ -453,10 +474,35 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 - `objects[]`: các object trên spread (character, prop, background, foreground, vfx...)
   - `geometry`: vị trí tương đối trên ảnh gốc (%), quy đổi ra vị trí trên spread cho animation
 - `animations[]`: animation cho textbox và object
-  - `effect.type`: appear (xuất hiện), exit (biến mất), emphasis (nhấn mạnh), read-along (đọc theo), moving (di chuyển)
-  - `effect.geometry`: vị trí đích cho animation moving (x, y, w, h)
   - `trigger_type`: on_click (khi click), with_previous (cùng lúc với trước), after_previous (sau cái trước)
-  - `loop`: số lần lặp animation (0 = không lặp)
+  - `effect.type`: 1-27, xem bảng Animation Effect Types bên dưới
+  - `effect.geometry`: vị trí đích cho animation motion paths (x, y, w, h)
+  - `effect.delay`: thời gian chờ trước khi chạy (ms)
+  - `effect.duration`: thời gian diễn ra (ms)
+  - `effect.loop`: số lần lặp animation (0 = không lặp)
+  - `effect.amount`: lượng thay đổi
+  - `effect.direction`: hướng animation (left, right, up, down)
+
+**Animation Effect Types:**
+| ID | Name | Type | Target | Options |
+|----|------|------|--------|---------|
+| 1 | Play | Play | Audio, Video | delay, loop |
+| 2 | Appear | Entrance | Image, Video, Textbox | delay |
+| 3 | Fade In | Entrance | Image, Video, Textbox | delay, duration |
+| 4 | Fly In | Entrance | Image, Video, Textbox | delay, duration, direction |
+| 5 | Float In | Entrance | Image, Video, Textbox | delay, duration, direction |
+| 6 | Zoom | Entrance | Image, Textbox | delay, duration, amount |
+| 7 | Spin | Emphasis | Image, Textbox | delay, duration, loop, amount, direction |
+| 8 | Grow/Shrink | Emphasis | Image, Textbox | delay, duration, amount, direction |
+| 9 | Teeter | Emphasis | Image, Textbox | delay, duration, loop |
+| 10 | Transparency | Emphasis | Image, Textbox | delay, duration |
+| 11 | Read-along | Emphasis | Textbox | delay |
+| 12 | Disappear | Exit | Image, Video, Textbox | delay, duration |
+| 13 | Fade Out | Exit | Image, Video, Textbox | delay, duration |
+| 14 | Fly Out | Exit | Image, Video, Textbox | delay, duration, direction |
+| 15 | Float Out | Exit | Image, Video, Textbox | delay, duration |
+| 16 | Lines | Motion Paths | Image, Video | delay, duration, geometry |
+| 17 | Arcs | Motion Paths | Image, Video | delay, duration |
 
 ### characters[] structure
 ```json
