@@ -4,7 +4,7 @@ Thiết kế kiến trúc component cho các trang chính của AI Storybook Can
 
 ## Quy tắc thiết kế
 
-👉 **Xem chi tiết:** [CLAUDE.md](../CLAUDE.md#quy-tắc-khi-thiết-kế-component)
+👉 **Xem chi tiết:** [CLAUDE.md](CLAUDE.md#quy-tắc-khi-thiết-kế-component)
 
 ### Phạm vi
 - **Chỉ thiết kế 2 tầng:** Component cha + children trực tiếp

@@ -118,6 +118,17 @@ editor-page/
 
 ---
 
+## Quy tắc chung
+- **No code in design docs** except: JSON structures, TypeScript interfaces, mapping constants
+- **Cố gắng** đặt tên component, api, feature 1 cách rõ ràng, dễ hiểu, tránh nhập nhằng
+- Keep docs focused on specifications, not implementation details
+- Định nghĩa TypeScript interfaces rõ ràng cho input/output
+- **Link tới các file doc khác** phải có đầy đủ path từ root vào. Ví dụ: 
+ - component design: [Manuscript CreativeSpace](component/editor-page/03-manuscript-creative-space.md)
+ - api design: [00 - Brainstorming Initial](api/chat/00-story-brainstorming-initial.md)
+ - app feture: [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
+
+
 ## Quy tắc khi thiết kế Component
 
 ### Phạm vi thiết kế
@@ -159,8 +170,6 @@ editor-page/
 | Callback props | on + Verb | `onSave`, `onChange` |
 | Boolean props | is/has + Adj | `isOpen`, `hasChanges` |
 | Handler functions | handle + Verb | `handleSave` |
-
-**Cố gắng** đặt tên component 1 cách rõ ràng, dễ hiểu, tránh nhập nhằng
 
 ### Annotations
 
@@ -206,11 +215,6 @@ editor-page/
 ### Image Generation Model
 - Model AI cho image generation được **fix cứng trong code**
 - Không cần parameter `optimizeFor`
-
-### Documentation Standards
-- **No code in design docs** except: JSON structures, TypeScript interfaces, mapping constants
-- Keep docs focused on specifications, not implementation details
-- Định nghĩa TypeScript interfaces rõ ràng cho input/output
 
 ### Error Handling
 - Trả về error messages rõ ràng
@@ -275,9 +279,6 @@ editor-page/
 - Client **KHÔNG** gọi trực tiếp AI Provider - luôn qua API
 - Client **CÓ THỂ** gọi trực tiếp DB cho simple CRUD (RLS bảo vệ)
 - Background tasks **PHẢI** idempotent và có job status tracking
-- **No code in design docs** except: JSON structures, TypeScript interfaces, mapping constants
-- Keep docs focused on specifications, not implementation details
-- Định nghĩa TypeScript interfaces rõ ràng cho input/output
 
 ---
 

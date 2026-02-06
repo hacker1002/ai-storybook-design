@@ -248,7 +248,7 @@ interface MenuButtonProps {
 
 ### 3.2 StepBreadcrumb
 
-📄 **Doc:** [`01-01-step-breadcrumb.md`](./01-01-step-breadcrumb.md)
+📄 **Doc:** [01-01-step-breadcrumb.md](component/editor-page/01-01-step-breadcrumb.md)
 
 **Mục đích:** Breadcrumb navigation giữa 4 steps. Click step trước hoặc sau để chuyển step.
 
@@ -317,7 +317,7 @@ No notifications:     Has notifications:
 
 ### 3.5 LanguageSelector
 
-📄 **Doc:** [`01-02-language-selector.md`](./01-02-language-selector.md)
+📄 **Doc:** [01-02-language-selector.md](component/editor-page/01-02-language-selector.md)
 
 **Mục đích:** Dropdown chọn ngôn ngữ hiển thị trong editor. Đặt trực tiếp trên header để dễ truy cập.
 
@@ -350,7 +350,7 @@ Closed:                       Open:
 
 ### 3.6 MenuPopover
 
-📄 **Doc:** [`01-03-menu-popover.md`](./01-03-menu-popover.md)
+📄 **Doc:** [01-03-menu-popover.md](component/editor-page/01-03-menu-popover.md)
 
 **Mục đích:** Popover menu chứa points, navigation home, và editor mode display.
 

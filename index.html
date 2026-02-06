@@ -116,6 +116,31 @@
     .search input {
       border-radius: 20px;
     }
+
+    /* Sidebar collapse styles */
+    .sidebar-nav li.folder > a::after {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-right: 2px solid #999;
+      border-bottom: 2px solid #999;
+      transform: rotate(-45deg);
+      margin-left: 8px;
+      transition: transform 0.2s ease;
+    }
+
+    .sidebar-nav li.folder.open > a::after {
+      transform: rotate(45deg);
+    }
+
+    .sidebar-nav li.folder > ul {
+      display: none;
+    }
+
+    .sidebar-nav li.folder.open > ul {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -144,6 +169,7 @@
         auto2top: true,
         maxLevel: 4,
         subMaxLevel: 3,
+        sidebarDisplayLevel: 1, // Collapse all except top level
 
         // Search plugin
         search: {
@@ -195,6 +221,8 @@
       document.write('<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-markdown.min.js"><\/script>');
       document.write('<script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"><\/script>');
       document.write('<script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/emoji.min.js"><\/script>');
+      // Sidebar collapse plugin
+      document.write('<script src="//cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/docsify-sidebar-collapse.min.js"><\/script>');
     }
   </script>
 </body>

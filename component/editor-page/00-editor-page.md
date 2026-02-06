@@ -223,7 +223,7 @@ EditorPage:
 
 ### 3.1 EditorHeader
 
-📄 **Doc:** [`01-editor-header.md`](./01-editor-header.md)
+📄 **Doc:** [01-editor-header.md](component/editor-page/01-editor-header.md)
 
 **Mục đích:** Top navigation bar. Hiển thị book info, step navigation, language selector, và quick actions.
 
@@ -251,7 +251,7 @@ interface EditorHeaderProps {
 
 ### 3.2 IconRail
 
-📄 **Doc:** [`02-icon-rail.md`](./02-icon-rail.md)
+📄 **Doc:** [02-icon-rail.md](component/editor-page/02-icon-rail.md)
 
 **Mục đích:** Sidebar navigation dọc bên trái chứa icons để chuyển giữa các CreativeSpace.
 
@@ -269,7 +269,7 @@ interface IconRailProps {
 
 ### 3.3 ManuscriptCreativeSpace ⚡
 
-📄 **Doc:** [`03-manuscript-creative-space.md`](./03-manuscript-creative-space.md)
+📄 **Doc:** [03-manuscript-creative-space.md](component/editor-page/03-manuscript-creative-space.md)
 
 **Mục đích:** Soạn thảo manuscript theo các bước: Brief → Draft → Script → Prose Dummy → Poetry Dummy → Finalization.
 
@@ -289,7 +289,7 @@ interface ManuscriptCreativeSpaceProps {
 
 ### 3.4 CharactersCreativeSpace
 
-📄 **Doc:** [`04-characters-creative-space.md`](./04-characters-creative-space.md)
+📄 **Doc:** [04-characters-creative-space.md](component/editor-page/04-characters-creative-space.md)
 
 **Mục đích:** Quản lý nhân vật: thông tin cơ bản, variants, voices, crops.
 
@@ -309,7 +309,7 @@ interface CharactersCreativeSpaceProps {
 
 ### 3.5 PropsCreativeSpace
 
-📄 **Doc:** [`05-props-creative-space.md`](./05-props-creative-space.md)
+📄 **Doc:** [05-props-creative-space.md](component/editor-page/05-props-creative-space.md)
 
 **Mục đích:** Quản lý đạo cụ: states, sounds, crops.
 
@@ -329,7 +329,7 @@ interface PropsCreativeSpaceProps {
 
 ### 3.6 StagesCreativeSpace
 
-📄 **Doc:** [`06-stages-creative-space.md`](./06-stages-creative-space.md)
+📄 **Doc:** [06-stages-creative-space.md](component/editor-page/06-stages-creative-space.md)
 
 **Mục đích:** Quản lý bối cảnh: settings (temporal, sensory, emotional), sounds.
 
@@ -349,7 +349,7 @@ interface StagesCreativeSpaceProps {
 
 ### 3.7 SpreadsCreativeSpace ⚡
 
-📄 **Doc:** [`07-spreads-creative-space.md`](./07-spreads-creative-space.md)
+📄 **Doc:** [07-spreads-creative-space.md](component/editor-page/07-spreads-creative-space.md)
 
 **Mục đích:** Layout visual editor cho các trang đôi (spread). Quản lý images, textboxes.
 
@@ -388,7 +388,7 @@ interface SpreadsCreativeSpaceProps {
 
 ### 3.8 ObjectsCreativeSpace
 
-📄 **Doc:** [`08-objects-creative-space.md`](./08-objects-creative-space.md)
+📄 **Doc:** [08-objects-creative-space.md](component/editor-page/08-objects-creative-space.md)
 
 **Mục đích:** Retouch layer management. Điều chỉnh vị trí, kích thước, z-index các object (image) trên spread.
 
@@ -407,7 +407,7 @@ interface ObjectsCreativeSpaceProps {
 
 ### 3.9 AnimationsCreativeSpace ⚡
 
-📄 **Doc:** [`09-animations-creative-space.md`](./09-animations-creative-space.md)
+📄 **Doc:** [09-animations-creative-space.md](component/editor-page/09-animations-creative-space.md)
 
 **Mục đích:** Timeline editor cho animations. Quản lý trigger, delay, duration, effect types.
 
@@ -427,7 +427,7 @@ interface AnimationsCreativeSpaceProps {
 
 ### 3.10 FlagsCreativeSpace
 
-📄 **Doc:** [`10-flags-creative-space.md`](./10-flags-creative-space.md)
+📄 **Doc:** [10-flags-creative-space.md](component/editor-page/10-flags-creative-space.md)
 
 **Mục đích:** Hiển thị và xử lý các vấn đề (quality warnings, consistency issues).
 
@@ -447,7 +447,7 @@ interface FlagsCreativeSpaceProps {
 
 ### 3.11 SharesCreativeSpace
 
-📄 **Doc:** [`11-shares-creative-space.md`](./11-shares-creative-space.md)
+📄 **Doc:** [11-shares-creative-space.md](component/editor-page/11-shares-creative-space.md)
 
 **Mục đích:** Quản lý share links (public preview, client review, team draft).
 
@@ -466,7 +466,7 @@ interface SharesCreativeSpaceProps {
 
 ### 3.12 CollaboratorsCreativeSpace
 
-📄 **Doc:** [`12-collaborators-creative-space.md`](./12-collaborators-creative-space.md)
+📄 **Doc:** [12-collaborators-creative-space.md](component/editor-page/12-collaborators-creative-space.md)
 
 **Mục đích:** Quản lý collaborators và permissions (languages, steps, spreads access).
 
@@ -486,7 +486,7 @@ interface CollaboratorsCreativeSpaceProps {
 
 ### 3.13 ConfigCreativeSpace
 
-📄 **Doc:** [`13-config-creative-space.md`](./13-config-creative-space.md)
+📄 **Doc:** [13-config-creative-space.md](component/editor-page/13-config-creative-space.md)
 
 **Mục đích:** Cấu hình book: general, creative, typography, layout, remix, export.
 
@@ -505,7 +505,7 @@ interface ConfigCreativeSpaceProps {
 
 ### 3.14 RightSidebar (AI Assistant) ⚡
 
-📄 **Doc:** [`14-right-sidebar.md`](./14-right-sidebar.md)
+📄 **Doc:** [14-right-sidebar.md](component/editor-page/14-right-sidebar.md)
 
 **Mục đích:** Panel AI Assistant hỗ trợ người dùng. Contextual với creativeSpace hiện tại.
 

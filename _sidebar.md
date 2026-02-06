@@ -8,6 +8,12 @@
   * [Editor Header](component/editor-page/01-editor-header.md)
   * [Icon Rail](component/editor-page/02-icon-rail.md)
   * [Manuscript CreativeSpace](component/editor-page/03-manuscript-creative-space.md)
+    * [Steps Sidebar](component/editor-page/03-01-manuscript-steps-sidebar.md)
+      * [Step Item](component/editor-page/03-01-01-step-item.md)
+    * [Doc Editor](component/editor-page/03-02-manuscript-doc-editor.md)
+    * [Dummy View](component/editor-page/03-03-manuscript-dummy-view.md)
+      * [Spread Thumbnail](component/editor-page/03-03-01-spread-thumbnail.md)
+    * [Finalization View](component/editor-page/03-04-manuscript-finalization-view.md)
 
 * **App Features**
   * [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
