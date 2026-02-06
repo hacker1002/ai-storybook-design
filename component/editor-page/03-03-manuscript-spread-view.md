@@ -1,6 +1,10 @@
 # ManuscriptSpreadView: Component Design
 
-> **Note:** This component replaces both `ManuscriptDummyView` and `ManuscriptFinalizationView` by unifying them into a single configurable component.
+> **Note:** This component replaces both `ManuscriptDummyView` and `ManuscriptFinalizationView` by unifying them into a single configurable component. Used by Prose Dummy, Poetry Dummy, and Finalization steps.
+
+**Screenshots:**
+- Edit mode: `component/editor-page/screenshots/manuscript-edit-view.png`
+- Grid mode: `component/editor-page/screenshots/manuscript-grid-view.png`
 
 ---
 
@@ -13,61 +17,46 @@
 │                              ManuscriptSpreadView                                │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
 │  │  SpreadViewHeader                                                          │  │
-│  │  [☐]  "Show slider only"                           ─ ●────── + 100%       │  │
-│  │   ↑ toggle                                         ↑ zoom controls        │  │
+│  │  [⚏]  ☑ Show full spread view              ─ ●────── + 100% (or 4 cols)   │  │
+│  │   ↑ toggle   ↑ checkbox (grid mode only)       ↑ dual-purpose slider      │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                  │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │  SpreadEditorPanel (conditional - when isEditorVisible && selectedSpread)  │  │
-│  │  ┌───────────────────────────────────────────────────────────────────┐    │  │
-│  │  │                     SpreadCanvas                                   │    │  │
-│  │  │  ┌────────────────────────┬────────────────────────┐              │    │  │
-│  │  │  │      Left Page         │      Right Page        │              │    │  │
-│  │  │  │  ┌──────────────┐      │   ┌──────────────┐     │              │    │  │
-│  │  │  │  │    Image     │      │   │   Textbox    │     │              │    │  │
-│  │  │  │  │              │      │   │              │     │              │    │  │
-│  │  │  │  └──────────────┘      │   └──────────────┘     │              │    │  │
-│  │  │  └────────────────────────┴────────────────────────┘              │    │  │
-│  │  └───────────────────────────────────────────────────────────────────┘    │  │
-│  └───────────────────────────────────────────────────────────────────────────┘  │
-│                                                                                  │
-│  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │  SpreadThumbnailList (always visible)                                          │  │
-│  │  ┌─────┐  ╔═════╗  ┌─────┐  ┌─────┐  ┌─────┐  ┌───────┐                   │  │
-│  │  │0-1  │  ║2-3  ║  │4-5  │  │6-7  │  │8-9  │  │  NEW  │ ← conditional     │  │
-│  │  └─────┘  ╚═════╝  └─────┘  └─────┘  └─────┘  └───────┘   (editable mode) │  │
-│  │           ↑ selected                           ↑ drag-drop in editable    │  │
+│  │  SWITCH viewMode:                                                          │  │
+│  │                                                                            │  │
+│  │  'edit': SpreadEditorPanel + SpreadThumbnailList (horizontal)              │  │
+│  │  'grid': SpreadThumbnailList (grid layout)                                 │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 1.2 Layout States
 
-**State A: Editor Visible (isEditorVisible: true)**
+**State A: Edit Mode (viewMode: 'edit')**
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  [☐]                                           ─ ●────── + 100% │  ← Header
+│  [⚏]                                           ─ ●────── + 100% │  ← Header (zoom: 25%-200%)
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │                     ┌───────────────────────┐                   │
 │                     │   SpreadEditorPanel   │                   │  ← ~70% height
-│                     │   (selected spread)   │                   │
-│                     │                       │                   │
+│                     │   (SpreadCanvas)      │                   │
+│                     │   zoom applied here   │                   │
 │                     └───────────────────────┘                   │
 │                                                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌────┐ ╔════╗ ┌────┐ ┌────┐ ┌────┐ ┌─────┐                    │  ← ~20% height
 │  │0-1 │ ║2-3 ║ │4-5 │ │6-7 │ │8-9 │ │ NEW │   SpreadThumbnailList  │
-│  └────┘ ╚════╝ └────┘ └────┘ └────┘ └─────┘                    │
+│  └────┘ ╚════╝ └────┘ └────┘ └────┘ └─────┘  (horizontal)      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**State B: Grid Only (isEditorVisible: false)**
+**State B: Grid Mode (viewMode: 'grid')**
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  [☑]                                           ─ ●────── + 100% │  ← Header
+│  [⚏] ☑ Show full spread view                  ─ ●────── +   4  │  ← Header (columns: 1-6)
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐            │
 │  │   0-1   │  │   2-3   │  │   4-5   │  │   6-7   │            │
@@ -75,9 +64,9 @@
 │  │ │     │ │  │ │     │ │  │ │     │ │  │ │     │ │            │
 │  │ └─────┘ │  │ └─────┘ │  │ └─────┘ │  │ └─────┘ │            │
 │  └─────────┘  └─────────┘  └─────────┘  └─────────┘            │  ← SpreadGrid
-│  ┌─────────┐  ┌─────────────────┐                               │    (full height)
+│  ┌─────────┐  ┌─────────────────┐                               │    (columns adjustable)
 │  │   8-9   │  │       +         │  ← NewSpreadButton            │
-│  │ ┌─────┐ │  │    Add Spread   │    (editable mode only)       │
+│  │ ┌─────┐ │  │    Add Spread   │    (dummy mode only)          │
 │  │ │     │ │  └─────────────────┘                               │
 │  │ └─────┘ │                                                    │
 │  └─────────┘                                                    │
@@ -91,23 +80,24 @@
 │                              ManuscriptSpreadView                                 │
 │  ┌────────────────────────────────────────────────────────────────────────────┐  │
 │  │  Props: spreads[], mode, currentLanguage                                   │  │
-│  │  State: isEditorVisible, selectedSpreadIndex, zoomLevel, columnsPerRow     │  │
+│  │  State: viewMode, selectedSpreadIndex, zoomLevel, columnsPerRow            │  │
 │  │  Callbacks: onSpreadSelect, onSpreadAdd, onSpreadUpdate, onSpreadReorder   │  │
 │  └────────────────────────────────────────────────────────────────────────────┘  │
 │         │                              │                              │           │
 │         ▼                              ▼                              ▼           │
 │  ┌─────────────────┐          ┌─────────────────────┐        ┌─────────────────┐ │
 │  │ SpreadViewHeader │          │  SpreadEditorPanel  │        │ SpreadThumbnailList │ │
-│  │                  │          │  (or SpreadGrid)    │        │                 │ │
+│  │                  │          │  (edit mode only)   │        │                 │ │
 │  │ Props:           │          │                     │        │ Props:          │ │
-│  │ • isEditorVisible│          │ Props:              │        │ • spreads       │ │
+│  │ • viewMode       │          │ Props:              │        │ • spreads       │ │
 │  │ • zoomLevel      │          │ • spread            │        │ • selectedIndex │ │
-│  │ • mode           │          │ • currentLanguage   │        │ • mode          │ │
-│  │                  │          │ • mode              │        │ • isDragEnabled │ │
-│  │ Callbacks:       │          │ • zoomLevel         │        │                 │ │
-│  │ • onToggleEditor │          │                     │        │ Callbacks:      │ │
-│  │ • onZoomChange   │          │ Callbacks:          │        │ • onSpreadClick │ │
-│  │                  │          │ • onSpreadUpdate    │        │ • onAddSpread   │ │
+│  │ • columnsPerRow  │          │ • currentLanguage   │        │ • mode          │ │
+│  │ • spreadViewMode │          │ • mode              │        │ • layout        │ │
+│  │                  │          │ • zoomLevel         │        │ • columnsPerRow │ │
+│  │ Callbacks:       │          │                     │        │                 │ │
+│  │ • onViewModeToggle│          │ Callbacks:          │        │ Callbacks:      │ │
+│  │ • onZoomChange   │          │ • onSpreadUpdate    │        │ • onSpreadClick │ │
+│  │ • onColumnsChange│          │                     │        │ • onAddSpread   │ │
 │  │                  │          │                     │        │ • onDragEnd     │ │
 │  └─────────────────┘          └─────────────────────┘        └─────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────────┘
@@ -134,14 +124,15 @@
 **Key Changes từ Design cũ:**
 1. Gộp `ManuscriptDummyView` và `ManuscriptFinalizationView` thành 1 component
 2. Click spread → hiển thị inline `SpreadEditorPanel` thay vì modal
-3. `SpreadThumbnailList` thay thế grid view khi editor visible
-4. `SpreadViewHeader` thay thế `GridHeader` với toggle button
+3. Dual-purpose slider: Zoom (edit mode) hoặc Columns (grid mode)
+4. Toggle checkbox "Show full spread view" cho grid mode
 5. Finalization mode giờ cũng hỗ trợ drag-drop reorder
 
 **Shared Types:**
 
 ```typescript
 type SpreadViewMode = 'dummy' | 'finalize';
+type ViewMode = 'edit' | 'grid';
 
 interface SpreadViewSpread {
   layout: string | null;
@@ -185,14 +176,14 @@ interface ManuscriptSpreadViewProps {
 
 interface ManuscriptSpreadViewState {
   // Layout state
-  isEditorVisible: boolean;              // Toggle between editor+filmstrip vs grid
+  viewMode: ViewMode;                    // 'edit' | 'grid'
 
   // Selection state
   selectedSpreadIndex: number | null;
 
-  // View controls
-  zoomLevel: number;                     // 50-200, default 100
-  columnsPerRow: number;                 // 2-6, default 4 (for grid mode)
+  // View controls (dual-purpose slider)
+  zoomLevel: number;                     // 25-200, default 100 (edit mode)
+  columnsPerRow: number;                 // 1-6, default 4 (grid mode)
 
   // Drag state
   draggedIndex: number | null;
@@ -215,14 +206,16 @@ ManuscriptSpreadView:
   displayField = mode === 'dummy' ? 'art_note' : 'visual_description'
 
   RENDER SpreadViewHeader với:
-    - isEditorVisible
+    - viewMode
     - zoomLevel
-    - mode
-    - onToggleEditor: () => toggleEditorVisible()
+    - columnsPerRow
+    - spreadViewMode: mode
+    - onViewModeToggle: () => toggleViewMode()
     - onZoomChange: (level) => setZoomLevel(level)
+    - onColumnsChange: (cols) => setColumnsPerRow(cols)
 
-  IF isEditorVisible:
-    // Editor + Filmstrip layout (horizontal)
+  IF viewMode === 'edit':
+    // Edit mode: Editor + Filmstrip layout (horizontal)
     IF selectedSpreadIndex !== null:
       selectedSpread = spreads[selectedSpreadIndex]
       RENDER SpreadEditorPanel với:
@@ -250,8 +243,8 @@ ManuscriptSpreadView:
       - onAddSpread: canAdd ? onSpreadAdd : undefined
       - onDragEnd: handleDragEnd
 
-  ELSE:
-    // Grid layout (vertical scroll) - reuse SpreadThumbnailList with layout='grid'
+  ELSE (viewMode === 'grid'):
+    // Grid mode: Vertical grid with adjustable columns
     RENDER SpreadThumbnailList với:
       - spreads
       - selectedIndex: selectedSpreadIndex
@@ -265,12 +258,11 @@ ManuscriptSpreadView:
       - onSpreadClick: handleSpreadClick
       - onAddSpread: canAdd ? onSpreadAdd : undefined
       - onDragEnd: handleDragEnd
-      - onColumnsChange: setColumnsPerRow
 
   handleSpreadClick(index):
     setSelectedSpreadIndex(index)
-    IF !isEditorVisible:
-      setIsEditorVisible(true)  // Auto-show editor when clicking spread
+    IF viewMode === 'grid':
+      setViewMode('edit')  // Auto-switch to edit when clicking spread in grid
     onSpreadSelect?.(index)
 
   handleSpreadUpdate(updatedSpread):
@@ -282,20 +274,20 @@ ManuscriptSpreadView:
     setDraggedIndex(null)
     setDropTargetIndex(null)
 
-  toggleEditorVisible():
-    setIsEditorVisible(!isEditorVisible)
-    IF !isEditorVisible AND selectedSpreadIndex === null AND spreads.length > 0:
-      setSelectedSpreadIndex(0)  // Auto-select first spread
+  toggleViewMode():
+    setViewMode(viewMode === 'edit' ? 'grid' : 'edit')
+    IF viewMode === 'grid' AND selectedSpreadIndex === null AND spreads.length > 0:
+      setSelectedSpreadIndex(0)  // Auto-select first spread when entering edit
 ```
 
 ### 2.4 Visual
 
-**Editor Visible State:**
+**Edit Mode (viewMode: 'edit'):**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ☐                                                        ─ ●────────── + 100%  │
-│  └→ "Show slider only"                                      └→ Zoom controls   │
+│  [⚏]                                                      ─ ●────────── + 100%  │
+│   ↑ toggle icon                                             └→ Zoom (25%-200%)  │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │                ┌────────────────────────────────────────────────┐               │
@@ -323,12 +315,12 @@ ManuscriptSpreadView:
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Grid Only State (Toggle Off):**
+**Grid Mode (viewMode: 'grid'):**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ☑                                                        ─ ●────────── + 100%  │
-│  └→ "Show editor"                                           └→ Zoom controls   │
+│  [⚏] ☑ Show full spread view                              ─ ●────────── +   4  │
+│   ↑    ↑ checkbox (uncheck to switch to edit)               └→ Columns (1-6)   │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
 │  │  0  │  1    │  │  2  │  3    │  │  4  │  5    │  │  6  │  7    │            │
@@ -351,12 +343,12 @@ ManuscriptSpreadView:
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Finalize Mode:**
+**Finalize Mode (edit view):**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ☐                                                        ─ ●────────── + 100%  │
-│                                                             └→ Zoom controls    │
+│  [⚏]                                                      ─ ●────────── + 100%  │
+│                                                             └→ Zoom (25%-200%)  │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │                              [...SpreadEditorPanel...]                          │
@@ -379,7 +371,7 @@ ManuscriptSpreadView:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ☐                                                        ─ ●────────── + 100%  │
+│  [⚏]                                                      ─ ●────────── + 100%  │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │                                                                                 │
@@ -407,31 +399,36 @@ ManuscriptSpreadView:
 
 📄 **Doc:** [03-03-01-spread-view-header.md](component/editor-page/03-03-01-spread-view-header.md)
 
-**Mục đích:** Header toolbar với toggle button và zoom controls.
+**Mục đích:** Header toolbar với toggle button và dual-purpose slider (zoom/columns).
 
 **Props & Callbacks:**
 
 ```typescript
 interface SpreadViewHeaderProps {
-  isEditorVisible: boolean;
-  zoomLevel: number;                     // 50-200
-  mode: SpreadViewMode;
+  viewMode: ViewMode;                    // 'edit' | 'grid'
+  zoomLevel: number;                     // 25-200, default 100 (edit mode only)
+  columnsPerRow: number;                 // 1-6, default 4 (grid mode only)
+  spreadViewMode: SpreadViewMode;        // 'dummy' | 'finalize'
 
-  onToggleEditor: () => void;
+  onViewModeToggle: () => void;
   onZoomChange: (level: number) => void;
+  onColumnsChange: (columns: number) => void;
 }
 ```
 
 **Visual:**
 
 ```
+Edit Mode:
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ☐                                                        ─ ●────────── + 100%  │
-│  ↑ Toggle                                                 ↑ Zoom slider         │
-│                                                                                 │
-│  Tooltip (hover):                                                               │
-│  - When ☐ (unchecked): "Show slider only"                                       │
-│  - When ☑ (checked): "Show editor"                                              │
+│  [⚏]                                                      ─ ●────────── + 100%  │
+│   ↑ toggle icon                                             └→ Zoom (25%-200%)  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+Grid Mode:
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  [⚏] ☑ Show full spread view                              ─ ●────────── +   4  │
+│   ↑    ↑ checkbox (uncheck to exit grid)                    └→ Columns (1-6)   │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -587,18 +584,27 @@ Gộp DummyView và FinalizationView thành 1 component với `mode` prop. Lý d
 **Inline Editor thay Modal**
 Thay SpreadEditModal bằng SpreadEditorPanel inline. Lý do: UX tốt hơn, không bị context switch, dễ so sánh với filmstrip, responsive hơn.
 
-**Toggle Button**
-`isEditorVisible` toggle giữa 2 layouts:
-- `true`: Editor panel + Filmstrip (default khi có spread selected)
-- `false`: Grid view (full spread overview)
+**View Mode Toggle**
+`viewMode` toggle giữa 2 layouts:
+- `'edit'`: Editor panel + horizontal filmstrip (default)
+- `'grid'`: Grid view với adjustable columns
 
-Lý do: User có thể nhanh chóng switch giữa detailed editing và overview.
+Toggle behavior:
+- Edit mode: Click icon → chuyển sang grid
+- Grid mode: Click icon hoặc uncheck "Show full spread view" → chuyển sang edit
+
+**Dual-Purpose Slider**
+Slider có behavior khác nhau dựa trên viewMode:
+- Edit mode: Controls zoom level (25%-200%) for SpreadCanvas
+- Grid mode: Controls columns per row (1-6) for grid layout
+
+Lý do: Space-efficient UI, cùng 1 slider phục vụ 2 mục đích khác nhau theo context.
 
 **Finalization Mode Reorder**
 Enable drag-drop reorder cho cả finalize mode (trước đây readonly). Lý do: User cần flexibility để sắp xếp lại spreads trước khi export.
 
 **Zoom Level**
-Áp dụng cho SpreadEditorPanel, không ảnh hưởng Filmstrip/Grid. Lý do: Editor cần zoom để edit detail, filmstrip/grid cần consistent size để navigate.
+Áp dụng cho SpreadCanvas trong edit mode, không ảnh hưởng Filmstrip/Grid thumbnails. Lý do: Canvas cần zoom để edit detail, thumbnails cần consistent size để navigate.
 
 > **Note:** Translation is handled at EditorPage level via `TranslationNotAvailableDialog`.
 > See [01-04-translation-not-available-dialog.md](component/editor-page/01-04-translation-not-available-dialog.md).
@@ -633,9 +639,9 @@ function calculateGridThumbnailSize(containerWidth: number, columns: number, gap
 const VIEW_PREFS_KEY = 'spread-view-prefs';
 
 interface ViewPreferences {
-  isEditorVisible: boolean;
-  zoomLevel: number;
-  columnsPerRow: number;
+  viewMode: ViewMode;                    // 'edit' | 'grid'
+  zoomLevel: number;                     // 25-200
+  columnsPerRow: number;                 // 1-6
 }
 
 function savePreferences(prefs: ViewPreferences) {
@@ -645,7 +651,7 @@ function savePreferences(prefs: ViewPreferences) {
 function loadPreferences(): ViewPreferences {
   const stored = localStorage.getItem(VIEW_PREFS_KEY);
   return stored ? JSON.parse(stored) : {
-    isEditorVisible: true,
+    viewMode: 'edit',
     zoomLevel: 100,
     columnsPerRow: 4,
   };
@@ -658,8 +664,8 @@ function loadPreferences(): ViewPreferences {
 |-----|--------|
 | `←` / `→` | Navigate to prev/next spread |
 | `Home` / `End` | First/last spread |
-| `E` | Toggle editor visibility |
-| `+` / `-` | Zoom in/out |
+| `G` | Toggle view mode (edit ↔ grid) |
+| `+` / `-` | Zoom in/out (edit mode) or adjust columns (grid mode) |
 | `Delete` | Delete selected spread (with confirmation) |
 | `Ctrl+Z` | Undo last change |
 

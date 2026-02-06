@@ -354,9 +354,13 @@ interface ManuscriptDocEditorProps {
 
 📄 **Doc:** [03-03-manuscript-spread-view.md](component/editor-page/03-03-manuscript-spread-view.md)
 
-> **Note:** Unified component thay thế cả `ManuscriptDummyView` và `ManuscriptFinalizationView`.
+> **Note:** Unified component thay thế cả `ManuscriptDummyView` và `ManuscriptFinalizationView`. Used by Prose Dummy, Poetry Dummy, and Finalization steps.
 
-**Mục đích:** Unified spread view cho cả Dummy và Finalization steps. Hiển thị spread grid/filmstrip với inline editor panel, thay thế modal-based editing.
+**Screenshots:**
+- Edit mode: `component/editor-page/screenshots/manuscript-edit-view.png`
+- Grid mode: `component/editor-page/screenshots/manuscript-grid-view.png`
+
+**Mục đích:** Unified spread view cho cả Dummy và Finalization steps. Hiển thị spread editor với horizontal filmstrip, hoặc grid view với adjustable columns.
 
 **Data source:**
 - `mode='dummy'`: `manuscript.dummies[].spreads[]`
@@ -388,16 +392,16 @@ interface ManuscriptSpreadViewProps {
 | Add spread | ✅ Button visible | ❌ No button |
 | Image display | `art_note` | `visual_description` |
 
-**Layout Modes:**
-1. **Editor + Filmstrip** (default): Inline editor panel + bottom thumbnails strip
-2. **Grid Only** (toggle): Classic grid view with all thumbnails
+**View Modes:**
+1. **Edit Mode** (default): SpreadCanvas + horizontal filmstrip, slider controls zoom (25%-200%)
+2. **Grid Mode** (toggle): Grid view with all thumbnails, slider controls columns (1-6)
 
-**Visual (Editor + Filmstrip mode):**
+**Visual (Edit Mode):**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  ☐                                                    ─ ●──── + 100% │
-│  └→ toggle                                            └→ zoom        │
+│  [⚏]                                                 ─ ●──── + 100% │
+│   ↑ toggle                                            └→ zoom       │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │               ┌───────────────────────────────────┐                 │
@@ -417,11 +421,26 @@ interface ManuscriptSpreadViewProps {
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+**Visual (Grid Mode):**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  [⚏] ☑ Show full spread view                         ─ ●──── +   4 │
+│   ↑    ↑ checkbox                                     └→ columns   │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐                                │
+│  │ 0-1 │  │ 2-3 │  │ 4-5 │  │ 6-7 │                                │
+│  └─────┘  └─────┘  └─────┘  └─────┘                                │
+│  ┌─────┐  ┌───────┐                                                │
+│  │ 8-9 │  │  NEW  │   (dummy mode)                                 │
+│  └─────┘  └───────┘                                                │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
 **Child Components:**
-- `SpreadViewHeader` - Header với toggle, zoom controls
+- `SpreadViewHeader` - Header với toggle, dual-purpose slider (zoom/columns)
 - `SpreadEditorPanel` - Inline editor (replaces SpreadEditModal)
-- `SpreadFilmstrip` - Bottom thumbnails strip
-- `SpreadGrid` - Classic grid view (when toggle off)
+- `SpreadThumbnailList` - Thumbnails (horizontal filmstrip or grid based on viewMode)
 
 ---
 
