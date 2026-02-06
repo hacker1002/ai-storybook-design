@@ -175,9 +175,15 @@ interface Manuscript {
 
 ```typescript
 interface ManuscriptCreativeSpaceProps {
-  manuscript: Manuscript;           // object, không phải array
+  // Manuscript data (for Brief, Draft, Script, Prose/Poetry Dummy)
+  manuscript: Manuscript;
   currentLanguage: Language;        // ⚡ language-aware
   onManuscriptUpdate: (manuscript: Manuscript) => void;
+
+  // Snapshot spreads (for Finalization step only)
+  snapshotSpreads: SpreadViewSpread[];
+  onSnapshotSpreadsUpdate: (spreadIndex: number, spread: SpreadViewSpread) => void;
+  onSnapshotSpreadsReorder: (oldIndex: number, newIndex: number) => void;
 }
 
 interface ManuscriptCreativeSpaceState {
@@ -222,12 +228,13 @@ ManuscriptCreativeSpace:
         - onSpreadSelect, onSpreadAdd, onSpreadUpdate, onSpreadReorder
 
     'finalization':
-      spreads = GET snapshot.spreads[]  // Data from snapshot, NOT manuscript.dummies
       RENDER ManuscriptSpreadView với:
-        - spreads (from snapshot.spreads[])
+        - spreads: snapshotSpreads      // From props, NOT manuscript.dummies
         - mode: 'finalize'
         - currentLanguage
-        - onSpreadSelect, onSpreadUpdate, onSpreadReorder
+        - onSpreadSelect: handleSpreadSelect
+        - onSpreadUpdate: onSnapshotSpreadsUpdate
+        - onSpreadReorder: onSnapshotSpreadsReorder
         // NOTE: No onSpreadAdd in finalize mode
         // NOTE: Translation handled at EditorPage level via TranslationNotAvailableDialog
 ```
