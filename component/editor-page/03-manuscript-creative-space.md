@@ -19,10 +19,10 @@
 │  │  │  • Prose Dummy > │     │  │     → ManuscriptDocEditor             │  │  │
 │  │  │  • Poetry Dummy> │     │  │                                       │  │  │
 │  │  │  • Finalization> │     │  │   'prose_dummy'|'poetry_dummy':       │  │  │
-│  │  └──────────────────┘     │  │     → ManuscriptDummyView             │  │  │
+│  │  └──────────────────┘     │  │     → ManuscriptSpreadView (mode=dummy)│  │  │
 │  │                           │  │                                       │  │  │
 │  │                           │  │   'finalization':                     │  │  │
-│  │                           │  │     → ManuscriptFinalizationView      │  │  │
+│  │                           │  │     → ManuscriptSpreadView (mode=finalize)│ │
 │  │                           │  │                                       │  │  │
 │  │                           │  └───────────────────────────────────────┘  │  │
 │  └───────────────────────────┴─────────────────────────────────────────────┘  │
@@ -58,12 +58,11 @@
 │  │ Callbacks:     │   │                 │   │ • onSpreadAdd                 │   │
 │  │ • onStepChange │   └─────────────────┘   │ • onSpreadUpdate              │   │
 │  │ • onPrompt     │                         │                               │   │
-│  │   Change       │                         │ Finalization Extra Props:     │   │
-│  │ • onGenerate   │                         │ • availableLanguages          │   │
-│  │ • onDummyType  │                         │                               │   │
 │  │   Change       │                         │ Finalization Extra Callbacks: │   │
-│  └────────────────┘                         │ • onTranslate                 │   │
-│                                             └───────────────────────────────┘   │
+│  │ • onGenerate   │                         │ • onTranslate ⚡              │   │
+│  │ • onDummyType  │                         │   (book.original_language     │   │
+│  │   Change       │                         │    → currentLanguage)         │   │
+│  └────────────────┘                         └───────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -74,9 +73,9 @@
 | `brief` | `doc` | ManuscriptDocEditor | Markdown editor cho ý tưởng truyện |
 | `draft` | `doc` | ManuscriptDocEditor | Markdown editor cho bản nháp đầy đủ |
 | `script` | `doc` | ManuscriptDocEditor | Markdown editor cho kịch bản scene-by-scene |
-| `prose_dummy` | `dummy` | ManuscriptDummyView | Spread grid cho văn xuôi |
-| `poetry_dummy` | `dummy` | ManuscriptDummyView | Spread grid cho thơ/vần |
-| `finalization` | `dummy` | ManuscriptFinalizationView | Spread grid + Type selector + Translate |
+| `prose_dummy` | `spread` | ManuscriptSpreadView (mode=dummy) | Spread view + editor cho văn xuôi |
+| `poetry_dummy` | `spread` | ManuscriptSpreadView (mode=dummy) | Spread view + editor cho thơ/vần |
+| `finalization` | `spread` | ManuscriptSpreadView (mode=finalize) | Spread view + editor + Translate |
 
 ### 1.4 manuscript{} Data Structure Reference
 
@@ -194,6 +193,7 @@ interface ManuscriptCreativeSpaceCallbacks {
   onGenerate: (step: ManuscriptStepType, prompt: string) => Promise<void>;
   onDocContentChange: (docType: string, content: string) => void;
   onDummyUpdate: (dummyType: DummyType, spreads: DummySpread[]) => void;
+  onDummySpreadReorder: (dummyType: DummyType, oldIndex: number, newIndex: number) => void;  // NEW
   onGenerateArtDirection: (sourceDummyType: DummyType, prompt: string) => Promise<void>;
   onTranslate: (targetLanguage: Language) => Promise<void>;
 }
@@ -216,13 +216,21 @@ ManuscriptCreativeSpace:
     'prose_dummy' | 'poetry_dummy':
       dummyType = activeStep === 'prose_dummy' ? 'prose' : 'poetry'
       dummy = GET dummy from manuscript.dummies WHERE type === dummyType
-      RENDER ManuscriptDummyView với dummy, currentLanguage, onSpreadUpdate
+      RENDER ManuscriptSpreadView với:
+        - spreads: dummy.spreads
+        - mode: 'dummy'
+        - currentLanguage
+        - onSpreadSelect, onSpreadAdd, onSpreadUpdate, onSpreadReorder
 
     'finalization':
-      dummy = GET dummy from manuscript.dummies WHERE type === selectedDummyType
-      RENDER ManuscriptFinalizationView với:
-        - dummy, currentLanguage
-        - onGenerateArtDirection, onTranslate
+      spreads = GET snapshot.spreads[]  // Data from snapshot, NOT manuscript.dummies
+      RENDER ManuscriptSpreadView với:
+        - spreads (from snapshot.spreads[])
+        - mode: 'finalize'
+        - currentLanguage
+        - onSpreadSelect, onSpreadUpdate, onSpreadReorder
+        - onTranslate(targetLanguage)  // Translate từ book.original_language → targetLanguage
+        // NOTE: No onSpreadAdd in finalize mode
 ```
 
 ### 2.4 Visual
@@ -343,100 +351,109 @@ interface ManuscriptDocEditorProps {
 
 ---
 
-### 3.3 ManuscriptDummyView
+### 3.3 ManuscriptSpreadView
 
-📄 **Doc:** [03-03-manuscript-dummy-view.md](component/editor-page/03-03-manuscript-dummy-view.md)
+📄 **Doc:** [03-03-manuscript-spread-view.md](component/editor-page/03-03-manuscript-spread-view.md)
 
-**Mục đích:** Grid view hiển thị page spreads cho Prose Dummy và Poetry Dummy steps. Cho phép add/select/edit spreads.
+> **Note:** Unified component thay thế cả `ManuscriptDummyView` và `ManuscriptFinalizationView`.
+
+**Mục đích:** Unified spread view cho cả Dummy và Finalization steps. Hiển thị spread grid/filmstrip với inline editor panel, thay thế modal-based editing.
+
+**Data source:**
+- `mode='dummy'`: `manuscript.dummies[].spreads[]`
+- `mode='finalize'`: `snapshot.spreads[]`
 
 **Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox text hiển thị theo `currentLanguage.code`
 
 **Props & Callbacks:**
 
 ```typescript
-interface ManuscriptDummyViewProps {
-  dummy: ManuscriptDummy | null;
+interface ManuscriptSpreadViewProps {
+  spreads: SpreadViewSpread[];
+  mode: 'dummy' | 'finalize';
   currentLanguage: Language;
-  onSpreadSelect: (spreadIndex: number) => void;
-  onSpreadAdd: () => void;
-  onSpreadUpdate: (spreadIndex: number, spread: DummySpread) => void;
+
+  onSpreadSelect?: (spreadIndex: number) => void;
+  onSpreadAdd?: () => void;              // Not called in finalize mode
+  onSpreadUpdate?: (spreadIndex: number, spread: SpreadViewSpread) => void;
+  onSpreadReorder?: (oldIndex: number, newIndex: number) => void;
+  // Finalize mode only - translates textboxes[] from book.original_language → targetLanguage
+  onTranslate?: (targetLanguage: Language) => Promise<void>;
 }
 ```
 
-**Visual:**
+**Key Features:**
+
+| Feature | mode='dummy' | mode='finalize' |
+|---------|--------------|-----------------|
+| Drag-drop reorder | ✅ Yes | ✅ Yes |
+| Click to edit (inline) | ✅ Yes | ✅ Yes |
+| Add spread | ✅ Button visible | ❌ No button |
+| Translate | ❌ No | ✅ Yes |
+| Image display | `art_note` | `visual_description` |
+
+**Layout Modes:**
+1. **Editor + Filmstrip** (default): Inline editor panel + bottom thumbnails strip
+2. **Grid Only** (toggle): Classic grid view with all thumbnails
+
+**Visual (Editor + Filmstrip mode):**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  ─  4 / row  +                                                      │
+│  ☐                                     🌐 Translate  ─ ●──── + 100% │
+│  └→ toggle                             (finalize)    └→ zoom        │
 ├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐                │
-│  │ 0 │ 1   │  │ 2 │ 3   │  │ 4 │ 5   │  │ 6 │ 7   │                │
-│  └─────────┘  └─────────┘  └─────────┘  └─────────┘                │
-│   Page 1-2     Page 3-4     Page 5-6     Page 7-8                   │
 │                                                                     │
-│  ┌─────────┐  ┌───────────────┐                                     │
-│  │ 8 │ 9   │  │      +        │  ← New Spread button                │
-│  └─────────┘  └───────────────┘                                     │
+│               ┌───────────────────────────────────┐                 │
+│               │        SpreadEditorPanel          │                 │
+│               │  ┌────────────────┬─────────────┐ │                 │
+│               │  │   Left Page    │  Right Page │ │                 │
+│               │  │   [Image]      │  [Textbox]  │ │                 │
+│               │  │      2         │      3      │ │                 │
+│               │  └────────────────┴─────────────┘ │                 │
+│               └───────────────────────────────────┘                 │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─────┐  ╔═════╗  ┌─────┐  ┌─────┐  ┌─────┐  ┌───────┐            │
+│  │ 0-1 │  ║ 2-3 ║  │ 4-5 │  │ 6-7 │  │ 8-9 │  │  NEW  │            │
+│  └─────┘  ╚═════╝  └─────┘  └─────┘  └─────┘  └───────┘            │
+│              ↑ selected                        (dummy mode)         │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+**Child Components:**
+- `SpreadViewHeader` - Header với toggle, zoom, translate button
+- `SpreadEditorPanel` - Inline editor (replaces SpreadEditModal)
+- `SpreadFilmstrip` - Bottom thumbnails strip
+- `SpreadGrid` - Classic grid view (when toggle off)
 
 ---
 
-### 3.4 ManuscriptFinalizationView
+### 3.4 ~~ManuscriptFinalizationView~~ (DEPRECATED)
 
-📄 **Doc:** [03-04-manuscript-finalization-view.md](component/editor-page/03-04-manuscript-finalization-view.md)
+> **Deprecated:** Replaced by `ManuscriptSpreadView` với `mode='finalize'`.
+>
+> See [03-03-manuscript-spread-view.md](component/editor-page/03-03-manuscript-spread-view.md) for updated design.
 
-**Mục đích:** View cho Finalization step. Hiển thị spread grid từ selected dummy source, có thêm Translate button ở header. Generate Art Direction sẽ tạo visual_description và save ra snapshot.spreads[].
-
-**Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox text hiển thị và translate theo `currentLanguage.code`
-
-**Props & Callbacks:**
-
+**Migration:**
 ```typescript
-interface ManuscriptFinalizationViewProps {
-  dummy: ManuscriptDummy | null;
-  currentLanguage: Language;
-  availableLanguages: Language[];
-  onSpreadSelect: (spreadIndex: number) => void;
-  onSpreadAdd: () => void;
-  onSpreadUpdate: (spreadIndex: number, spread: DummySpread) => void;
-  onTranslate: (targetLanguage: Language) => Promise<void>;
-}
-```
+// Before
+<ManuscriptFinalizationView
+  spreads={snapshotSpreads}
+  currentLanguage={currentLanguage}
+  onTranslate={handleTranslate}
+/>
 
-**Visual:**
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  ─  4 / row  +                                     🌐 Translate     │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐                │
-│  │ 0 │ 1   │  │ 2 │ 3   │  │ 4 │ 5   │  │ 6 │ 7   │                │
-│  └─────────┘  └─────────┘  └─────────┘  └─────────┘                │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-**Translate Button Flow:**
-
-```
-Click "Translate"
-    → Show language dropdown (available languages - currentLanguage)
-    → Select target language
-    → Confirm dialog: "Translate all textboxes to {language}?"
-    → onTranslate(targetLanguage)
-    → AI translates all textboxes
-    → Adds new language entry to each textbox
-```
-
-**Generate Art Direction Flow:**
-
-```
-Click "Generate Art Direction" (in sidebar)
-    → isGenerating = true
-    → API call: generate visual_description for each image
-    → Copy dummy spreads to snapshot.spreads[]
-    → Save visual_descriptions to images
-    → isGenerating = false
+// After
+<ManuscriptSpreadView
+  spreads={snapshotSpreads}
+  mode="finalize"
+  currentLanguage={currentLanguage}
+  onSpreadSelect={handleSpreadSelect}
+  onSpreadUpdate={handleSpreadUpdate}
+  onSpreadReorder={handleSpreadReorder}
+  onTranslate={handleTranslate}  // translates from book.original_language → targetLanguage
+/>
 ```
 
 ---
@@ -459,6 +476,12 @@ Finalization step có dropdown chọn source dummy (Prose/Poetry). Lý do: User 
 
 **Language-aware Textbox Display**
 Textbox content được lấy theo `textbox[currentLanguage.code]`. Lý do: Hỗ trợ multi-language editing.
+
+**Translation Logic**
+- Source language: `book.original_language` (ngôn ngữ gốc của sách)
+- Target language: `currentLanguage` (ngôn ngữ hiện tại đang chọn)
+- Scope: `spreads[].textboxes[]` - translate tất cả text trong các textbox
+- Không cần truyền `availableLanguages` - user chọn `currentLanguage` để translate
 
 ### 4.2 Generate Flow
 

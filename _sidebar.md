@@ -11,9 +11,11 @@
     * [Steps Sidebar](component/editor-page/03-01-manuscript-steps-sidebar.md)
       * [Step Item](component/editor-page/03-01-01-step-item.md)
     * [Doc Editor](component/editor-page/03-02-manuscript-doc-editor.md)
-    * [Dummy View](component/editor-page/03-03-manuscript-dummy-view.md)
-      * [Spread Thumbnail](component/editor-page/03-03-01-spread-thumbnail.md)
-    * [Finalization View](component/editor-page/03-04-manuscript-finalization-view.md)
+    * [Spread View](component/editor-page/03-03-manuscript-spread-view.md)
+      * [Spread View Header](component/editor-page/03-03-01-spread-view-header.md)
+      * [Spread Editor Panel](component/editor-page/03-03-02-spread-editor-panel.md)
+      * [Spread Thumbnail List](component/editor-page/03-03-03-spread-thumbnail-list.md)
+      * [Spread Thumbnail](component/editor-page/03-03-05-spread-thumbnail.md)
 
 * **App Features**
   * [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)

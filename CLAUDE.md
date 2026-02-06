@@ -123,7 +123,7 @@ editor-page/
 - **Cố gắng** đặt tên component, api, feature 1 cách rõ ràng, dễ hiểu, tránh nhập nhằng
 - Keep docs focused on specifications, not implementation details
 - Định nghĩa TypeScript interfaces rõ ràng cho input/output
-- **Link tới các file doc khác** phải có đầy đủ path từ root vào. Ví dụ: 
+- **(IMPORTANT) Link tới các file doc khác** phải có đầy đủ path từ root vào. Ví dụ: 
  - component design: [Manuscript CreativeSpace](component/editor-page/03-manuscript-creative-space.md)
  - api design: [00 - Brainstorming Initial](api/chat/00-story-brainstorming-initial.md)
  - app feture: [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
