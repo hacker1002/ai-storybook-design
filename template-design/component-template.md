@@ -133,6 +133,8 @@ Selected:             Disabled:
 └───────────────┘     └───────────────┘
 ```
 
+**Lưu ý:** nếu có screenshot mẫu thì thêm đường dẫn ảnh mẫu vào
+
 ---
 
 ## 3. Child Components Interface

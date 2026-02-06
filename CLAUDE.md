@@ -142,7 +142,7 @@ editor-page/
 |-----|-------|
 | **Mục đích** | Nhiệm vụ của component (1-2 câu) |
 | **Interface** | Props, State, Callbacks (TypeScript) |
-| **Visualization** | Diagrams (ASCII hoặc Mermaid) |
+| **Visualization** | Diagrams (ASCII hoặc Mermaid), **Lưu ý:** nếu có screenshot mẫu thì thêm đường dẫn ảnh mẫu vào |
 
 ### Được phép / Không được phép
 

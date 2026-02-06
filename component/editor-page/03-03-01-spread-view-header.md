@@ -11,35 +11,24 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                              SpreadViewHeader                                    │
-│  ┌───────────────┐                    ┌───────────────┐  ┌────────────────────┐ │
-│  │ EditorToggle  │                    │TranslateButton│  │   ZoomControls     │ │
-│  │  ☐            │                    │ 🌐 Translate  │  │  ─ ●────── + 100%  │ │
-│  └───────────────┘                    └───────────────┘  └────────────────────┘ │
-│                                        (finalize only)                          │
+│  ┌───────────────┐                                       ┌────────────────────┐ │
+│  │ EditorToggle  │                                       │   ZoomControls     │ │
+│  │  ☐            │                                       │  ─ ●────── + 100%  │ │
+│  └───────────────┘                                       └────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 Mode Variations
+### 1.2 Layout
 
 ```
-Dummy Mode:
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │  ☐                                                        ─ ●────────── + 100%  │
-│  └→ Toggle                                                └→ Zoom              │
-└─────────────────────────────────────────────────────────────────────────────────┘
-
-Finalize Mode:
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ☐                                     🌐 Translate       ─ ●────────── + 100%  │
-│  └→ Toggle                             └→ Translate btn   └→ Zoom              │
-└─────────────────────────────────────────────────────────────────────────────────┘
-
-Translating State:
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ☐                                     ⏳ Translating...  ─ ●────────── + 100%  │
-│                                        └→ disabled state                        │
+│  └→ Toggle                                                └→ Zoom controls     │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+> **Note:** Translation is handled at EditorPage level via `TranslationNotAvailableDialog`.
+> See [01-04-translation-not-available-dialog.md](component/editor-page/01-04-translation-not-available-dialog.md).
 
 ---
 
@@ -47,7 +36,7 @@ Translating State:
 
 ### 2.1 Overview
 
-**Mục đích:** Header toolbar cho SpreadView với toggle button để switch giữa Editor+Filmstrip và Grid layouts, zoom controls, và Translate button (finalize mode only).
+**Mục đích:** Header toolbar cho SpreadView với toggle button để switch giữa Editor+Filmstrip và Grid layouts, và zoom controls.
 
 ### 2.2 Interface
 
@@ -56,14 +45,9 @@ interface SpreadViewHeaderProps {
   isEditorVisible: boolean;
   zoomLevel: number;                     // 50-200, default 100
   mode: SpreadViewMode;
-  canTranslate: boolean;
-  isTranslating?: boolean;
-  currentLanguage: Language;
 
   onToggleEditor: () => void;
   onZoomChange: (level: number) => void;
-  // Translates textboxes[] from book.original_language → currentLanguage
-  onTranslate?: () => void;
 }
 ```
 
@@ -82,13 +66,6 @@ SpreadViewHeader:
     // Center section (spacer)
 
     // Right section
-    IF canTranslate:
-      RENDER TranslateButton với:
-        - disabled: isTranslating
-        - label: isTranslating ? "Translating..." : `Translate to ${currentLanguage.name}`
-        - tooltip: `Translate from original language to ${currentLanguage.name}`
-        - onClick: onTranslate  // Directly calls translate, no dialog needed
-
     RENDER ZoomControls với:
       - value: zoomLevel
       - min: 50
@@ -202,33 +179,6 @@ interface ZoomControlsProps {
 }
 ```
 
-### 3.3 TranslateButton
-
-**Mục đích:** Button để trigger translation từ `book.original_language` → `currentLanguage`.
-
-**Props:**
-
-```typescript
-interface TranslateButtonProps {
-  disabled: boolean;
-  label: string;
-  tooltip?: string;
-  onClick: () => void;
-}
-```
-
-**Visual:**
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  🌐 Translate to Vietnamese                                                      │
-│  └→ Label shows target language (currentLanguage)                               │
-│                                                                                 │
-│  Hover tooltip:                                                                 │
-│  "Translate from original language to Vietnamese"                               │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
 ---
 
 ## 4. Technical Notes
@@ -243,15 +193,8 @@ Icon thay đổi dựa trên current state:
 **Zoom Applies to Editor Only**
 Zoom level chỉ ảnh hưởng SpreadEditorPanel, không ảnh hưởng Filmstrip/Grid. Lý do: Filmstrip cần consistent size để navigate, Editor cần zoom để edit detail.
 
-**Translate Button Visibility**
-Chỉ hiển thị trong `mode='finalize'`. Lý do: Translation chỉ cần thiết sau khi art direction được generate.
-
-**Translation Logic (Simplified)**
-- Source language: `book.original_language` (ngôn ngữ gốc của sách, lấy từ context/props cha)
-- Target language: `currentLanguage` (ngôn ngữ hiện tại đang chọn)
-- Scope: `spreads[].textboxes[]` - translate tất cả text trong các textbox
-- Không cần dialog để chọn language - user đã chọn `currentLanguage` từ language switcher
-- Click "Translate" → gọi `onTranslate()` trực tiếp
+> **Note:** Translation is handled at EditorPage level via `TranslationNotAvailableDialog`.
+> See [01-04-translation-not-available-dialog.md](component/editor-page/01-04-translation-not-available-dialog.md).
 
 ### 4.2 Styling
 
@@ -307,9 +250,4 @@ const zoomSliderA11y = {
   'aria-valuenow': zoomLevel,
   'aria-valuetext': `${zoomLevel}%`,
 };
-
-const translateButtonA11y = (currentLanguage: Language) => ({
-  'aria-label': `Translate content from original language to ${currentLanguage.name}`,
-  'aria-disabled': isTranslating,
-});
 ```

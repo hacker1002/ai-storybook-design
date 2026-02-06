@@ -175,6 +175,15 @@ interface EditorPageState {
   saveStatus: SaveStatus;
   isLoading: boolean;
   isSidebarOpen: boolean;
+
+  // Translation Dialog State
+  translationDialogState: TranslationDialogState | null;
+}
+
+interface TranslationDialogState {
+  isOpen: boolean;
+  targetLanguage: Language;
+  sourceLanguage: Language;
 }
 
 interface EditorPageCallbacks {
@@ -185,6 +194,7 @@ interface EditorPageCallbacks {
   onBookUpdate: (updates: Partial<Book>) => void;
   onSnapshotUpdate: (updates: Partial<Snapshot>) => void;
   onToggleSidebar: () => void;
+  onTranslateContent: (sourceLanguage: Language, targetLanguage: Language) => Promise<void>;
 }
 ```
 
@@ -212,6 +222,15 @@ EditorPage:
     RENDER RightSidebar với bookId, currentStep, activeCreativeSpace, currentLanguage, contextData, onClose
   ELSE:
     RENDER AISidebarToggle với onToggle (floating button bottom-right)
+
+  // Translation confirmation dialog
+  IF translationDialogState?.isOpen:
+    RENDER TranslationNotAvailableDialog với:
+      - isOpen: true
+      - targetLanguage: translationDialogState.targetLanguage
+      - sourceLanguage: translationDialogState.sourceLanguage
+      - onCancel: () => setTranslationDialogState(null)
+      - onTranslate: () => onTranslateContent(sourceLanguage, targetLanguage)
 ```
 
 ---
@@ -560,6 +579,45 @@ interface AISidebarToggleProps {
 
 ---
 
+### 3.16 TranslationNotAvailableDialog
+
+📄 **Doc:** [021-translation-not-available-dialog.md](component/editor-page/021-translation-not-available-dialog.md)
+
+**Mục đích:** Dialog xác nhận khi user chọn language mà chưa có translation trong textboxes. Hỏi user có muốn translate content không.
+
+**Trigger:** Khi `onLanguageChange` được gọi và `spreads[].textboxes[]` chưa có key `[language_code]`.
+
+**Props & Callbacks:**
+
+```typescript
+interface TranslationNotAvailableDialogProps {
+  isOpen: boolean;
+  targetLanguage: Language;
+  sourceLanguage: Language;
+  onCancel: () => void;
+  onTranslate: () => void;
+}
+```
+
+**Visual:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                         [X] │
+│  Translation Not Available                                  │
+│                                                             │
+│  The translation for **Tiếng Việt** is not available yet.  │
+│  Would you like to translate your content to this          │
+│  language?                                                  │
+│                                                             │
+│                    ┌──────────┐  ┌────────────────────────┐ │
+│                    │  Cancel  │  │  ✨ Translate          │ │
+│                    └──────────┘  └────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## 4. Technical Notes
 
 ### 4.1 Key Design Decisions
@@ -630,3 +688,23 @@ Cân nhắc tách MainCreativeSpace nếu xuất hiện nhu cầu:
 - Error boundary riêng (crash creativeSpace không crash toàn app)
 - Lazy loading creativeSpaces (code splitting với Suspense)
 - CreativeSpace state persistence (giữ state khi switch, không unmount)
+
+### 4.5 Translation Check Flow
+
+Khi user chọn language mới trong LanguageSelector:
+
+```
+handleLanguageChange(language):
+  1. Always update currentLanguage (allow viewing empty state)
+  2. Skip check if selecting original language
+  3. Check if any textbox has translation for language.code
+  4. If no translation found → show TranslationNotAvailableDialog
+```
+
+**Edge cases:**
+| Case | Behavior |
+|------|----------|
+| Select original language | No dialog |
+| All spreads empty (no textboxes) | No dialog (nothing to translate) |
+| Some textboxes have translation | No dialog (partial OK) |
+| User cancels dialog | Close dialog, language already changed |

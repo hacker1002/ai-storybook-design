@@ -49,19 +49,19 @@
 │  ┌────────────────┐   ┌─────────────────┐   ┌───────────────────────────────┐   │
 │  │ StepsSidebar   │   │   DocEditor     │   │   DummyView / Finalization    │   │
 │  │                │   │                 │   │                               │   │
-│  │ Props:         │   │ Props:          │   │ DummyView Props:              │   │
-│  │ • activeStep   │   │ • doc           │   │ • dummy                       │   │
+│  │ Props:         │   │ Props:          │   │ Props:                        │   │
+│  │ • activeStep   │   │ • doc           │   │ • spreads                     │   │
 │  │ • promptInput  │   │                 │   │ • currentLanguage ⚡           │   │
 │  │ • isGenerating │   │ Callbacks:      │   │                               │   │
-│  │ • selectedType │   │ • onContent     │   │ DummyView Callbacks:          │   │
+│  │ • selectedType │   │ • onContent     │   │ Callbacks:                    │   │
 │  │                │   │   Change        │   │ • onSpreadSelect              │   │
 │  │ Callbacks:     │   │                 │   │ • onSpreadAdd                 │   │
 │  │ • onStepChange │   └─────────────────┘   │ • onSpreadUpdate              │   │
-│  │ • onPrompt     │                         │                               │   │
-│  │   Change       │                         │ Finalization Extra Callbacks: │   │
-│  │ • onGenerate   │                         │ • onTranslate ⚡              │   │
-│  │ • onDummyType  │                         │   (book.original_language     │   │
-│  │   Change       │                         │    → currentLanguage)         │   │
+│  │ • onPrompt     │                         │ • onSpreadReorder             │   │
+│  │   Change       │                         │                               │   │
+│  │ • onGenerate   │                         │                               │   │
+│  │ • onDummyType  │                         │                               │   │
+│  │   Change       │                         │                               │   │
 │  └────────────────┘                         └───────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -75,7 +75,7 @@
 | `script` | `doc` | ManuscriptDocEditor | Markdown editor cho kịch bản scene-by-scene |
 | `prose_dummy` | `spread` | ManuscriptSpreadView (mode=dummy) | Spread view + editor cho văn xuôi |
 | `poetry_dummy` | `spread` | ManuscriptSpreadView (mode=dummy) | Spread view + editor cho thơ/vần |
-| `finalization` | `spread` | ManuscriptSpreadView (mode=finalize) | Spread view + editor + Translate |
+| `finalization` | `spread` | ManuscriptSpreadView (mode=finalize) | Spread view + editor for final text adjustments |
 
 ### 1.4 manuscript{} Data Structure Reference
 
@@ -193,9 +193,8 @@ interface ManuscriptCreativeSpaceCallbacks {
   onGenerate: (step: ManuscriptStepType, prompt: string) => Promise<void>;
   onDocContentChange: (docType: string, content: string) => void;
   onDummyUpdate: (dummyType: DummyType, spreads: DummySpread[]) => void;
-  onDummySpreadReorder: (dummyType: DummyType, oldIndex: number, newIndex: number) => void;  // NEW
+  onDummySpreadReorder: (dummyType: DummyType, oldIndex: number, newIndex: number) => void;
   onGenerateArtDirection: (sourceDummyType: DummyType, prompt: string) => Promise<void>;
-  onTranslate: (targetLanguage: Language) => Promise<void>;
 }
 ```
 
@@ -229,8 +228,8 @@ ManuscriptCreativeSpace:
         - mode: 'finalize'
         - currentLanguage
         - onSpreadSelect, onSpreadUpdate, onSpreadReorder
-        - onTranslate(targetLanguage)  // Translate từ book.original_language → targetLanguage
         // NOTE: No onSpreadAdd in finalize mode
+        // NOTE: Translation handled at EditorPage level via TranslationNotAvailableDialog
 ```
 
 ### 2.4 Visual
@@ -377,8 +376,6 @@ interface ManuscriptSpreadViewProps {
   onSpreadAdd?: () => void;              // Not called in finalize mode
   onSpreadUpdate?: (spreadIndex: number, spread: SpreadViewSpread) => void;
   onSpreadReorder?: (oldIndex: number, newIndex: number) => void;
-  // Finalize mode only - translates textboxes[] from book.original_language → targetLanguage
-  onTranslate?: (targetLanguage: Language) => Promise<void>;
 }
 ```
 
@@ -389,7 +386,6 @@ interface ManuscriptSpreadViewProps {
 | Drag-drop reorder | ✅ Yes | ✅ Yes |
 | Click to edit (inline) | ✅ Yes | ✅ Yes |
 | Add spread | ✅ Button visible | ❌ No button |
-| Translate | ❌ No | ✅ Yes |
 | Image display | `art_note` | `visual_description` |
 
 **Layout Modes:**
@@ -400,8 +396,8 @@ interface ManuscriptSpreadViewProps {
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  ☐                                     🌐 Translate  ─ ●──── + 100% │
-│  └→ toggle                             (finalize)    └→ zoom        │
+│  ☐                                                    ─ ●──── + 100% │
+│  └→ toggle                                            └→ zoom        │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │               ┌───────────────────────────────────┐                 │
@@ -422,7 +418,7 @@ interface ManuscriptSpreadViewProps {
 ```
 
 **Child Components:**
-- `SpreadViewHeader` - Header với toggle, zoom, translate button
+- `SpreadViewHeader` - Header với toggle, zoom controls
 - `SpreadEditorPanel` - Inline editor (replaces SpreadEditModal)
 - `SpreadFilmstrip` - Bottom thumbnails strip
 - `SpreadGrid` - Classic grid view (when toggle off)
@@ -441,7 +437,6 @@ interface ManuscriptSpreadViewProps {
 <ManuscriptFinalizationView
   spreads={snapshotSpreads}
   currentLanguage={currentLanguage}
-  onTranslate={handleTranslate}
 />
 
 // After
@@ -452,8 +447,8 @@ interface ManuscriptSpreadViewProps {
   onSpreadSelect={handleSpreadSelect}
   onSpreadUpdate={handleSpreadUpdate}
   onSpreadReorder={handleSpreadReorder}
-  onTranslate={handleTranslate}  // translates from book.original_language → targetLanguage
 />
+// NOTE: Translation now handled at EditorPage level via TranslationNotAvailableDialog
 ```
 
 ---
@@ -477,11 +472,8 @@ Finalization step có dropdown chọn source dummy (Prose/Poetry). Lý do: User 
 **Language-aware Textbox Display**
 Textbox content được lấy theo `textbox[currentLanguage.code]`. Lý do: Hỗ trợ multi-language editing.
 
-**Translation Logic**
-- Source language: `book.original_language` (ngôn ngữ gốc của sách)
-- Target language: `currentLanguage` (ngôn ngữ hiện tại đang chọn)
-- Scope: `spreads[].textboxes[]` - translate tất cả text trong các textbox
-- Không cần truyền `availableLanguages` - user chọn `currentLanguage` để translate
+> **Note:** Translation is now handled at EditorPage level via `TranslationNotAvailableDialog`.
+> See [01-04-translation-not-available-dialog.md](component/editor-page/01-04-translation-not-available-dialog.md).
 
 ### 4.2 Generate Flow
 

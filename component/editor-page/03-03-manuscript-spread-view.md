@@ -92,8 +92,7 @@
 │  ┌────────────────────────────────────────────────────────────────────────────┐  │
 │  │  Props: spreads[], mode, currentLanguage                                   │  │
 │  │  State: isEditorVisible, selectedSpreadIndex, zoomLevel, columnsPerRow     │  │
-│  │  Callbacks: onSpreadSelect, onSpreadAdd, onSpreadUpdate, onSpreadReorder,  │  │
-│  │             onTranslate                                                     │  │
+│  │  Callbacks: onSpreadSelect, onSpreadAdd, onSpreadUpdate, onSpreadReorder   │  │
 │  └────────────────────────────────────────────────────────────────────────────┘  │
 │         │                              │                              │           │
 │         ▼                              ▼                              ▼           │
@@ -108,8 +107,8 @@
 │  │ Callbacks:       │          │ • zoomLevel         │        │                 │ │
 │  │ • onToggleEditor │          │                     │        │ Callbacks:      │ │
 │  │ • onZoomChange   │          │ Callbacks:          │        │ • onSpreadClick │ │
-│  │ • onTranslate    │          │ • onSpreadUpdate    │        │ • onAddSpread   │ │
-│  │   (finalize mode)│          │                     │        │ • onDragEnd     │ │
+│  │                  │          │ • onSpreadUpdate    │        │ • onAddSpread   │ │
+│  │                  │          │                     │        │ • onDragEnd     │ │
 │  └─────────────────┘          └─────────────────────┘        └─────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -122,7 +121,6 @@
 | Drag-drop reorder | ✅ Yes | ✅ Yes (NEW) |
 | Click to edit | ✅ Yes (inline editor) | ✅ Yes (inline editor) |
 | Add spread | ✅ Button visible | ❌ No button |
-| Translate | ❌ No | ✅ Yes |
 | Image display | `art_note` | `visual_description` |
 
 ---
@@ -183,8 +181,6 @@ interface ManuscriptSpreadViewProps {
   onSpreadAdd?: () => void;              // Not called in finalize mode
   onSpreadUpdate?: (spreadIndex: number, spread: SpreadViewSpread) => void;
   onSpreadReorder?: (oldIndex: number, newIndex: number) => void;
-  // Finalize mode only - translates textboxes[] from book.original_language → targetLanguage
-  onTranslate?: (targetLanguage: Language) => Promise<void>;
 }
 
 interface ManuscriptSpreadViewState {
@@ -216,17 +212,14 @@ ManuscriptSpreadView:
 
   isEditable = mode === 'dummy' OR (mode === 'finalize' AND hasEditPermission)
   canAdd = mode === 'dummy'
-  canTranslate = mode === 'finalize'
   displayField = mode === 'dummy' ? 'art_note' : 'visual_description'
 
   RENDER SpreadViewHeader với:
     - isEditorVisible
     - zoomLevel
     - mode
-    - canTranslate
     - onToggleEditor: () => toggleEditorVisible()
     - onZoomChange: (level) => setZoomLevel(level)
-    - onTranslate: canTranslate ? handleTranslate : undefined
 
   IF isEditorVisible:
     // Editor + Filmstrip layout (horizontal)
@@ -293,9 +286,6 @@ ManuscriptSpreadView:
     setIsEditorVisible(!isEditorVisible)
     IF !isEditorVisible AND selectedSpreadIndex === null AND spreads.length > 0:
       setSelectedSpreadIndex(0)  // Auto-select first spread
-
-  handleTranslate(targetLanguage):
-    await onTranslate?.(targetLanguage)
 ```
 
 ### 2.4 Visual
@@ -361,12 +351,12 @@ ManuscriptSpreadView:
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Finalize Mode (with Translate button):**
+**Finalize Mode:**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ☐                                     🌐 Translate       ─ ●────────── + 100%  │
-│                                           ↑ finalize mode only                  │
+│  ☐                                                        ─ ●────────── + 100%  │
+│                                                             └→ Zoom controls    │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │                              [...SpreadEditorPanel...]                          │
@@ -381,6 +371,9 @@ ManuscriptSpreadView:
 │                                         ↑ No "Add" button in finalize mode      │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+> **Note:** Translation is handled at EditorPage level via `TranslationNotAvailableDialog`.
+> See [01-04-translation-not-available-dialog.md](component/editor-page/01-04-translation-not-available-dialog.md).
 
 **Empty State:**
 
@@ -414,7 +407,7 @@ ManuscriptSpreadView:
 
 📄 **Doc:** [03-03-01-spread-view-header.md](component/editor-page/03-03-01-spread-view-header.md)
 
-**Mục đích:** Header toolbar với toggle button, zoom controls, và translate button (finalize mode).
+**Mục đích:** Header toolbar với toggle button và zoom controls.
 
 **Props & Callbacks:**
 
@@ -423,14 +416,9 @@ interface SpreadViewHeaderProps {
   isEditorVisible: boolean;
   zoomLevel: number;                     // 50-200
   mode: SpreadViewMode;
-  canTranslate: boolean;
-  isTranslating?: boolean;
-  currentLanguage: Language;
 
   onToggleEditor: () => void;
   onZoomChange: (level: number) => void;
-  // Translates textboxes[] from book.original_language → currentLanguage
-  onTranslate?: () => void;
 }
 ```
 
@@ -438,8 +426,8 @@ interface SpreadViewHeaderProps {
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ☐                                     🌐 Translate       ─ ●────────── + 100%  │
-│  ↑ Toggle                              ↑ (finalize only)  ↑ Zoom slider        │
+│  ☐                                                        ─ ●────────── + 100%  │
+│  ↑ Toggle                                                 ↑ Zoom slider         │
 │                                                                                 │
 │  Tooltip (hover):                                                               │
 │  - When ☐ (unchecked): "Show slider only"                                       │
@@ -612,11 +600,8 @@ Enable drag-drop reorder cho cả finalize mode (trước đây readonly). Lý d
 **Zoom Level**
 Áp dụng cho SpreadEditorPanel, không ảnh hưởng Filmstrip/Grid. Lý do: Editor cần zoom để edit detail, filmstrip/grid cần consistent size để navigate.
 
-**Translation Logic**
-- Source language: `book.original_language` (ngôn ngữ gốc của sách)
-- Target language: `currentLanguage` (ngôn ngữ hiện tại đang chọn)
-- Scope: `spreads[].textboxes[]` - translate tất cả text trong các textbox
-- Không cần `availableLanguages` dropdown - chỉ cần nút "Translate" gọi `onTranslate()` với `currentLanguage`
+> **Note:** Translation is handled at EditorPage level via `TranslationNotAvailableDialog`.
+> See [01-04-translation-not-available-dialog.md](component/editor-page/01-04-translation-not-available-dialog.md).
 
 ### 4.2 Layout Calculations
 
