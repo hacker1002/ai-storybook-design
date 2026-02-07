@@ -2,6 +2,17 @@
 
 ---
 
+## [2026-02-07 10:20] Add spread ID for optimized rendering
+
+- **JSONB manuscript.dummies[].spreads[]**: thêm `id` (UUID)
+- **JSONB spreads[]**: thêm `id` (UUID)
+- **Lý do**: Enable ID-based subscription trong Zustand store, tránh re-render toàn bộ list khi edit 1 spread
+- **Generation**: Client-side UUID (e.g., `crypto.randomUUID()`) khi tạo spread mới
+
+Migration: N/A (JSONB field, backward compatible - existing spreads sẽ được assign ID khi load/save)
+
+---
+
 ## [2026-02-06 10:55] Rename flags to issues & Update animations
 
 - **flags**: đổi tên thành `issues`

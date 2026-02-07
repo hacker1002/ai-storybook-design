@@ -38,6 +38,8 @@ ai-storybook-design/
 │       └── story-idea-brainstorming.md
 │
 ├── component/                   # Component Designs
+│   ├── stores/                  # Zustand store designs
+│   │   └── snapshot-store.md
 │   └── editor-page/             # Editor page components
 │       ├── 00-editor-page.md
 │       └── screenshots/
@@ -119,11 +121,13 @@ editor-page/
 ---
 
 ## Quy tắc chung
-- **No code in design docs** except: JSON structures, TypeScript interfaces, mapping constants
+- **(IMPORTANT) No code in design docs** except: JSON structures, TypeScript interfaces, mapping constants, Store Integration section
+- **(IMPORTANT)** không viết code css style vào doc thiết kế
 - **Cố gắng** đặt tên component, api, feature 1 cách rõ ràng, dễ hiểu, tránh nhập nhằng
 - Keep docs focused on specifications, not implementation details
 - Định nghĩa TypeScript interfaces rõ ràng cho input/output
 - **(IMPORTANT) Link tới các file doc khác** phải có đầy đủ path từ root vào. Ví dụ: 
+ - stores design: [Snapshot Store](component/stores/snapshot-store.md)
  - component design: [Manuscript CreativeSpace](component/editor-page/03-manuscript-creative-space.md)
  - api design: [00 - Brainstorming Initial](api/chat/00-story-brainstorming-initial.md)
  - app feture: [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
@@ -135,14 +139,16 @@ editor-page/
 - **Chỉ thiết kế 2 tầng:** Component cha + các component con trực tiếp
 - **KHÔNG thiết kế:** Sub-components của children (sẽ có file riêng)
 - **Nếu đã có thiết kế component cha:** Tuân thủ theo thiết kế component cha khi thiết kế
+- **BẮT BUỘC check các file store design** trước khi thiết kế component
 
 ### Nội dung bắt buộc
 
 | Mục | Mô tả |
 |-----|-------|
 | **Mục đích** | Nhiệm vụ của component (1-2 câu) |
-| **Interface** | Props, State, Callbacks (TypeScript) |
+| **Interface** | Props, State, Callbacks, Store State Selectors & Actions (TypeScript) |
 | **Visualization** | Diagrams (ASCII hoặc Mermaid), **Lưu ý:** nếu có screenshot mẫu thì thêm đường dẫn ảnh mẫu vào |
+| **Child Components** | tập trung vào parent-child interaction |
 
 ### Được phép / Không được phép
 
@@ -183,6 +189,14 @@ editor-page/
 - ❌ Prop drilling quá sâu (> 3 tầng)
 - ❌ Component làm quá nhiều việc (God component)
 - ❌ Intermediate component chỉ pass props mà không có logic riêng
+
+### Quy tắc khi thiết kế Component Stores:
+
+- **Zustand Stores:** Thiết kế store toàn cục cho app
+- **Slice pattern**: Mỗi domain có slice riêng
+- **Immer middleware**: Mutation syntax cho immutable updates
+- **ID-based selectors**: Tối ưu re-render với stable ID
+- **Actions-only hook**: `useXxxActions()` không trigger re-render
 
 ---
 

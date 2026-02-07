@@ -26,11 +26,22 @@ cp template-design/component-template.md component/{page-name}/{nn}-{component-n
 |------|-------------|--------|
 | [editor-page](./editor-page/) | Editor page - creativeSpace quản lý book | ✅ Active |
 
+## Stores
+
+| Store | Description | Status |
+|-------|-------------|--------|
+| [snapshot-store](./stores/snapshot-store.md) | Zustand store cho snapshot data (manuscript, spreads, characters, props, stages) | ✅ Designed |
+
+👉 **Xem chi tiết:** [stores/README.md](./stores/README.md)
+
 ## Cấu trúc thư mục
 
 ```
 component/
 ├── README.md
+├── stores/                       # Zustand store designs
+│   ├── README.md
+│   └── snapshot-store.md
 └── {page-name}/
     ├── 00-{root-component}.md    # Root component
     ├── 01-{child-component}.md   # Child components

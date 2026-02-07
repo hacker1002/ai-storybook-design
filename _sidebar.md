@@ -14,7 +14,7 @@
       * [Spread View Header](component/editor-page/03-03-01-spread-view-header.md)
       * [Spread Editor Panel](component/editor-page/03-03-02-spread-editor-panel.md)
       * [Spread Thumbnail List](component/editor-page/03-03-03-spread-thumbnail-list.md)
-      * [Spread Thumbnail](component/editor-page/03-03-05-spread-thumbnail.md)
+        * [Spread Thumbnail](component/editor-page/03-03-03-01-spread-thumbnail.md)
 
 * **App Features**
   * [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)

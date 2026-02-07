@@ -8,9 +8,9 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        [ComponentName]                           │
+│                        [ComponentName]                          │
 │  ┌───────────────────────────────────────────────────────────┐  │
-│  │                      [ChildComponent1]                     │  │
+│  │                      [ChildComponent1]                    │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │  ┌─────────────┬─────────────────────────────────┬───────────┐  │
 │  │ [Child2]    │        [Child3]                 │  [Child4] │  │
@@ -21,30 +21,32 @@
 ### 1.2 Data Flow
 
 ```
-                                    ┌─────────────┐
-                                    │   API/DB    │
-                                    └──────┬──────┘
-                                           │
-                                           ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                          [ComponentName]                          │
-│  ┌────────────────────────────────────────────────────────────┐  │
-│  │  State: [list state variables]                              │  │
-│  └────────────────────────────────────────────────────────────┘  │
-│         │              │                              │          │
-│         ▼              ▼                              ▼          │
-│  ┌───────────┐  ┌───────────┐                  ┌───────────┐    │
-│  │  [Child1] │  │  [Child2] │                  │  [Child3] │    │
-│  │           │  │           │                  │           │    │
-│  │ Props:    │  │ Props:    │                  │ Props:    │    │
-│  │ •prop1    │  │ •prop1    │                  │ •prop1    │    │
-│  │ •prop2    │  │ •prop2    │                  │ •prop2    │    │
-│  │           │  │           │                  │           │    │
-│  │ Callbacks:│  │ Callbacks:│                  │ Callbacks:│    │
-│  │ •onAction │  │ •onAction │                  │ •onAction │    │
-│  └───────────┘  └───────────┘                  └───────────┘    │
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────┐                              ┌─────────────────────┐
+│   API/DB    │                              │   Zustand Stores    │
+└──────┬──────┘                              │  ┌───────────────┐  │
+       │                                     │  │ useXxxStore   │  │
+       │                                     │  │ useYyyStore   │  │
+       ▼                                     │  └───────────────┘  │
+┌──────────────────────────────────────────┐ └──────────┬──────────┘
+│            [ComponentName]               │            │
+│  ┌────────────────────────────────────┐  │◄───────────┘
+│  │  Local State: [list variables]     │  │  (selectors, actions)
+│  └────────────────────────────────────┘  │
+│         │              │           │     │
+│         ▼              ▼           ▼     │
+│  ┌───────────┐  ┌───────────┐ ┌───────┐  │
+│  │  [Child1] │  │  [Child2] │ │[Chil3]│  │
+│  │ Props:    │  │ Props:    │ │ Props:│  │
+│  │ •prop1    │  │ •prop1    │ │ •prop1│  │
+│  │ Callbacks:│  │ Callbacks:│ │Callbk:│  │
+│  │ •onAction │  │ •onAction │ │•onAct │  │
+│  └───────────┘  └───────────┘ └───────┘  │
+└──────────────────────────────────────────┘
 ```
+
+**Lưu ý:**
+- Mũi tên từ Store → Component: selectors để đọc data
+- Mũi tên từ Component → Store: actions để update data
 
 ### 1.x Table/Graph Mapping/Summary for some special global logic
 
@@ -69,6 +71,8 @@ interface [SharedInterface] {
 
 ### 2.2 Interface
 
+**Props & Local State:**
+
 ```typescript
 interface [ComponentName]Props {
   propName: PropType;
@@ -88,6 +92,21 @@ interface [ComponentName]Callbacks {
   onUpdate: (data: DataType) => void;
 }
 ```
+
+**Store Integration:**
+
+```typescript
+// State Selectors
+spread = useSpreadById(spreadId);
+currentPage = useCurrentPage();
+isLoading = useSnapshotLoading();
+
+// Actions
+{ updateSpread, addSpreadTextbox, deleteSpread } = useSnapshotActions();
+{ setCurrentPage } = useEditorActions();
+```
+
+**Lưu ý:** Chỉ liệt kê selectors và actions thực tế component sử dụng.
 
 ### 2.3 Render Logic (pseudo)
 
@@ -122,7 +141,7 @@ interface [ComponentName]Callbacks {
 ```
 Default:              Loading:              Error:
 ┌───────────────┐     ┌───────────────┐     ┌───────────────┐
-│ [content]     │     │ ⏳ Loading... │     │ ⚠️ Error msg  │
+│ [content]     │     │ ⏳ Loading... │     │ ⚠️ Error msg   │
 │               │     │               │     │ [Retry]       │
 └───────────────┘     └───────────────┘     └───────────────┘
 
@@ -139,17 +158,19 @@ Selected:             Disabled:
 
 ## 3. Child Components Interface
 
-> **Lưu ý:** Section này chỉ định nghĩa **props và callbacks** (contract giữa parent-child).
-> State và logic chi tiết của mỗi child sẽ được thiết kế trong file riêng của component đó.
+> **Lưu ý quan trọng:**
+> - Section này **CHỈ** định nghĩa **props và callbacks** (contract giữa parent-child)
+> - **KHÔNG** thiết kế store integration tại đây — child component tự thiết kế store selectors/actions trong file riêng của nó
+> - State và logic chi tiết của mỗi child sẽ được thiết kế trong file riêng của component đó
 
 ### 3.1 [ChildComponent1]
 
-📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component1}.md`](./component/{page-name}/{hierarchy}-{child-component1}.md)
-**(Important) vẫn thêm link doc tới child component kể cả chưa có doc**
+📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component1}.md`](component/{page-name}/{hierarchy}-{child-component1}.md)
+**(IMPORTANT) link phải có đầy đủ path từ root (component/{page-name}). Add link child component kể cả chưa có doc**
 
 **Mục đích:** [Mô tả nhiệm vụ - 1 câu]
 
-**Props & Callbacks:**
+**Props & Callbacks:** *(chỉ parent-child interaction)*
 
 ```typescript
 interface [ChildComponent1]Props {
@@ -175,12 +196,12 @@ interface [ChildComponent1]Props {
 
 ### 3.2 [ChildComponent2]
 
-📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component2}.md`](./component/{page-name}/{hierarchy}-{child-component2}.md)
-**(Important) vẫn thêm link doc tới child component kể cả chưa có doc**
+📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component2}.md`](component/{page-name}/{hierarchy}-{child-component2}.md)
+**(IMPORTANT) link phải có đầy đủ path từ root (component/{page-name}). Add link child component kể cả chưa có doc**
 
 **Mục đích:** [Mô tả nhiệm vụ - 1 câu]
 
-**Props & Callbacks:**
+**Props & Callbacks:** *(chỉ parent-child interaction)*
 
 ```typescript
 interface [ChildComponent2]Props {
@@ -195,14 +216,14 @@ interface [ChildComponent2]Props {
 
 ### 3.3 [ChildComponent3]
 
-📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component3}.md`](./component/{page-name}/{hierarchy}-{child-component3}.md)
-**(Important) vẫn thêm link doc tới child component kể cả chưa có doc**
+📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component3}.md`](component/{page-name}/{hierarchy}-{child-component3}.md)
+**(IMPORTANT) link phải có đầy đủ path từ root (component/{page-name}). Add link child component kể cả chưa có doc**
 
 **Mục đích:** [Mô tả nhiệm vụ - 1 câu]
 
 **Special Impact:** ✅ **BỊ ẢNH HƯỞNG** — [Giải thích logic global ảnh hưởng tới component]
 
-**Props & Callbacks:**
+**Props & Callbacks:** *(chỉ parent-child interaction)*
 
 ```typescript
 interface [ChildComponent3]Props {

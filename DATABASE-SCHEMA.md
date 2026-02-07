@@ -367,6 +367,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
   "dummies[]": [{
     "type": "prose | poetry",
     "spreads[]": [{
+      "id": "uuid",
       "layout": "uuid",
       "left_page": {
         "number": 1,
@@ -402,6 +403,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 ### spreads[] structure
 ```json
 {
+  "id": "uuid",
   "type": 1,
   "number": 1,
   "layout": "uuid",

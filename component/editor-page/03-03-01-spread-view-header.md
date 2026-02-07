@@ -14,7 +14,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              SpreadViewHeader                                    │
+│                              SpreadViewHeader                                   │
 │  ┌───────────────┐                                       ┌────────────────────┐ │
 │  │  ViewToggle   │                                       │  DualPurposeSlider │ │
 │  │  [⚏]         │                                       │  ─ ●────── + 100%  │ │
@@ -22,26 +22,42 @@
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 Layout
+### 1.2 Data Flow
 
-**Edit Mode:**
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  [⚏]                                                      ─ ●────────── + 100%  │
-│   ↑ icon only                                             └→ Zoom (25%-200%)   │
-└─────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│                            ManuscriptSpreadView (Parent)                           │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐  │
+│  │ Local State: viewMode, zoomLevel, columnsPerRow                              │  │
+│  └────────────────────────────────┬─────────────────────────────────────────────┘  │
+└───────────────────────────────────┼────────────────────────────────────────────────┘
+                                    │ (props + callbacks)
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│                              SpreadViewHeader                                      │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐  │
+│  │  Props: viewMode, zoomLevel, columnsPerRow, spreadViewMode                   │  │
+│  │  Callbacks: onViewModeToggle, onZoomChange, onColumnsChange                  │  │
+│  │  Local State: (none)                                                         │  │
+│  └──────────────────────────────────────────────────────────────────────────────┘  │
+│         │                                                              │           │
+│         ▼                                                              ▼           │
+│  ┌──────────────────┐                                   ┌──────────────────────┐   │
+│  │   ViewToggle     │                                   │  DualPurposeSlider   │   │
+│  │                  │                                   │                      │   │
+│  │ Props:           │                                   │ Props:               │   │
+│  │ • viewMode       │                                   │ • viewMode           │   │
+│  │                  │                                   │ • zoomLevel          │   │
+│  │ Callbacks:       │                                   │ • columnsPerRow      │   │
+│  │ • onToggle       │                                   │                      │   │
+│  │                  │                                   │ Callbacks:           │   │
+│  │                  │                                   │ • onZoomChange       │   │
+│  │                  │                                   │ • onColumnsChange    │   │
+│  └──────────────────┘                                   └──────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Grid Mode:**
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  [⚏]                                                      ─ ●────────── + 4    │
-│   ↑ toggle (tooltip: "Show full spread view")             └→ Columns (1-6)     │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
-> **Note:** Translation is handled at EditorPage level via `TranslationNotAvailableDialog`.
-> See [01-04-translation-not-available-dialog.md](component/editor-page/01-04-translation-not-available-dialog.md).
+**Lưu ý:** SpreadViewHeader là **stateless presentational component**. Tất cả state được quản lý bởi parent (ManuscriptSpreadView) và truyền xuống qua props.
 
 ---
 
@@ -51,53 +67,60 @@
 
 **Mục đích:** Header toolbar cho SpreadView với toggle button để switch giữa Edit và Grid modes. Slider có dual-purpose: zoom (edit mode) hoặc columns (grid mode).
 
-### 2.2 Interface
+**Shared Types:**
 
 ```typescript
 type ViewMode = 'edit' | 'grid';
+type SpreadViewMode = 'dummy' | 'finalize';
+```
 
+### 2.2 Interface
+
+**Props & Local State:**
+
+```typescript
 interface SpreadViewHeaderProps {
-  viewMode: ViewMode;
-  zoomLevel: number;                     // 25-200, default 100 (edit mode only)
-  columnsPerRow: number;                 // 1-6, default 4 (grid mode only)
-  spreadViewMode: SpreadViewMode;        // 'dummy' | 'finalize'
+  viewMode: ViewMode;                      // 'edit' | 'grid'
+  zoomLevel: number;                       // 25-200, default 100 (edit mode only)
+  columnsPerRow: number;                   // 1-6, default 4 (grid mode only)
+  spreadViewMode: SpreadViewMode;          // 'dummy' | 'finalize'
 
   onViewModeToggle: () => void;
   onZoomChange: (level: number) => void;
   onColumnsChange: (columns: number) => void;
 }
+
+// No local state - fully controlled component
+```
+
+**Store Integration:**
+
+```typescript
+// None - stateless presentational component
+// All state managed by parent ManuscriptSpreadView
+// Parent handles: viewMode, zoomLevel, columnsPerRow as local state
 ```
 
 ### 2.3 Render Logic (pseudo)
 
 ```
 SpreadViewHeader:
-  RENDER Container (flex row, justify-between, align-center):
+  RENDER Container (flex row, justify-between, align-center, h-48px):
 
     // Left section
-    RENDER ViewToggle icon button với:
-      - tooltip: "Show full spread view"
-      - onClick: onViewModeToggle
+    RENDER ViewToggle với:
+      - viewMode
+      - onToggle: onViewModeToggle
 
-    // Center section (spacer)
+    // Center section (flex-grow spacer)
 
-    // Right section - Dual Purpose Slider
-    IF viewMode === 'edit':
-      RENDER ZoomSlider với:
-        - value: zoomLevel
-        - min: 25
-        - max: 200
-        - step: 25
-        - label: "{zoomLevel}%"
-        - onChange: onZoomChange
-    ELSE (grid mode):
-      RENDER ColumnsSlider với:
-        - value: columnsPerRow
-        - min: 1
-        - max: 6
-        - step: 1
-        - label: "{columnsPerRow}"
-        - onChange: onColumnsChange
+    // Right section
+    RENDER DualPurposeSlider với:
+      - viewMode
+      - zoomLevel (for edit mode)
+      - columnsPerRow (for grid mode)
+      - onZoomChange
+      - onColumnsChange
 ```
 
 ### 2.4 Visual
@@ -105,13 +128,13 @@ SpreadViewHeader:
 **Edit Mode (default):**
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────────────────────────┐
 │  ╔═══╗                                                   ┌─────────────────────┐ │
 │  ║ ⚏ ║                                                   │ ─  ●──────  + 100%  │ │
 │  ╚═══╝                                                   └─────────────────────┘ │
-│    ↑ View toggle (tooltip: "Show full spread view")         ↑ Zoom slider        │
+│    ↑ View toggle (tooltip: "Show spread grid view")         ↑ Zoom slider        │
 │    (click to switch to grid)                                (25%-200%)           │
-└─────────────────────────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Grid Mode:**
@@ -133,7 +156,92 @@ SpreadViewHeader:
 | Edit | Zoom SpreadCanvas | 25%-200% | 25 | `{value}%` |
 | Grid | Columns per row | 1-6 | 1 | `{value}` |
 
-**Slider Controls:**
+---
+
+## 3. Child Components Interface
+
+> **Lưu ý quan trọng:**
+> - ViewToggle và DualPurposeSlider là **inline components** (không có file riêng)
+> - Components đơn giản, không cần store integration
+> - Thiết kế chi tiết ở đây vì sẽ implement inline
+
+### 3.1 ViewToggle (inline)
+
+**Mục đích:** Icon button để toggle giữa Edit và Grid view modes.
+
+**Props & Callbacks:**
+
+```typescript
+interface ViewToggleProps {
+  viewMode: ViewMode;          // 'edit' | 'grid'
+  onToggle: () => void;
+}
+```
+
+**Render Logic:**
+
+```
+ViewToggle:
+  RENDER IconButton với:
+    - icon: GridViewIcon (same icon for both modes)
+    - tooltip: "Show full spread view"
+    - aria-pressed: viewMode === 'grid'
+    - aria-label: "Switch to {opposite} view"
+    - onClick: onToggle
+```
+
+**Visual:**
+
+```
+Edit Mode:                              Grid Mode:
+┌─────────────────────────────┐         ┌─────────────────────────────────┐
+│  ╔═══╗  ← icon button       │         │  ╔═══╗  ← icon button           │
+│  ║ ⚏ ║                      │        │  ║ ⚏ ║  (same icon)            │
+│  ╚═══╝                      │         │  ╚═══╝                          │
+│  Click → Grid               │         │  Click → Edit                   │
+└─────────────────────────────┘         └─────────────────────────────────┘
+```
+
+### 3.2 DualPurposeSlider (inline)
+
+**Mục đích:** Slider với behavior thay đổi dựa trên viewMode.
+
+**Props & Callbacks:**
+
+```typescript
+interface DualPurposeSliderProps {
+  viewMode: ViewMode;
+  zoomLevel: number;                       // for edit mode
+  columnsPerRow: number;                   // for grid mode
+  onZoomChange: (level: number) => void;
+  onColumnsChange: (columns: number) => void;
+}
+```
+
+**Render Logic:**
+
+```
+DualPurposeSlider:
+  IF viewMode === 'edit':
+    config = { value: zoomLevel, min: 25, max: 200, step: 25, label: "{value}%", onChange: onZoomChange }
+  ELSE:
+    config = { value: columnsPerRow, min: 1, max: 6, step: 1, label: "{value}", onChange: onColumnsChange }
+
+  RENDER Container (flex row, align-center, gap-8px):
+    RENDER IconButton (minus) onClick: config.value - config.step
+    RENDER Slider với config
+    RENDER IconButton (plus) onClick: config.value + config.step
+    RENDER Text label: config.label
+```
+
+**Config by Mode:**
+
+| Mode | Value | Min | Max | Step | Label |
+|------|-------|-----|-----|------|-------|
+| Edit | zoomLevel | 25 | 200 | 25 | `{value}%` |
+| Grid | columnsPerRow | 1 | 6 | 1 | `{value}` |
+
+**Visual:**
 
 ```
 Edit Mode (Zoom):
@@ -155,63 +263,12 @@ Grid Mode (Columns):
 
 ---
 
-## 3. Child Components Interface
-
-### 3.1 ViewToggle
-
-**Mục đích:** Icon button để switch giữa Edit và Grid modes, với tooltip "Show full spread view".
-
-**Props:**
-
-```typescript
-interface ViewToggleProps {
-  viewMode: ViewMode;                    // 'edit' | 'grid'
-  onToggle: () => void;
-}
-```
-
-**Visual:**
-
-```
-Edit Mode:                              Grid Mode:
-┌─────────────────────────────┐         ┌─────────────────────────────────┐
-│  ╔═══╗  ← icon              │         │  ╔═══╗  ← icon                  │
-│  ║ ⚏ ║                      │         │  ║ ⚏ ║                          │
-│  ╚═══╝                      │         │  ╚═══╝                          │
-│  Click → Grid               │         │  Click → Edit                   │
-│  (tooltip: "Show full       │         │  (tooltip: "Show full           │
-│   spread view")             │         │   spread view")                 │
-└─────────────────────────────┘         └─────────────────────────────────┘
-```
-
-### 3.2 DualPurposeSlider
-
-**Mục đích:** Slider với dual behavior dựa trên viewMode.
-
-**Props:**
-
-```typescript
-interface DualPurposeSliderProps {
-  viewMode: ViewMode;
-  zoomLevel: number;                     // for edit mode
-  columnsPerRow: number;                 // for grid mode
-  onZoomChange: (level: number) => void;
-  onColumnsChange: (columns: number) => void;
-}
-```
-
-**Config by Mode:**
-
-| Mode | Min | Max | Step | Label |
-|------|-----|-----|------|-------|
-| Edit | 25 | 200 | 25 | `{value}%` |
-| Grid | 1 | 6 | 1 | `{value}` |
-
----
-
 ## 4. Technical Notes
 
 ### 4.1 Key Design Decisions
+
+**Stateless Presentational Component**
+SpreadViewHeader không có local state. Tất cả UI state (viewMode, zoomLevel, columnsPerRow) được quản lý bởi parent ManuscriptSpreadView và truyền xuống qua props. Lý do: Single source of truth, dễ test, và parent cần state này cho các child components khác (SpreadEditorPanel, SpreadThumbnailList).
 
 **Dual-Purpose Slider**
 Slider changes behavior based on viewMode:
@@ -220,21 +277,35 @@ Slider changes behavior based on viewMode:
 
 Lý do: Space-efficient UI, cùng 1 slider phục vụ 2 mục đích khác nhau theo context.
 
-**View Toggle with Tooltip**
-- Edit mode: Icon button with tooltip "Show full spread view"
-- Grid mode: Icon button with tooltip "Show full spread view"
-
-Lý do: Simple toggle icon, tooltip cung cấp context về action.
+**Inline Child Components**
+ViewToggle và DualPurposeSlider được implement inline (không tách file riêng). Lý do: Components đơn giản, không có state phức tạp, không reuse ở nơi khác.
 
 **Zoom Applies to SpreadCanvas Only**
 Zoom level chỉ ảnh hưởng SpreadCanvas trong edit mode, không ảnh hưởng thumbnails. Lý do: Thumbnails cần consistent size để navigate.
-
-> **Note:** Translation is handled at EditorPage level via `TranslationNotAvailableDialog`.
-> See [01-04-translation-not-available-dialog.md](component/editor-page/01-04-translation-not-available-dialog.md).
 
 ### 4.2 Accessibility
 
 | Element | Role | ARIA attributes |
 |---------|------|-----------------|
-| Toggle | `button` | `aria-pressed`, `aria-label="Switch to grid/edit view"` |
+| ViewToggle | `button` | `aria-pressed`, `aria-label="Switch to {mode} view"` |
 | Slider | `slider` | `aria-label`, `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, `aria-valuetext` |
+| Decrease btn | `button` | `aria-label="Decrease {zoom/columns}"` |
+| Increase btn | `button` | `aria-label="Increase {zoom/columns}"` |
+
+### 4.3 Layout Constants
+
+| Element | Value | Note |
+|---------|-------|------|
+| Header height | 48px | Fixed, matches parent layout |
+| Toggle button | 36×36px | IconButton size |
+| Slider width | 120px | Slider track only |
+| Gap between controls | 8px | Consistent spacing |
+
+---
+
+## 5. Related Docs
+
+- Parent Component: [03-03-manuscript-spread-view.md](component/editor-page/03-03-manuscript-spread-view.md)
+- Sibling - SpreadEditorPanel: [03-03-02-spread-editor-panel.md](component/editor-page/03-03-02-spread-editor-panel.md)
+- Sibling - SpreadThumbnailList: [03-03-03-spread-thumbnail-list.md](component/editor-page/03-03-03-spread-thumbnail-list.md)
+- Store Design: [snapshot-store.md](component/stores/snapshot-store.md)
