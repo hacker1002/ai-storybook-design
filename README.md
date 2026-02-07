@@ -19,6 +19,12 @@
 ### Component Design
 Thiết kế kiến trúc component cho các trang chính.
 
+#### Stores
+| Store | Description |
+|-------|-------------|
+| [Snapshot Store](component/stores/snapshot-store.md) | Zustand store quản lý snapshot data (manuscript, spreads, characters, props, stages) |
+
+#### Pages & Components
 | Component | Description |
 |-----------|-------------|
 | [Editor Page](component/editor-page/00-editor-page.md) | Root component của trang editor, quản lý creativeSpace và navigation |

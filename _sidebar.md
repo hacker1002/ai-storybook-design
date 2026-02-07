@@ -4,6 +4,8 @@
 * [📊 Database Schema](DATABASE-SCHEMA.md)
 
 * **Component Design**
+  * **Stores**
+    * [Snapshot Store](component/stores/snapshot-store.md)
   * [Editor Page](component/editor-page/00-editor-page.md)
   * [Editor Header](component/editor-page/01-editor-header.md)
   * [Icon Rail](component/editor-page/02-icon-rail.md)
