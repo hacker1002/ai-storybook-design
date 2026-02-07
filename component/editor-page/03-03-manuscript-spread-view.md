@@ -32,18 +32,18 @@
 ### 1.2 Data Flow
 
 ```
-                      ┌─────────────────────┐
-                      │    SnapshotStore    │
-                      │   (Zustand global)  │
-                      └──────────┬──────────┘
-                                 │
-         ┌───────────────────────┼───────────────────────┐
-         │ (selectors)           │                       │ (actions)
-         ▼                       ▼                       ▼
+        ┌─────────────────────┐          ┌───────────────────────┐
+        │    SnapshotStore    │          │  EditorSettingsStore  │
+        │   (Zustand global)  │          │   (Zustand global)    │
+        └──────────┬──────────┘          └───────────┬───────────┘
+                   │                                 │
+         ┌─────────┼─────────────────────────────────┼────────────┐
+         │         │ (selectors)                     │ (selector) │
+         ▼         ▼                                 ▼            ▼
 ┌───────────────────────────────────────────────────────────────────────────────────┐
 │                              ManuscriptSpreadView                                 │
 │  ┌─────────────────────────────────────────────────────────────────────────────┐  │
-│  │  Props: mode, dummyType?, currentLanguage                                   │  │
+│  │  Props: mode, dummyType?                                                    │  │
 │  │  Local State: viewMode, selectedSpreadId, zoomLevel, columnsPerRow          │  │
 │  └─────────────────────────────────────────────────────────────────────────────┘  │
 │         │                              │                              │           │
@@ -55,13 +55,14 @@
 │  │ • viewMode       │          │ Props:              │        │ • mode          │ │
 │  │ • zoomLevel      │          │ • spreadId          │        │ • dummyType?    │ │
 │  │ • columnsPerRow  │          │ • mode, dummyType?  │        │ • selectedId    │ │
-│  │ • spreadViewMode │          │ • currentLanguage   │        │ • layout        │ │
-│  │                  │          │ • zoomLevel         │        │ • columnsPerRow │ │
-│  │ Callbacks:       │          │ • isEditable        │        │ • canAdd        │ │
-│  │ • onViewModeToggle│         │ • displayField      │        │                 │ │
-│  │ • onZoomChange   │          │                     │        │ Callbacks:      │ │
-│  │ • onColumnsChange│          │ (uses store)        │        │ • onSpreadClick │ │
-│  └──────────────────┘          └─────────────────────┘        └─────────────────┘ │
+│  │ • spreadViewMode │          │ • zoomLevel         │        │ • layout        │ │
+│  │                  │          │ • isEditable        │        │ • columnsPerRow │ │
+│  │ Callbacks:       │          │ • displayField      │        │ • canAdd        │ │
+│  │ • onViewModeToggle│         │                     │        │                 │ │
+│  │ • onZoomChange   │          │ (uses both stores)  │        │ Callbacks:      │ │
+│  │ • onColumnsChange│          └─────────────────────┘        │ • onSpreadClick │ │
+│  └──────────────────┘                                         │ (uses stores)   │ │
+│                                                               └─────────────────┘ │
 └───────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -110,7 +111,7 @@ type DisplayField = 'art_note' | 'visual_description';
 interface ManuscriptSpreadViewProps {
   mode: SpreadViewMode;               // 'dummy' | 'finalize'
   dummyType?: DummyType;              // Required for dummy mode ('prose' | 'poetry')
-  currentLanguage: Language;
+  // currentLanguage via useCurrentLanguage() - no prop drilling
 }
 
 interface ManuscriptSpreadViewState {
@@ -133,7 +134,7 @@ interface ManuscriptSpreadViewState {
 **Store Integration:**
 
 ```typescript
-// State Selectors (mode-conditional)
+// SnapshotStore Selectors (mode-conditional)
 dummySpreads = useDummySpreads(dummyType);    // For dummy mode
 snapshotSpreads = useSpreads();                // For finalize mode
 spreads = mode === 'dummy' ? dummySpreads : snapshotSpreads;
@@ -143,7 +144,10 @@ dummySpreadIds = useDummySpreadIds(dummyType);  // For dummy mode
 snapshotSpreadIds = useSpreadIds();              // For finalize mode
 spreadIds = mode === 'dummy' ? dummySpreadIds : snapshotSpreadIds;
 
-// Actions
+// EditorSettingsStore (global UI state)
+currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
+
+// SnapshotStore Actions
 { addDummySpread, updateDummySpread, deleteDummySpread, reorderDummySpreads,
   addSpread, updateSpread, deleteSpread, reorderSpreads } = useSnapshotActions();
 ```
@@ -156,6 +160,9 @@ ManuscriptSpreadView:
   spreads = mode === 'dummy' ? useDummySpreads(dummyType) : useSpreads()
   spreadIds = mode === 'dummy' ? useDummySpreadIds(dummyType) : useSpreadIds()
   actions = useSnapshotActions()
+
+  // EditorSettingsStore (no prop drilling)
+  currentLanguage = useCurrentLanguage()
 
   isEditable = true  // Both modes editable
   canAdd = true
@@ -175,21 +182,24 @@ ManuscriptSpreadView:
     IF selectedSpreadId !== null:
       RENDER SpreadEditorPanel với:
         - spreadId: selectedSpreadId
-        - mode, dummyType, currentLanguage, zoomLevel
+        - mode, dummyType, zoomLevel
         - isEditable, displayField
+        // SpreadEditorPanel uses useCurrentLanguage() internally
 
     RENDER SpreadThumbnailList với:
       - mode, dummyType, selectedId: selectedSpreadId
-      - currentLanguage, displayField, layout: 'horizontal'
+      - displayField, layout: 'horizontal'
       - isDragEnabled: true, canAdd
       - onSpreadClick: handleSpreadClick
+      // SpreadThumbnailList uses useCurrentLanguage() internally
 
   ELSE (viewMode === 'grid'):
     RENDER SpreadThumbnailList với:
       - mode, dummyType, selectedId: selectedSpreadId
-      - currentLanguage, displayField, layout: 'grid', columnsPerRow
+      - displayField, layout: 'grid', columnsPerRow
       - isDragEnabled: true, canAdd
       - onSpreadClick: handleSpreadClick
+      // SpreadThumbnailList uses useCurrentLanguage() internally
 
   // Handlers
   handleSpreadClick(id):
@@ -243,24 +253,24 @@ ManuscriptSpreadView:
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │  [⚏]                                                      ─ ●────────── +   4  │
-│   ↑ toggle (tooltip: "Show full spread view")               └→ Columns (1-6)   │
+│   ↑ toggle (tooltip: "Show full spread view")               └→ Columns (1-6)    │
 ├─────────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
-│  │  0  │  1    │  │  2  │  3    │  │  4  │  5    │  │  6  │  7    │            │
-│  │ ┌────────┐  │  │ ┌────────┐  │  │ ┌────────┐  │  │ ┌────────┐  │            │
-│  │ │"art    │  │  │ │"art    │  │  │ │"art    │  │  │ │"art    │  │            │
-│  │ │note"   │  │  │ │note"   │  │  │ │note"   │  │  │ │note"   │  │            │
-│  │ └────────┘  │  │ └────────┘  │  │ └────────┘  │  │ └────────┘  │            │
-│  │     text    │  │     text    │  │     text    │  │     text    │            │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │  0  │  1    │  │  2  │  3    │  │  4  │  5    │  │  6  │  7    │             │
+│  │ ┌────────┐  │  │ ┌────────┐  │  │ ┌────────┐  │  │ ┌────────┐  │             │
+│  │ │"art    │  │  │ │"art    │  │  │ │"art    │  │  │ │"art    │  │             │
+│  │ │note"   │  │  │ │note"   │  │  │ │note"   │  │  │ │note"   │  │             │
+│  │ └────────┘  │  │ └────────┘  │  │ └────────┘  │  │ └────────┘  │             │
+│  │     text    │  │     text    │  │     text    │  │     text    │             │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
 │       ↕ drag-drop                                                               │
-│  ┌─────────────┐  ┌───────────────────┐                                        │
-│  │  8  │  9    │  │        +          │  ← NewSpreadButton                     │
-│  │ ┌────────┐  │  │   Add New Spread  │                                        │
-│  │ │"art    │  │  │                   │                                        │
-│  │ │note"   │  │  └───────────────────┘                                        │
-│  │ └────────┘  │                                                               │
-│  └─────────────┘                                                               │
+│  ┌─────────────┐  ┌───────────────────┐                                         │
+│  │  8  │  9    │  │        +          │  ← NewSpreadButton                      │
+│  │ ┌────────┐  │  │   Add New Spread  │                                         │
+│  │ │"art    │  │  │                   │                                         │
+│  │ │note"   │  │  └───────────────────┘                                         │
+│  │ └────────┘  │                                                                │
+│  └─────────────┘                                                                │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -350,13 +360,25 @@ interface SpreadEditorPanelProps {
   spreadId: string;                  // ID-based subscription
   mode: SpreadViewMode;
   dummyType?: DummyType;             // Required for dummy mode
-  currentLanguage: Language;         // ⚡ language-aware
+  // currentLanguage via useCurrentLanguage() - no prop drilling
   zoomLevel: number;
   isEditable: boolean;
   displayField: DisplayField;        // 'art_note' | 'visual_description'
   // No spread prop - uses store selectors internally
   // No callbacks - uses store actions directly
 }
+```
+
+**Store Integration (inside component):**
+
+```typescript
+// EditorSettingsStore
+currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
+
+// SnapshotStore - mode conditional
+spread = mode === 'dummy'
+  ? useDummySpreadById(dummyType, spreadId)
+  : useSpreadById(spreadId);
 ```
 
 **Visual:**
@@ -400,7 +422,7 @@ interface SpreadThumbnailListProps {
   mode: SpreadViewMode;
   dummyType?: DummyType;                   // Required for dummy mode
   selectedId: string | null;               // ID-based selection
-  currentLanguage: Language;               // ⚡ language-aware
+  // currentLanguage via useCurrentLanguage() - no prop drilling
   displayField: DisplayField;
   isDragEnabled: boolean;
   canAdd: boolean;
@@ -413,6 +435,18 @@ interface SpreadThumbnailListProps {
   onSpreadClick: (id: string) => void;
   // Note: Add/Reorder handled via store actions internally
 }
+```
+
+**Store Integration (inside component):**
+
+```typescript
+// EditorSettingsStore
+currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
+
+// SnapshotStore - mode conditional
+spreadIds = mode === 'dummy'
+  ? useDummySpreadIds(dummyType)
+  : useSpreadIds();
 ```
 
 **Visual (layout='horizontal'):**
@@ -456,7 +490,7 @@ interface SpreadThumbnailProps {
   mode: SpreadViewMode;
   dummyType?: DummyType;                 // Required for dummy mode
   isSelected: boolean;
-  currentLanguage: Language;             // ⚡ language-aware
+  // currentLanguage via useCurrentLanguage() - no prop drilling
   displayField: DisplayField;
   isDragging?: boolean;
   isDropTarget?: boolean;
@@ -465,6 +499,18 @@ interface SpreadThumbnailProps {
 
   onClick: () => void;
 }
+```
+
+**Store Integration (inside component):**
+
+```typescript
+// EditorSettingsStore
+currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
+
+// SnapshotStore
+spread = mode === 'dummy'
+  ? useDummySpreadById(dummyType, spreadId)
+  : useSpreadById(spreadId);
 ```
 
 ---
@@ -554,12 +600,3 @@ interface ViewPreferences {
 | Editor panel | `region` | `aria-label="Spread editor"`, `aria-live="polite"` |
 
 ---
-
-## 5. Related Docs
-
-- Store Design: [snapshot-store.md](component/stores/snapshot-store.md)
-- Parent Component: [03-manuscript-creative-space.md](component/editor-page/03-manuscript-creative-space.md)
-- SpreadViewHeader: [03-03-01-spread-view-header.md](component/editor-page/03-03-01-spread-view-header.md)
-- SpreadEditorPanel: [03-03-02-spread-editor-panel.md](component/editor-page/03-03-02-spread-editor-panel.md)
-- SpreadThumbnailList: [03-03-03-spread-thumbnail-list.md](component/editor-page/03-03-03-spread-thumbnail-list.md)
-- SpreadThumbnail: [03-03-04-spread-thumbnail.md](component/editor-page/03-03-04-spread-thumbnail.md)

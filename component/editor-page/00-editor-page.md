@@ -53,40 +53,41 @@
                                     │   API/DB    │
                                     └──────┬──────┘
                                            │
-                        ┌──────────────────┴───────────────────┐
-                        │                                      │
-                        ▼                                      ▼
-             ┌────────────────────┐                   ┌───────────────┐
-             │   SnapshotStore    │                   │  EditorPage   │
-             │ (Zustand global)   │                   │ (local state) │
-             │                    │                   │               │
-             │ • manuscript       │                   │ • book        │
-             │ • spreads          │                   │ • flags       │
-             │ • characters       │                   │ • shareLinks  │
-             │ • props            │                   │ • collaborations│
-             │ • stages           │                   │ • currentStep │
-             │ • meta (sync)      │                   │ • activeCreativeSpace│
-             └────────┬───────────┘                   │ • currentLanguage│
-                      │                               │ • isSidebarOpen│
-                      │                               └───────┬───────┘
-                      │                                       │
-         ┌────────────┴────────────────────────────┬──────────┘
-         │ (selectors)                             │ (props)
-         ▼                                         ▼
-  ┌──────────────────────────────────────────────────────────────────────────┐
-  │  CreativeSpaces (use selectors directly)                                 │
-  │  ┌────────────────────────────────────────────────────────────────────┐  │
-  │  │ • ManuscriptCreativeSpace ⚡ → useManuscript(), useDummySpreads()   │  │
-  │  │ • CharactersCreativeSpace  → useCharacters()                       │  │
-  │  │ • PropsCreativeSpace       → useProps()                            │  │
-  │  │ • StagesCreativeSpace      → useStages()                           │  │
-  │  │ • SpreadsCreativeSpace ⚡   → useSpreads(), useSpreadById()         │  │
-  │  │ • ObjectsCreativeSpace     → useSpreads()                          │  │
-  │  │ • AnimationsCreativeSpace ⚡ → useSpreads()                         │  │
-  │  │                                                                    │  │
-  │  │ Actions via: useSnapshotActions() (no re-render)                   │  │
-  │  └────────────────────────────────────────────────────────────────────┘  │
-  └──────────────────────────────────────────────────────────────────────────┘
+        ┌──────────────────────────────────┼──────────────────────────────┐
+        │                                  │                              │
+        ▼                                  ▼                              ▼
+┌────────────────────┐         ┌───────────────────────┐        ┌───────────────┐
+│   SnapshotStore    │         │ EditorSettingsStore   │        │  EditorPage   │
+│ (Zustand global)   │         │ (Zustand global)      │        │ (local state) │
+│                    │         │                       │        │               │
+│ • manuscript       │         │ • currentLanguage ⚡   │        │ • book        │
+│ • spreads          │         │ • currentStep         │        │ • flags       │
+│ • characters       │         │                       │        │ • shareLinks  │
+│ • props            │         │ Actions:              │        │ • collaborations│
+│ • stages           │         │ • setCurrentLanguage  │        │ • activeCreativeSpace│
+│ • meta (sync)      │         │ • setCurrentStep      │        │ • isSidebarOpen│
+└────────┬───────────┘         │ • resetSettings       │        └───────┬───────┘
+         │                     └───────────┬───────────┘                │
+         │                                 │                            │
+         │  ┌──────────────────────────────┘                            │
+         │  │ (selectors: useCurrentLanguage, useCurrentStep)           │
+         │  │                                       ┌───────────────────┘
+         │  │                                       │ (props: activeCreativeSpace, etc.)
+         ▼  ▼                                       ▼
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │  CreativeSpaces (use selectors directly from both stores)                 │
+  │  ┌─────────────────────────────────────────────────────────────────────┐  │
+  │  │ • ManuscriptCreativeSpace ⚡ → useManuscript(), useCurrentLanguage() │  │
+  │  │ • CharactersCreativeSpace  → useCharacters(), useCurrentStep()      │  │
+  │  │ • PropsCreativeSpace       → useProps(), useCurrentStep()           │  │
+  │  │ • StagesCreativeSpace      → useStages(), useCurrentStep()          │  │
+  │  │ • SpreadsCreativeSpace ⚡   → useSpreads(), useCurrentLanguage()     │  │
+  │  │ • ObjectsCreativeSpace     → useSpreads()                           │  │
+  │  │ • AnimationsCreativeSpace ⚡ → useSpreads(), useCurrentLanguage()    │  │
+  │  │                                                                     │  │
+  │  │ Actions via: useSnapshotActions(), useEditorSettingsActions()       │  │
+  │  └─────────────────────────────────────────────────────────────────────┘  │
+  └───────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 1.3 Step ↔ CreativeSpace Mapping
@@ -172,15 +173,16 @@ interface EditorPageState {
   shareLinks: ShareLink[];
   collaborations: Collaboration[];
 
-  // UI State
-  currentStep: Step;
+  // UI State (local only)
   activeCreativeSpace: CreativeSpaceType;
-  currentLanguage: Language;
   isLoading: boolean;
   isSidebarOpen: boolean;
 
   // Dialog State
   translationDialogState: TranslationDialogState | null;
+
+  // NOTE: currentStep & currentLanguage moved to EditorSettingsStore
+  // See: component/stores/editor-settings-store.md
 }
 
 interface TranslationDialogState {
@@ -190,9 +192,8 @@ interface TranslationDialogState {
 }
 
 interface EditorPageCallbacks {
-  onStepChange: (step: Step) => void;
+  // NOTE: onStepChange & onLanguageChange now via EditorSettingsStore actions
   onCreativeSpaceChange: (creativeSpace: CreativeSpaceType) => void;
-  onLanguageChange: (language: Language) => void;
   onSave: () => Promise<void>;
   onBookUpdate: (updates: Partial<Book>) => void;
   onToggleSidebar: () => void;
@@ -203,15 +204,20 @@ interface EditorPageCallbacks {
 **Store Integration:**
 
 ```typescript
-// State Selectors
+// SnapshotStore Selectors
 isDirty = useIsDirty();
 isSaving = useIsSaving();
 spreads = useSpreads();  // for translation check
 spreadsCount = useSpreadCount();  // for CollaboratorsCreativeSpace
 
-// Top-level Store Actions (accessed directly from store)
+// SnapshotStore Actions (accessed directly from store)
 initSnapshot = useSnapshotStore.getState().initSnapshot;
 resetSnapshot = useSnapshotStore.getState().resetSnapshot;
+
+// EditorSettingsStore (global UI state - no prop drilling)
+currentLanguage = useCurrentLanguage();
+currentStep = useCurrentStep();
+{ setCurrentLanguage, setCurrentStep, resetSettings } = useEditorSettingsActions();
 ```
 
 ### 2.3 Render Logic (pseudo)
@@ -220,28 +226,30 @@ resetSnapshot = useSnapshotStore.getState().resetSnapshot;
 EditorPage:
   ON_MOUNT:
     fetchSnapshot(bookId) → initSnapshot(snapshot)
+    resetSettings(book.original_language, 'idea')  // Init EditorSettingsStore
 
   // Derived save status from store
   saveStatus = isSaving ? 'saving' : (isDirty ? 'unsaved' : 'saved')
 
-  RENDER EditorHeader với bookTitle, currentStep, currentLanguage, saveStatus, callbacks
-  RENDER IconRail với activeCreativeSpace, currentStep
+  // NOTE: currentStep, currentLanguage now from EditorSettingsStore - no props needed
+  RENDER EditorHeader với bookTitle, saveStatus, callbacks
+  RENDER IconRail với activeCreativeSpace
 
   SWITCH activeCreativeSpace:
-    'manuscript' → RENDER ManuscriptCreativeSpace với currentLanguage ⚡
-    'characters'  → RENDER CharactersCreativeSpace với currentStep
-    'props'       → RENDER PropsCreativeSpace với currentStep
-    'stages'      → RENDER StagesCreativeSpace với currentStep
-    'spreads'     → RENDER SpreadsCreativeSpace với currentStep, currentLanguage ⚡
+    'manuscript' → RENDER ManuscriptCreativeSpace  // uses useCurrentLanguage() internally
+    'characters'  → RENDER CharactersCreativeSpace  // uses useCurrentStep() internally
+    'props'       → RENDER PropsCreativeSpace
+    'stages'      → RENDER StagesCreativeSpace
+    'spreads'     → RENDER SpreadsCreativeSpace  // uses both stores internally
     'objects'     → RENDER ObjectsCreativeSpace
-    'animations'  → RENDER AnimationsCreativeSpace với currentLanguage ⚡
+    'animations'  → RENDER AnimationsCreativeSpace  // uses useCurrentLanguage() internally
     'flags'       → RENDER FlagsCreativeSpace với flags
     'shares'      → RENDER SharesCreativeSpace với shareLinks
     'collabs'     → RENDER CollaboratorsCreativeSpace với collaborations, spreadsCount
     'config'      → RENDER ConfigCreativeSpace với book
 
   IF isSidebarOpen:
-    RENDER RightSidebar với bookId, currentStep, activeCreativeSpace, currentLanguage, onClose
+    RENDER RightSidebar với bookId, activeCreativeSpace, onClose  // uses stores internally
   ELSE:
     RENDER AISidebarToggle với onToggle (floating button bottom-right)
 
@@ -301,15 +309,13 @@ Loading:                          Error:
 ```typescript
 interface EditorHeaderProps {
   bookTitle: string;
-  currentStep: Step;
-  currentLanguage: Language;
+  // currentStep, currentLanguage via useEditorSettingsStore
   saveStatus: SaveStatus;
   notificationCount: number;
   userPoints: UserPoints;
   editorMode: EditorMode;
-  onLanguageChange: (language: Language) => void;
+  // onLanguageChange, onStepChange via useEditorSettingsActions
   onTitleEdit: (newTitle: string) => void;
-  onStepChange: (step: Step) => void;
   onSave: () => Promise<void>;
   onNotificationClick: () => void;
   onNavigateHome: () => void;
@@ -329,7 +335,7 @@ interface EditorHeaderProps {
 ```typescript
 interface IconRailProps {
   activeCreativeSpace: CreativeSpaceType;
-  currentStep: Step;
+  // currentStep via useCurrentStep()
   onCreativeSpaceChange: (creativeSpace: CreativeSpaceType) => void;
 }
 ```
@@ -348,7 +354,7 @@ interface IconRailProps {
 
 ```typescript
 interface ManuscriptCreativeSpaceProps {
-  currentLanguage: Language;  // ⚡ language-aware
+  // currentLanguage via useCurrentLanguage() - no prop drilling
 }
 ```
 
@@ -364,7 +370,7 @@ interface ManuscriptCreativeSpaceProps {
 
 ```typescript
 interface CharactersCreativeSpaceProps {
-  currentStep: Step;
+  // currentStep via useCurrentStep() - no prop drilling
 }
 ```
 
@@ -380,7 +386,7 @@ interface CharactersCreativeSpaceProps {
 
 ```typescript
 interface PropsCreativeSpaceProps {
-  currentStep: Step;
+  // currentStep via useCurrentStep() - no prop drilling
 }
 ```
 
@@ -396,7 +402,7 @@ interface PropsCreativeSpaceProps {
 
 ```typescript
 interface StagesCreativeSpaceProps {
-  currentStep: Step;
+  // currentStep via useCurrentStep() - no prop drilling
 }
 ```
 
@@ -414,8 +420,8 @@ interface StagesCreativeSpaceProps {
 
 ```typescript
 interface SpreadsCreativeSpaceProps {
-  currentStep: Step;
-  currentLanguage: Language;  // ⚡ language-aware
+  // currentStep via useCurrentStep()
+  // currentLanguage via useCurrentLanguage() - no prop drilling
 }
 ```
 
@@ -464,7 +470,7 @@ interface ObjectsCreativeSpaceProps {
 
 ```typescript
 interface AnimationsCreativeSpaceProps {
-  currentLanguage: Language;  // ⚡ language-aware
+  // currentLanguage via useCurrentLanguage() - no prop drilling
 }
 ```
 
@@ -554,9 +560,9 @@ interface ConfigCreativeSpaceProps {
 interface RightSidebarProps {
   isOpen: boolean;
   bookId: string;
-  currentStep: Step;
+  // currentStep via useCurrentStep()
   activeCreativeSpace: CreativeSpaceType;
-  currentLanguage: Language;
+  // currentLanguage via useCurrentLanguage() - no prop drilling
   contextData?: {
     selectedCharacter?: Character;
     selectedProp?: Prop;
@@ -643,12 +649,13 @@ interface TranslationNotAvailableDialogProps {
 **No Intermediate MainCreativeSpace Component**
 EditorPage render trực tiếp creativeSpace dựa trên `activeCreativeSpace`. Lý do: MainCreativeSpace không có responsibility riêng ngoài routing, giảm props drilling, code đơn giản hơn.
 
-**State Split: SnapshotStore vs Local State**
+**State Split: Stores vs Local State**
 | Data | Location | Reason |
 |------|----------|--------|
 | manuscript, spreads, characters, props, stages | SnapshotStore | Shared across CreativeSpaces, persist to DB |
+| currentStep, currentLanguage | EditorSettingsStore | Global UI state, avoid prop drilling |
 | book, flags, shareLinks, collaborations | Local state | Not part of snapshot, different update patterns |
-| currentStep, activeCreativeSpace, currentLanguage | Local state | UI-only, no persistence |
+| activeCreativeSpace, isSidebarOpen | Local state | UI-only, single component usage |
 
 **Language as UI State**
 `currentLanguage` là UI state (view preference), không phải data state. Nó quyết định ngôn ngữ nào được hiển thị trong editor, nhưng không thay đổi data structure của textbox.

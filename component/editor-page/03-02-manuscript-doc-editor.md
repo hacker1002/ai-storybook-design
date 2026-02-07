@@ -29,7 +29,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                      ManuscriptDocEditor                          │
+│                      ManuscriptDocEditor                         │
 │  ┌────────────────────────────────────────────────────────────┐  │
 │  │  Props: doc (ManuscriptDoc | null)                         │  │
 │  │  Callback: onContentChange                                 │  │
@@ -43,7 +43,7 @@
 │  │ • editor ref  │              │ • content     │                │
 │  │               │              │               │                │
 │  │ Actions:      │              │ Callbacks:    │                │
-│  │ • format cmds │───applies──▶│ • onChange    │                │
+│  │ • format cmds │───applies───▶│ • onChange    │                │
 │  └───────────────┘              └───────────────┘                │
 └──────────────────────────────────────────────────────────────────┘
 ```

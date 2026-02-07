@@ -303,9 +303,3 @@ Zoom level chỉ ảnh hưởng SpreadCanvas trong edit mode, không ảnh hư�
 
 ---
 
-## 5. Related Docs
-
-- Parent Component: [03-03-manuscript-spread-view.md](component/editor-page/03-03-manuscript-spread-view.md)
-- Sibling - SpreadEditorPanel: [03-03-02-spread-editor-panel.md](component/editor-page/03-03-02-spread-editor-panel.md)
-- Sibling - SpreadThumbnailList: [03-03-03-spread-thumbnail-list.md](component/editor-page/03-03-03-spread-thumbnail-list.md)
-- Store Design: [snapshot-store.md](component/stores/snapshot-store.md)

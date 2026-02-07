@@ -100,7 +100,7 @@ interface SpreadEditorPanelProps {
   spreadId: string;
   mode: SpreadViewMode;
   dummyType?: DummyType;           // Required when mode === 'dummy'
-  currentLanguage: Language;
+  // currentLanguage via useCurrentLanguage() - no prop drilling
   zoomLevel: number;               // 50-200
   isEditable: boolean;
   displayField: 'art_note' | 'visual_description';
@@ -118,12 +118,16 @@ interface SpreadEditorPanelState {
 **Store Integration:**
 
 ```typescript
-// State Selectors (mode-based)
+// EditorSettingsStore (global UI state)
+currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
+langCode = currentLanguage.code;
+
+// SnapshotStore Selectors (mode-based)
 spread = mode === 'dummy'
   ? useDummySpreadById(dummyType, spreadId)
   : useSpreadById(spreadId);
 
-// Actions
+// SnapshotStore Actions
 const {
   updateSpreadImage,
   updateSpreadTextbox,
@@ -255,7 +259,7 @@ interface SpreadCanvasProps {
   mode: SpreadViewMode;
   dummyType?: DummyType;
   zoomLevel: number;
-  currentLanguage: Language;
+  // currentLanguage via useCurrentLanguage() - no prop drilling
   isEditable: boolean;
   displayField: 'art_note' | 'visual_description';
   selectedElement: SelectedElement | null;
@@ -384,7 +388,3 @@ interface SelectionFrameProps {
 
 ---
 
-## 5. Related Docs
-
-- Store Design: [Snapshot Store](component/stores/snapshot-store.md)
-- Parent Component: [ManuscriptSpreadView](component/editor-page/03-03-manuscript-spread-view.md)

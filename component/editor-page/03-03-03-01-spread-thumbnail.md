@@ -35,20 +35,21 @@
 ### 1.2 Data Flow
 
 ```
-                                         ┌─────────────────────────────┐
-                                         │      SnapshotStore          │
-                                         │  ┌───────────────────────┐  │
-                                         │  │ useDummySpreadById()  │  │
-                                         │  │ useSpreadById()       │  │
-                                         │  └───────────────────────┘  │
-                                         └──────────────┬──────────────┘
-                                                        │ (selectors)
-                                                        ▼
+        ┌─────────────────────────────┐        ┌───────────────────────┐
+        │      SnapshotStore          │        │  EditorSettingsStore  │
+        │  ┌───────────────────────┐  │        │   (Zustand global)    │
+        │  │ useDummySpreadById()  │  │        │                       │
+        │  │ useSpreadById()       │  │        │ • currentLanguage     │
+        │  └───────────────────────┘  │        └───────────┬───────────┘
+        └──────────────┬──────────────┘                    │
+                       │ (selectors)                       │ (selector)
+                       ▼                                   ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                           SpreadThumbnail                                │
 │  ┌────────────────────────────────────────────────────────────────────┐  │
-│  │  Props: spreadId, mode, dummyType?, isSelected, currentLanguage,   │  │
+│  │  Props: spreadId, mode, dummyType?, isSelected,                    │  │
 │  │         displayMode, isDragEnabled, onClick, onDragStart, onDragEnd│  │
+│  │  Store: currentLanguage via useCurrentLanguage()                   │  │
 │  └────────────────────────────────────────────────────────────────────┘  │
 │  ┌────────────────────────────────────────────────────────────────────┐  │
 │  │  Local State: (none - read-only thumbnail)                         │  │
@@ -125,7 +126,7 @@ interface SpreadThumbnailProps {
   mode: SpreadViewMode;
   dummyType?: DummyType;                 // Required when mode='dummy'
   isSelected: boolean;
-  currentLanguage: Language;
+  // currentLanguage via useCurrentLanguage() - no prop drilling
   displayMode: 'dummy' | 'finalize';
   isDragEnabled?: boolean;
   isDragging?: boolean;
@@ -140,7 +141,10 @@ interface SpreadThumbnailProps {
 **Store Integration:**
 
 ```typescript
-// State Selectors (conditional based on mode)
+// EditorSettingsStore (global UI state)
+currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
+
+// SnapshotStore Selectors (conditional based on mode)
 spread = mode === 'dummy'
   ? useDummySpreadById(dummyType!, spreadId)
   : useSpreadById(spreadId);
@@ -154,6 +158,9 @@ spread = mode === 'dummy'
 SpreadThumbnail:
   // Get spread data from SnapshotStore
   spread = mode === 'dummy' ? useDummySpreadById(dummyType, spreadId) : useSpreadById(spreadId)
+
+  // Get currentLanguage from EditorSettingsStore (no prop drilling)
+  currentLanguage = useCurrentLanguage()
 
   leftPageNum = spread.left_page.number
   rightPageNum = spread.right_page.number
@@ -399,8 +406,3 @@ truncateText(text: string, maxLength: number): string
 
 ---
 
-## 5. Related Docs
-
-- Parent: [SpreadThumbnailList](component/editor-page/03-03-03-spread-thumbnail-list.md)
-- Store: [SnapshotStore](component/stores/snapshot-store.md)
-- Page Canvas: [ManuscriptCreativeSpace](component/editor-page/03-manuscript-creative-space.md)

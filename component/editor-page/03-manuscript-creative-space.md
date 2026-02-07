@@ -43,7 +43,7 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                            ManuscriptCreativeSpace                           │
 │  ┌────────────────────────────────────────────────────────────────────────┐  │
-│  │  Props: currentLanguage ⚡                                              │  │
+│  │  Props: (no props, get from stores)                                    │  │
 │  │                                                                        │  │
 │  │  Local State: activeStep, promptInput, isGenerating, selectedDummyType │  │
 │  └────────────────────────────────────────────────────────────────────────┘  │
@@ -55,7 +55,7 @@
 │  │                │   │ Props:          │   │ Props:                    │    │
 │  │ Props:         │   │ • doc           │   │ • mode                    │    │
 │  │ • step         │   │                 │   │ • dummyType (dummy mode)  │    │
-│  │ • isActive     │   │ Callbacks:      │   │ • currentLanguage ⚡       │    │
+│  │ • isActive     │   │ Callbacks:      │   │                           │    │
 │  │ • promptInput  │   │ • onContent     │   │                           │    │
 │  │ • isGenerating │   │   Change        │   │ (uses store internally)   │    │
 │  │                │   │                 │   │                           │    │
@@ -137,7 +137,7 @@ interface DummyTextbox {
 
 ```typescript
 interface ManuscriptCreativeSpaceProps {
-  currentLanguage: Language;  // ⚡ language-aware
+  // No props - uses EditorSettingsStore for currentLanguage
 }
 
 interface ManuscriptCreativeSpaceState {
@@ -160,11 +160,14 @@ const STEPS_CONFIG: StepConfig[] = [
 **Store Integration:**
 
 ```typescript
-// State Selectors
+// SnapshotStore Selectors
 manuscript = useManuscript();
 doc = useDoc(activeStep);           // For doc steps
 dummySpreads = useDummySpreads(dummyType);  // For dummy mode
 spreads = useSpreads();             // For finalize mode
+
+// EditorSettingsStore (global UI state)
+currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
 
 // Actions
 { updateDoc } = useSnapshotActions();
@@ -175,6 +178,7 @@ spreads = useSpreads();             // For finalize mode
 ```
 ManuscriptCreativeSpace:
   manuscript = useManuscript()
+  currentLanguage = useCurrentLanguage()  // From EditorSettingsStore
   { updateDoc } = useSnapshotActions()
 
   // Sidebar (inline)
@@ -190,10 +194,12 @@ ManuscriptCreativeSpace:
 
     'prose_dummy' | 'poetry_dummy':
       dummyType = activeStep === 'prose_dummy' ? 'prose' : 'poetry'
-      RENDER ManuscriptSpreadView với mode='dummy', dummyType, currentLanguage
+      RENDER ManuscriptSpreadView với mode='dummy', dummyType
+      // ManuscriptSpreadView uses useCurrentLanguage() internally
 
     'finalization':
-      RENDER ManuscriptSpreadView với mode='finalize', currentLanguage
+      RENDER ManuscriptSpreadView với mode='finalize'
+      // ManuscriptSpreadView uses useCurrentLanguage() internally
 ```
 
 ### 2.4 Visual
@@ -307,7 +313,7 @@ interface ManuscriptDocEditorProps {
 interface ManuscriptSpreadViewProps {
   mode: 'dummy' | 'finalize';
   dummyType?: DummyType;        // Required for dummy mode
-  currentLanguage: Language;    // ⚡ language-aware
+  // currentLanguage via useCurrentLanguage() - no prop drilling
   // No spreads prop - uses store selectors
   // No callbacks - uses store actions directly
 }
@@ -320,6 +326,9 @@ interface ManuscriptSpreadViewProps {
 const spreads = mode === 'dummy'
   ? useDummySpreads(dummyType)
   : useSpreads();
+
+// EditorSettingsStore
+const currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
 
 // Actions
 const { updateDummySpread, updateSpread, ... } = useSnapshotActions();
@@ -387,7 +396,3 @@ Textbox content lấy theo `textbox[currentLanguage.code]`. Translation handled 
 - `useIsDirty()` tracks changes
 - `useAutosave()` debounces save (default 60s)
 
-### 4.4 Related Docs
-
-- Store Design: [snapshot-store.md](component/stores/snapshot-store.md)
-- EditorPage: [00-editor-page.md](component/editor-page/00-editor-page.md)

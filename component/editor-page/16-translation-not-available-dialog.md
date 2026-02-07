@@ -8,11 +8,11 @@
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
-│                     TranslationNotAvailableDialog                          │
+│                     TranslationNotAvailableDialog                         │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │                         DialogOverlay                                │  │
+│  │                         DialogOverlay                               │  │
 │  │  ┌───────────────────────────────────────────────────────────────┐  │  │
-│  │  │                      DialogContent                             │  │  │
+│  │  │                      DialogContent                            │  │  │
 │  │  │  ┌─────────────────────────────────────────────────────────┐  │  │  │
 │  │  │  │  DialogHeader                                           │  │  │  │
 │  │  │  │  ┌───────────────────────────────────────┐ ┌─────────┐  │  │  │  │
@@ -41,26 +41,26 @@
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│                              EditorPage                                     │
+│                              EditorPage                                    │
 │  ┌──────────────────────────────────────────────────────────────────────┐  │
 │  │  State: translationDialogState: { isOpen, targetLanguage } | null    │  │
 │  └──────────────────────────────────────────────────────────────────────┘  │
-│                                      │                                      │
-│    handleLanguageChange(lang)        │                                      │
-│           │                          │                                      │
-│           ▼                          │                                      │
-│    setCurrentLanguage(lang)          │                                      │
-│           │                          │                                      │
-│           ▼                          │                                      │
-│    checkTranslationAvailable()       │                                      │
-│           │                          │                                      │
-│     ┌─────┴─────┐                    │                                      │
-│  available    missing                │                                      │
-│     │            │                   │                                      │
-│     ▼            ▼                   ▼                                      │
+│                                      │                                     │
+│    handleLanguageChange(lang)        │                                     │
+│           │                          │                                     │
+│           ▼                          │                                     │
+│    setCurrentLanguage(lang)          │                                     │
+│           │                          │                                     │
+│           ▼                          │                                     │
+│    checkTranslationAvailable()       │                                     │
+│           │                          │                                     │
+│     ┌─────┴─────┐                    │                                     │
+│  available    missing                │                                     │
+│     │            │                   │                                     │
+│     ▼            ▼                   ▼                                     │
 │   (done)    setTranslationDialogState({ isOpen: true, targetLanguage })    │
-│                                      │                                      │
-│                                      ▼                                      │
+│                                      │                                     │
+│                                      ▼                                     │
 │                    ┌──────────────────────────────────────────┐            │
 │                    │   TranslationNotAvailableDialog          │            │
 │                    │                                          │            │
@@ -136,8 +136,8 @@ TranslationNotAvailableDialog:
 │                                                         [X] │
 │  Translation Not Available                                  │
 │                                                             │
-│  The translation for **Tiếng Việt** is not available yet.  │
-│  Would you like to translate your content to this          │
+│  The translation for **Tiếng Việt** is not available yet.   │
+│  Would you like to translate your content to this           │
 │  language?                                                  │
 │                                                             │
 │                    ┌──────────┐  ┌────────────────────────┐ │
