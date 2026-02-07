@@ -23,6 +23,7 @@ Thiết kế kiến trúc component cho các trang chính.
 | Store | Description |
 |-------|-------------|
 | [Snapshot Store](component/stores/snapshot-store.md) | Zustand store quản lý snapshot data (manuscript, spreads, characters, props, stages) |
+| [Editor Settings Store](component/stores/editor-settings-store.md) | Zustand store quản lý editor UI state (currentLanguage, viewMode, zoom) |
 
 #### Pages & Components
 | Component | Description |

@@ -6,6 +6,7 @@
 * **Component Design**
   * **Stores**
     * [Snapshot Store](component/stores/snapshot-store.md)
+    * [Editor Settings Store](component/stores/editor-settings-store.md)
   * [Editor Page](component/editor-page/00-editor-page.md)
   * [Editor Header](component/editor-page/01-editor-header.md)
   * [Icon Rail](component/editor-page/02-icon-rail.md)
@@ -15,6 +16,9 @@
     * [Spread View](component/editor-page/03-03-manuscript-spread-view.md)
       * [Spread View Header](component/editor-page/03-03-01-spread-view-header.md)
       * [Spread Editor Panel](component/editor-page/03-03-02-spread-editor-panel.md)
+        * [Editable Image](component/editor-page/03-03-02-01-editable-image.md)
+        * [Editable Textbox](component/editor-page/03-03-02-02-editable-textbox.md)
+        * [Selection Frame](component/editor-page/03-03-02-03-selection-frame.md)
       * [Spread Thumbnail List](component/editor-page/03-03-03-spread-thumbnail-list.md)
         * [Spread Thumbnail](component/editor-page/03-03-03-01-spread-thumbnail.md)
 

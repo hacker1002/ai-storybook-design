@@ -1,6 +1,8 @@
 # SpreadEditorPanel: Component Design
 
 > **Note:** Replaces `SpreadEditModal`. Inline editor panel thay vì modal, hiển thị khi có spread được select.
+>
+> **Merged:** SpreadCanvas đã được merge vào component này để đơn giản hóa architecture.
 
 ---
 
@@ -12,22 +14,23 @@
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                              SpreadEditorPanel                                  │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │                            SpreadCanvas                                   │  │
+│  │                         Canvas Container                                  │  │
 │  │  ┌─────────────────────────────┬─────────────────────────────┐            │  │
 │  │  │         LeftPage            │         RightPage           │            │  │
 │  │  │                             │                             │            │  │
 │  │  │    ┌─────────────────┐      │      ┌─────────────────┐    │            │  │
 │  │  │    │  EditableImage  │      │      │ EditableTextbox │    │            │  │
-│  │  │    │  ╔═══════════╗  │      │      │  ┌───────────┐  │    │            │  │
-│  │  │    │  ║ ┌───────┐ ║  │      │      │  │ Text      │  │    │            │  │
-│  │  │    │  ║ │content│ ║  │      │      │  │ content   │  │    │            │  │
-│  │  │    │  ║ └───────┘ ║  │      │      │  └───────────┘  │    │            │  │
-│  │  │    │  ╚═══════════╝  │      │      └─────────────────┘    │            │  │
-│  │  │    │    ↑ selected   │      │                             │            │  │
-│  │  │    └─────────────────┘      │                             │            │  │
-│  │  │                             │                             │            │  │
+│  │  │    │  ┌───────────┐  │      │      │  ┌───────────┐  │    │            │  │
+│  │  │    │  │  content  │  │      │      │  │   text    │  │    │            │  │
+│  │  │    │  └───────────┘  │      │      │  └───────────┘  │    │            │  │
+│  │  │    └─────────────────┘      │      └─────────────────┘    │            │  │
 │  │  │           2                 │             3               │            │  │
 │  │  └─────────────────────────────┴─────────────────────────────┘            │  │
+│  │                                                                           │  │
+│  │  ╔═══════════════════════════════════════════════════════════════════╗    │  │
+│  │  ║                    SelectionFrame (overlay)                       ║    │  │
+│  │  ║  ●────────●────────●  (when element selected)                     ║    │  │
+│  │  ╚═══════════════════════════════════════════════════════════════════╝    │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -38,26 +41,29 @@
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                              SpreadEditorPanel                                  │
 │  ┌────────────────────────────────────────────────────────────────────────────┐ │
-│  │  Local State: selectedElement, isDragging, isResizing, dragOffset          │ │
+│  │  Local State:                                                              │ │
+│  │  • selectedElement: SelectedElement | null                                 │ │
+│  │  • isDragging, isResizing: boolean                                         │ │
+│  │  • activeHandle: ResizeHandle | null                                       │ │
+│  │  • dragStartPos: Point                                                     │ │
 │  └────────────────────────────────────────────────────────────────────────────┘ │
 │                              │                                                  │
-│                              ▼                                                  │
-│  ┌────────────────────────────────────────────────────────────────────────────┐ │
-│  │                           SpreadCanvas                                     │ │
-│  │                                │                                           │ │
-│  │     ┌──────────────────────────┼──────────────────────────────┐            │ │
-│  │     ▼                          ▼                              ▼            │ │
-│  │  ┌────────────┐          ┌────────────┐          ┌────────────────┐        │ │
-│  │  │ LeftPage   │          │ RightPage  │          │ SelectionFrame │        │ │
-│  │  │ Props:     │          │ Props:     │          │ (when selected)│        │ │
-│  │  │ • images   │          │ • images   │          │ Props:         │        │ │
-│  │  │ • textboxes│          │ • textboxes│          │ • geometry     │        │ │
-│  │  │ Callbacks: │          │ Callbacks: │          │ • showHandles  │        │ │
-│  │  │ • onSelect │          │ • onSelect │          │ Callbacks:     │        │ │
-│  │  │ • onDrag   │          │ • onDrag   │          │ • onDrag       │        │ │
-│  │  │ • onResize │          │ • onResize │          │ • onResize     │        │ │
-│  │  └────────────┘          └────────────┘          └────────────────┘        │ │
-│  └────────────────────────────────────────────────────────────────────────────┘ │
+│         ┌────────────────────┼────────────────────┐                             │
+│         ▼                    ▼                    ▼                             │
+│  ┌─────────────┐     ┌─────────────────┐  ┌─────────────────┐                   │
+│  │EditableImage│     │EditableTextbox  │  │ SelectionFrame  │                   │
+│  │ Props:      │     │ Props:          │  │ Props:          │                   │
+│  │ • image     │     │ • textbox       │  │ • geometry      │                   │
+│  │ • index     │     │ • content       │  │ • zoomLevel     │                   │
+│  │ • isSelected│     │ • isSelected    │  │ • showHandles   │                   │
+│  │             │     │                 │  │ • activeHandle  │                   │
+│  │ Callbacks:  │     │ Callbacks:      │  │                 │                   │
+│  │ • onSelect  │     │ • onSelect      │  │ Callbacks:      │                   │
+│  │             │     │ • onTextChange  │  │ • onDragStart   │                   │
+│  └─────────────┘     └─────────────────┘  │ • onDrag/End    │                   │
+│                                           │ • onResizeStart │                   │
+│                                           │ • onResize/End  │                   │
+│                                           └─────────────────┘                   │
 └─────────────────────────────────────────────────────────────────────────────────┘
                                        │
                                        ▼
@@ -82,36 +88,76 @@
 **Shared Types:**
 
 ```typescript
-type SelectedElementType = 'image' | 'textbox' | null;
+type SpreadViewMode = 'dummy' | 'finalize';
+type DummyType = 'prose' | 'poetry';
+type SelectedElementType = 'image' | 'textbox';
 type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
 interface SelectedElement {
   type: SelectedElementType;
   index: number;
 }
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface Geometry {
+  x: number;      // percentage 0-100
+  y: number;      // percentage 0-100
+  width: number;  // percentage 0-100
+  height: number; // percentage 0-100
+}
+
+interface SpreadViewImage {
+  geometry: Geometry;
+  art_note?: string;
+  visual_description?: string;
+  generated_image_url?: string;
+}
+
+interface SpreadViewTextbox {
+  [langCode: string]: TextboxContent;  // Keyed by language code
+}
+
+interface TextboxContent {
+  text: string;
+  geometry: Geometry;
+  typography?: Typography;
+}
 ```
 
 ### 2.2 Interface
 
-**Props & Local State:**
+**Props:**
 
 ```typescript
 interface SpreadEditorPanelProps {
   spreadId: string;
   mode: SpreadViewMode;
   dummyType?: DummyType;           // Required when mode === 'dummy'
-  // currentLanguage via useCurrentLanguage() - no prop drilling
   zoomLevel: number;               // 50-200
   isEditable: boolean;
   displayField: 'art_note' | 'visual_description';
+  // currentLanguage via useCurrentLanguage() - no prop drilling
 }
+```
 
+**Local State:**
+
+```typescript
 interface SpreadEditorPanelState {
+  // Selection
   selectedElement: SelectedElement | null;
+  isTextboxEditing: boolean;         // Hide SelectionFrame handles when true
+
+  // Drag/Resize (managed here, passed to SelectionFrame)
   isDragging: boolean;
   isResizing: boolean;
-  dragOffset: { x: number; y: number };
-  resizeHandle: ResizeHandle | null;
+  activeHandle: ResizeHandle | null;
+  dragStartPos: Point;
+  originalGeometry: Geometry | null;
 }
 ```
 
@@ -122,7 +168,7 @@ interface SpreadEditorPanelState {
 currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
 langCode = currentLanguage.code;
 
-// SnapshotStore Selectors (mode-based)
+// SnapshotStore Selectors (mode-based) - SINGLE source of data
 spread = mode === 'dummy'
   ? useDummySpreadById(dummyType, spreadId)
   : useSpreadById(spreadId);
@@ -133,52 +179,193 @@ const {
   updateSpreadTextbox,
   updateDummySpread,
 } = useSnapshotActions();
-
-// Handler mappings
-handleImageGeometryChange(imageIndex, newGeometry):
-  IF mode === 'dummy':
-    updateDummySpread(dummyType, spreadId, { images: updatedImages })
-  ELSE:
-    updateSpreadImage(spreadId, imageIndex, { geometry: newGeometry })
-
-handleTextboxGeometryChange(textboxId, newGeometry):
-  IF mode === 'dummy':
-    updateDummySpread(dummyType, spreadId, { textboxes: updatedTextboxes })
-  ELSE:
-    updateSpreadTextbox(spreadId, textboxId, { [langCode]: { geometry: newGeometry } })
-
-handleTextboxTextChange(textboxId, newText):
-  IF mode === 'dummy':
-    updateDummySpread(dummyType, spreadId, { textboxes: updatedTextboxes })
-  ELSE:
-    updateSpreadTextbox(spreadId, textboxId, { [langCode]: { text: newText } })
 ```
 
-### 2.3 Render Logic (pseudo)
+### 2.3 Coordinate System
+
+```typescript
+// Canvas Constants
+const BASE_WIDTH = 800;
+const BASE_HEIGHT = 600;
+const ASPECT_RATIO = 4/3;
+
+// Percentage → Pixel (for rendering)
+toPixel(percent: number, dimension: number): number
+  return (percent / 100) * dimension
+
+// Pixel → Percentage (for storage)
+toPercent(pixel: number, dimension: number): number
+  return (pixel / dimension) * 100
+
+// Mouse event → Canvas percentage (accounts for zoom)
+mouseToCanvasPercent(event, canvasRect, zoomLevel): Point
+  x = ((event.clientX - canvasRect.left) / (zoomLevel / 100)) / canvasRect.width * 100
+  y = ((event.clientY - canvasRect.top) / (zoomLevel / 100)) / canvasRect.height * 100
+  return { x, y }
+
+// Page detection
+isOnLeftPage(geometry: Geometry): boolean
+  return geometry.x + geometry.width / 2 < 50
+
+isOnRightPage(geometry: Geometry): boolean
+  return geometry.x + geometry.width / 2 >= 50
+```
+
+### 2.4 Geometry Derivation
+
+```typescript
+// Get geometry of selected element
+selectedGeometry = useMemo(() => {
+  if (!selectedElement || !spread) return null;
+
+  if (selectedElement.type === 'image') {
+    return spread.images[selectedElement.index]?.geometry;
+  }
+
+  if (selectedElement.type === 'textbox') {
+    const textbox = spread.textboxes[selectedElement.index];
+    return textbox?.[langCode]?.geometry;
+  }
+
+  return null;
+}, [selectedElement, spread, langCode]);
+```
+
+### 2.5 Handler Mappings
+
+```typescript
+// Selection
+handleElementSelect(element: SelectedElement | null):
+  setSelectedElement(element)
+  resetDragState()
+
+handleCanvasClick(e):
+  IF e.target === canvasRef.current:
+    handleElementSelect(null)  // Deselect
+
+// Drag handlers (called by SelectionFrame)
+handleDragStart():
+  setIsDragging(true)
+  setDragStartPos(currentMousePos)
+  setOriginalGeometry(selectedGeometry)
+
+handleDrag(delta: Point):
+  IF !isDragging || !originalGeometry RETURN
+
+  newGeometry = {
+    ...originalGeometry,
+    x: clamp(originalGeometry.x + delta.x, 0, 100 - originalGeometry.width),
+    y: clamp(originalGeometry.y + delta.y, 0, 100 - originalGeometry.height),
+  }
+  updateElementGeometry(newGeometry)
+
+handleDragEnd():
+  setIsDragging(false)
+
+// Resize handlers (called by SelectionFrame)
+handleResizeStart(handle: ResizeHandle):
+  setIsResizing(true)
+  setActiveHandle(handle)
+  setDragStartPos(currentMousePos)
+  setOriginalGeometry(selectedGeometry)
+
+handleResize(handle: ResizeHandle, delta: Point):
+  IF !isResizing || !originalGeometry RETURN
+
+  newGeometry = calculateResizedGeometry(originalGeometry, handle, delta)
+  updateElementGeometry(newGeometry)
+
+handleResizeEnd():
+  setIsResizing(false)
+  setActiveHandle(null)
+
+// Store update
+updateElementGeometry(newGeometry: Geometry):
+  IF selectedElement.type === 'image':
+    IF mode === 'dummy':
+      updateDummySpread(dummyType, spreadId, { images: updatedImages })
+    ELSE:
+      updateSpreadImage(spreadId, selectedElement.index, { geometry: newGeometry })
+
+  IF selectedElement.type === 'textbox':
+    IF mode === 'dummy':
+      updateDummySpread(dummyType, spreadId, { textboxes: updatedTextboxes })
+    ELSE:
+      updateSpreadTextbox(spreadId, selectedElement.index, { [langCode]: { geometry: newGeometry } })
+
+// Text change (called by EditableTextbox)
+handleTextChange(textboxIndex: number, newText: string):
+  IF mode === 'dummy':
+    updateDummySpread(dummyType, spreadId, { textboxes: updatedTextboxes })
+  ELSE:
+    updateSpreadTextbox(spreadId, textboxIndex, { [langCode]: { text: newText } })
+
+// Editing state change (called by EditableTextbox)
+handleEditingChange(isEditing: boolean):
+  setIsTextboxEditing(isEditing)
+```
+
+### 2.6 Render Logic (pseudo)
 
 ```
 SpreadEditorPanel:
+  // Store data (SINGLE source)
   spread = useSpreadById/useDummySpreadById based on mode
-  scaledSize = calculateScaledSize(containerSize, zoomLevel)
+  langCode = useCurrentLanguage().code
+  canvasRef = useRef()
 
-  RENDER Container (flex, center, overflow-auto):
-    RENDER SpreadCanvas với:
-      - style: { width: scaledSize.width, height: scaledSize.height }
-      - onClick: handleCanvasClick → deselect
+  // Canvas sizing
+  scaledWidth = BASE_WIDTH * (zoomLevel / 100)
+  scaledHeight = BASE_HEIGHT * (zoomLevel / 100)
 
-      RENDER SpreadFrame với leftPageNumber, rightPageNumber
+  // Derive selected geometry
+  selectedGeometry = getSelectedGeometry(selectedElement, spread, langCode)
 
-      FOR EACH page IN [left, right]:
-        FOR EACH image WHERE isOnPage(image, page):
-          RENDER EditableImage với index, isSelected, callbacks
-        FOR EACH textbox WHERE isOnPage(textbox, page):
-          RENDER EditableTextbox với content[langCode], callbacks
+  RENDER OuterContainer (flex, center, overflow-auto):
+    RENDER CanvasContainer (position: relative):
+      style: { width: scaledWidth, height: scaledHeight }
+      onClick: handleCanvasClick
+      ref: canvasRef
 
-      IF selectedElement && isEditable:
-        RENDER SelectionFrame với geometry, handles, callbacks
+      // Page divider
+      RENDER Divider at x=50%
+
+      // Page numbers
+      RENDER PageNumber left: spread.leftPageNumber
+      RENDER PageNumber right: spread.rightPageNumber
+
+      // Images (selection only, no drag/resize callbacks)
+      FOR EACH (image, index) IN spread.images:
+        RENDER EditableImage với:
+          - image, index
+          - isSelected: selectedElement?.type === 'image' && selectedElement?.index === index
+          - displayField, isEditable
+          - onSelect: () => handleElementSelect({ type: 'image', index })
+
+      // Textboxes (selection + text change, no drag/resize)
+      FOR EACH (textbox, index) IN spread.textboxes:
+        content = textbox[langCode]
+        RENDER EditableTextbox với:
+          - textbox, content, index
+          - isSelected: selectedElement?.type === 'textbox' && selectedElement?.index === index
+          - isEditable
+          - onSelect: () => handleElementSelect({ type: 'textbox', index })
+          - onTextChange: (text) => handleTextChange(index, text)
+          - onEditingChange: handleEditingChange
+
+      // SelectionFrame overlay (handles ALL drag/resize)
+      // Hide handles when dragging OR when textbox is in editing mode
+      IF selectedElement && selectedGeometry && isEditable:
+        RENDER SelectionFrame với:
+          - geometry: selectedGeometry
+          - zoomLevel
+          - showHandles: !isDragging && !isTextboxEditing
+          - activeHandle
+          - onDragStart, onDrag, onDragEnd
+          - onResizeStart, onResize, onResizeEnd
 ```
 
-### 2.4 Visual
+### 2.7 Visual States
 
 **Normal State (nothing selected):**
 
@@ -202,7 +389,7 @@ SpreadEditorPanel:
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Image Selected:**
+**Image Selected (SelectionFrame visible):**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -218,7 +405,7 @@ SpreadEditorPanel:
 │  │    ║●────────●────────●║    │                             │                  │
 │  │    ╚═══════════════════╝    │             3               │                  │
 │  └─────────────────────────────┴─────────────────────────────┘                  │
-│  ● = resize handles | Cursor: move (element), resize (handles)                  │
+│  ● = resize handles (via SelectionFrame) | Cursor: move/resize                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -245,36 +432,13 @@ SpreadEditorPanel:
 
 ## 3. Child Components Interface
 
-### 3.1 SpreadCanvas
+> **Note:** Drag/resize được handle bởi SelectionFrame, không phải EditableImage/EditableTextbox.
 
-📄 **Doc:** [`component/editor-page/03-03-02-01-spread-canvas.md`](component/editor-page/03-03-02-01-spread-canvas.md)
+### 3.1 EditableImage
 
-**Mục đích:** Container canvas cho spread content, handles zoom scaling và mouse events.
+📄 **Doc:** [`component/editor-page/03-03-02-01-editable-image.md`](component/editor-page/03-03-02-01-editable-image.md)
 
-**Props & Callbacks:**
-
-```typescript
-interface SpreadCanvasProps {
-  spreadId: string;
-  mode: SpreadViewMode;
-  dummyType?: DummyType;
-  zoomLevel: number;
-  // currentLanguage via useCurrentLanguage() - no prop drilling
-  isEditable: boolean;
-  displayField: 'art_note' | 'visual_description';
-  selectedElement: SelectedElement | null;
-
-  onElementSelect: (element: SelectedElement | null) => void;
-}
-```
-
----
-
-### 3.2 EditableImage
-
-📄 **Doc:** [`component/editor-page/03-03-02-02-editable-image.md`](component/editor-page/03-03-02-02-editable-image.md)
-
-**Mục đích:** Draggable/resizable image placeholder trong canvas.
+**Mục đích:** Image placeholder trong canvas. Selection only, không handle drag/resize.
 
 **Props & Callbacks:**
 
@@ -287,18 +451,17 @@ interface EditableImageProps {
   isEditable: boolean;
 
   onSelect: () => void;
-  onDrag: (newGeometry: Geometry) => void;
-  onResize: (newGeometry: Geometry) => void;
+  // NO onDrag/onResize - handled by SelectionFrame
 }
 ```
 
 ---
 
-### 3.3 EditableTextbox
+### 3.2 EditableTextbox
 
-📄 **Doc:** [`component/editor-page/03-03-02-03-editable-textbox.md`](component/editor-page/03-03-02-03-editable-textbox.md)
+📄 **Doc:** [`component/editor-page/03-03-02-02-editable-textbox.md`](component/editor-page/03-03-02-02-editable-textbox.md)
 
-**Mục đích:** Draggable/resizable/editable textbox trong canvas.
+**Mục đích:** Editable textbox trong canvas. Selection và text editing only.
 
 **Special Impact:** ✅ **BỊ ẢNH HƯỞNG** — Content theo `currentLanguage.code`
 
@@ -307,38 +470,40 @@ interface EditableImageProps {
 ```typescript
 interface EditableTextboxProps {
   textbox: SpreadViewTextbox;
-  content: { text: string; geometry: Geometry; typography: Typography };
+  content: TextboxContent;           // Pre-extracted for current language
   index: number;
   isSelected: boolean;
   isEditable: boolean;
 
   onSelect: () => void;
-  onDrag: (newGeometry: Geometry) => void;
-  onResize: (newGeometry: Geometry) => void;
   onTextChange: (text: string) => void;
+  onEditingChange: (isEditing: boolean) => void;  // Notify parent to hide handles
+  // NO onDrag/onResize - handled by SelectionFrame
 }
 ```
 
 ---
 
-### 3.4 SelectionFrame
+### 3.3 SelectionFrame
 
-📄 **Doc:** [`component/editor-page/03-03-02-04-selection-frame.md`](component/editor-page/03-03-02-04-selection-frame.md)
+📄 **Doc:** [`component/editor-page/03-03-02-03-selection-frame.md`](component/editor-page/03-03-02-03-selection-frame.md)
 
-**Mục đích:** Visual selection overlay với 8 resize handles.
+**Mục đích:** Visual selection overlay với 8 resize handles. Handles ALL drag/resize interactions.
 
 **Props & Callbacks:**
 
 ```typescript
 interface SelectionFrameProps {
   geometry: Geometry;
-  showHandles: boolean;
+  zoomLevel: number;               // For accurate delta calculation
+  showHandles: boolean;            // false during drag
+  activeHandle: ResizeHandle | null;
 
   onDragStart: () => void;
-  onDrag: (delta: { x: number; y: number }) => void;
+  onDrag: (delta: Point) => void;
   onDragEnd: () => void;
   onResizeStart: (handle: ResizeHandle) => void;
-  onResize: (handle: ResizeHandle, delta: { x: number; y: number }) => void;
+  onResize: (handle: ResizeHandle, delta: Point) => void;
   onResizeEnd: () => void;
 }
 ```
@@ -346,13 +511,12 @@ interface SelectionFrameProps {
 **Visual:**
 
 ```
-┌───●───┬───●───┐
-│  nw   │   n   │  ne
-├───────┼───────┤
-●   w   │       ●  e
-├───────┼───────┤
-│  sw   │   s   │  se
-└───●───┴───●───┘
+╔═══●═══╤═══●═══╗
+●               ●
+╟───────┼───────╢
+●               ●
+╚═══●═══╧═══●═══╝
+● = resize handles (8 total)
 ```
 
 ---
@@ -364,17 +528,18 @@ interface SelectionFrameProps {
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Inline vs Modal | Inline panel | Context preserved, better continuous editing UX |
-| Zoom | CSS transform scale | Simple, performant, maintains vector quality |
+| Merged Canvas | Single component | Simpler architecture, single store subscription |
+| Zoom | CSS dimensions | Simple, performant, maintains vector quality |
 | Coordinate System | Percentages (0-100) | Responsive, independent of canvas size |
 | Store Access | ID-based selector | Only re-renders when THIS spread changes |
-| Mutations | Store actions (not callbacks) | Stable references, no prop drilling |
+| Drag/Resize | SelectionFrame only | Single interaction handler, cleaner separation |
 
 ### 4.2 Mode-based Store Access
 
 | Mode | Selector | Update Action |
 |------|----------|---------------|
 | `dummy` | `useDummySpreadById(type, id)` | `updateDummySpread(type, id, partial)` |
-| `spread` | `useSpreadById(id)` | `updateSpreadImage()`, `updateSpreadTextbox()` |
+| `finalize` | `useSpreadById(id)` | `updateSpreadImage()`, `updateSpreadTextbox()` |
 
 ### 4.3 Keyboard Shortcuts
 
@@ -384,7 +549,33 @@ interface SelectionFrameProps {
 | `Delete` | Delete selected (with confirmation) |
 | `Arrow keys` | Nudge selected by 1% |
 | `Shift + Arrow` | Nudge by 5% |
-| `Enter` | Edit textbox (when textbox selected) |
+| `Enter` | Edit textbox (delegated to EditableTextbox when focused) |
+
+### 4.4 Canvas Constants
+
+```typescript
+const BASE_WIDTH = 800;
+const BASE_HEIGHT = 600;
+const ASPECT_RATIO = 4/3;
+const MIN_ELEMENT_SIZE = 5;  // percentage
+const NUDGE_STEP = 1;        // percentage
+const NUDGE_STEP_SHIFT = 5;  // percentage
+```
+
+### 4.5 Performance
+
+- Single store subscription (no redundant fetches)
+- Memoize coordinate transformations
+- `will-change: transform` for smooth zoom
+- Event delegation for canvas clicks
+
+### 4.6 Accessibility
+
+| Element | Role | ARIA |
+|---------|------|------|
+| Canvas | `application` | `aria-label="Spread editor"` |
+| Image | `img` | `aria-label={displayField content}` |
+| Textbox | `textbox` | `aria-label="Text content"` |
+| SelectionFrame | `group` | `aria-label="Selection controls"` |
 
 ---
-
