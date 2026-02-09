@@ -4,7 +4,7 @@
 
 ## 1. Overview
 
-**Mục đích:** Zustand store quản lý toàn bộ snapshot data (manuscript, spreads, characters, props, stages). Sử dụng slice pattern để modularize theo domain.
+**Mục đích:** Zustand store quản lý toàn bộ snapshot data (docs, dummies, sketch, spreads, characters, props, stages). Sử dụng slice pattern để modularize theo domain.
 
 **Pattern:** Slice pattern + Immer middleware
 
@@ -16,7 +16,9 @@ stores/
 │   ├── types.ts                    # Shared types
 │   ├── selectors.ts                # Memoized selectors
 │   └── slices/
-│       ├── manuscript-slice.ts
+│       ├── docs-slice.ts           # brief, draft, script
+│       ├── dummies-slice.ts        # dummy spreads
+│       ├── sketch-slice.ts         # centralized sketch data
 │       ├── spreads-slice.ts
 │       ├── characters-slice.ts
 │       ├── props-slice.ts
@@ -32,16 +34,32 @@ stores/
 
 // Re-export from DB types
 export type {
-  Manuscript,
   ManuscriptDoc,
   ManuscriptDummy,
   DummySpread,
+  Sketch,
   Spread,
+  SpreadImage,
+  SpreadTextbox,
+  SpreadObject,
+  SpreadAnimation,
   Character,
+  CharacterVariant,
+  CharacterVoice,
   Prop,
+  PropState,
   Stage,
+  StageSetting,
   Geometry,
   Typography,
+  CropSheet,
+  Crop,
+  Sound,
+  Background,
+  ImageReference,
+  Fill,
+  Outline,
+  Audio,
 } from '@/types/db';
 
 // Store-specific types
@@ -58,38 +76,96 @@ export interface SyncState {
   isSaving: boolean;
   error: string | null;
 }
+
+export type DocType = 'brief' | 'draft' | 'script';
+export type DummyType = 'prose' | 'poetry';
 ```
 
 ---
 
 ## 3. Slice Interfaces
 
-### 3.1 ManuscriptSlice
+### 3.1 DocsSlice
+
+Manages manuscript documents (brief, draft, script).
 
 ```typescript
-interface ManuscriptSlice {
+interface DocsSlice {
   // State
-  manuscript: Manuscript;
+  docs: ManuscriptDoc[];
 
   // Actions
-  setManuscript: (manuscript: Manuscript) => void;
-
-  // Doc actions
+  setDocs: (docs: ManuscriptDoc[]) => void;
   updateDoc: (docType: DocType, content: string) => void;
+  getDoc: (docType: DocType) => ManuscriptDoc | undefined;
+}
+```
 
-  // Dummy actions
-  updateDummySpreads: (dummyType: DummyType, spreads: DummySpread[]) => void;
+### 3.2 DummiesSlice
+
+Manages dummy spreads for prose and poetry versions.
+
+```typescript
+interface DummiesSlice {
+  // State
+  dummies: ManuscriptDummy[];
+
+  // Actions
+  setDummies: (dummies: ManuscriptDummy[]) => void;
+
+  // Dummy-level
+  getDummy: (dummyType: DummyType) => ManuscriptDummy | undefined;
+  updateDummyType: (fromType: DummyType, toType: DummyType) => void;
+
+  // Spread-level
   addDummySpread: (dummyType: DummyType, spread: DummySpread) => void;
   updateDummySpread: (dummyType: DummyType, spreadId: string, updates: Partial<DummySpread>) => void;
   deleteDummySpread: (dummyType: DummyType, spreadId: string) => void;
   reorderDummySpreads: (dummyType: DummyType, fromIndex: number, toIndex: number) => void;
-}
 
-type DocType = 'brief' | 'draft' | 'script';
-type DummyType = 'prose' | 'poetry';
+  // Bulk update
+  updateDummySpreads: (dummyType: DummyType, spreads: DummySpread[]) => void;
+}
 ```
 
-### 3.2 SpreadsSlice
+### 3.3 SketchSlice
+
+Manages centralized sketch data (character sheets, prop sheets).
+
+```typescript
+interface SketchSlice {
+  // State
+  sketch: Sketch;
+
+  // Actions
+  setSketch: (sketch: Sketch) => void;
+
+  // Linked dummy
+  setSketchDummyId: (dummyId: string) => void;
+
+  // Character sheets
+  addCharacterSheet: (sheetUrl: string) => void;
+  removeCharacterSheet: (index: number) => void;
+  reorderCharacterSheets: (fromIndex: number, toIndex: number) => void;
+
+  // Prop sheets
+  addPropSheet: (sheetUrl: string) => void;
+  removePropSheet: (index: number) => void;
+  reorderPropSheets: (fromIndex: number, toIndex: number) => void;
+
+  // Clear
+  clearSketch: () => void;
+}
+
+// Sketch type (from DB)
+interface Sketch {
+  dummy_id: string | null;
+  character_sheets: string[];
+  prop_sheets: string[];
+}
+```
+
+### 3.4 SpreadsSlice
 
 ```typescript
 interface SpreadsSlice {
@@ -105,10 +181,10 @@ interface SpreadsSlice {
   deleteSpread: (spreadId: string) => void;
   reorderSpreads: (fromIndex: number, toIndex: number) => void;
 
-  // Nested: Images
+  // Nested: Images (now with ID)
   addSpreadImage: (spreadId: string, image: SpreadImage) => void;
-  updateSpreadImage: (spreadId: string, imageIndex: number, updates: Partial<SpreadImage>) => void;
-  deleteSpreadImage: (spreadId: string, imageIndex: number) => void;
+  updateSpreadImage: (spreadId: string, imageId: string, updates: Partial<SpreadImage>) => void;
+  deleteSpreadImage: (spreadId: string, imageId: string) => void;
 
   // Nested: Textboxes
   addSpreadTextbox: (spreadId: string, textbox: SpreadTextbox) => void;
@@ -127,7 +203,7 @@ interface SpreadsSlice {
 }
 ```
 
-### 3.3 CharactersSlice
+### 3.5 CharactersSlice
 
 ```typescript
 interface CharactersSlice {
@@ -143,7 +219,7 @@ interface CharactersSlice {
   deleteCharacter: (key: string) => void;
   reorderCharacters: (fromIndex: number, toIndex: number) => void;
 
-  // Nested: Variants
+  // Nested: Variants (sketches[] removed - now in SketchSlice)
   addCharacterVariant: (key: string, variant: CharacterVariant) => void;
   updateCharacterVariant: (key: string, variantKey: string, updates: Partial<CharacterVariant>) => void;
   deleteCharacterVariant: (key: string, variantKey: string) => void;
@@ -152,10 +228,15 @@ interface CharactersSlice {
   addCharacterVoice: (key: string, voice: CharacterVoice) => void;
   updateCharacterVoice: (key: string, voiceKey: string, updates: Partial<CharacterVoice>) => void;
   deleteCharacterVoice: (key: string, voiceKey: string) => void;
+
+  // Nested: Crop Sheets
+  addCharacterCropSheet: (key: string, cropSheet: CropSheet) => void;
+  updateCharacterCropSheet: (key: string, cropSheetIndex: number, updates: Partial<CropSheet>) => void;
+  deleteCharacterCropSheet: (key: string, cropSheetIndex: number) => void;
 }
 ```
 
-### 3.4 PropsSlice
+### 3.6 PropsSlice
 
 ```typescript
 interface PropsSlice {
@@ -171,14 +252,24 @@ interface PropsSlice {
   deleteProp: (key: string) => void;
   reorderProps: (fromIndex: number, toIndex: number) => void;
 
-  // Nested: States
+  // Nested: States (sketches[] removed - now in SketchSlice)
   addPropState: (key: string, state: PropState) => void;
   updatePropState: (key: string, stateKey: string, updates: Partial<PropState>) => void;
   deletePropState: (key: string, stateKey: string) => void;
+
+  // Nested: Crop Sheets
+  addPropCropSheet: (key: string, cropSheet: CropSheet) => void;
+  updatePropCropSheet: (key: string, cropSheetIndex: number, updates: Partial<CropSheet>) => void;
+  deletePropCropSheet: (key: string, cropSheetIndex: number) => void;
+
+  // Nested: Sounds
+  addPropSound: (key: string, sound: Sound) => void;
+  updatePropSound: (key: string, soundKey: string, updates: Partial<Sound>) => void;
+  deletePropSound: (key: string, soundKey: string) => void;
 }
 ```
 
-### 3.5 StagesSlice
+### 3.7 StagesSlice
 
 ```typescript
 interface StagesSlice {
@@ -194,14 +285,19 @@ interface StagesSlice {
   deleteStage: (key: string) => void;
   reorderStages: (fromIndex: number, toIndex: number) => void;
 
-  // Nested: Settings
+  // Nested: Settings (sketches[] removed - now in SketchSlice)
   addStageSetting: (key: string, setting: StageSetting) => void;
   updateStageSetting: (key: string, settingKey: string, updates: Partial<StageSetting>) => void;
   deleteStageSetting: (key: string, settingKey: string) => void;
+
+  // Nested: Sounds
+  addStageSound: (key: string, sound: Sound) => void;
+  updateStageSound: (key: string, soundKey: string, updates: Partial<Sound>) => void;
+  deleteStageSound: (key: string, soundKey: string) => void;
 }
 ```
 
-### 3.6 MetaSlice
+### 3.8 MetaSlice
 
 ```typescript
 interface MetaSlice {
@@ -225,7 +321,9 @@ interface MetaSlice {
 ```typescript
 // SnapshotStore = union of all slices
 type SnapshotStore =
-  & ManuscriptSlice
+  & DocsSlice
+  & DummiesSlice
+  & SketchSlice
   & SpreadsSlice
   & CharactersSlice
   & PropsSlice
@@ -252,19 +350,30 @@ export const useSnapshotId: () => string | null;
 export const useIsDirty: () => boolean;
 export const useIsSaving: () => boolean;
 
-// Manuscript
-export const useManuscript: () => Manuscript;
+// Docs
+export const useDocs: () => ManuscriptDoc[];
 export const useDoc: (type: DocType) => ManuscriptDoc | undefined;
+export const useDocContent: (type: DocType) => string;
+
+// Dummies
+export const useDummies: () => ManuscriptDummy[];
 export const useDummy: (type: DummyType) => ManuscriptDummy | undefined;
 export const useDummySpreads: (type: DummyType) => DummySpread[];
 export const useDummySpreadIds: (type: DummyType) => string[];  // shallow compare
 export const useDummySpreadById: (type: DummyType, id: string) => DummySpread | undefined;
+
+// Sketch
+export const useSketch: () => Sketch;
+export const useSketchDummyId: () => string | null;
+export const useCharacterSheets: () => string[];
+export const usePropSheets: () => string[];
 
 // Spreads
 export const useSpreads: () => Spread[];
 export const useSpreadById: (id: string) => Spread | undefined;
 export const useSpreadIds: () => string[];  // shallow compare
 export const useSpreadCount: () => number;
+export const useSpreadImageById: (spreadId: string, imageId: string) => SpreadImage | undefined;
 
 // Characters
 export const useCharacters: () => Character[];
@@ -294,50 +403,99 @@ export const useSpreadEntities: (spreadId: string) => {
   stages: Stage[];
 };
 
+// Cross-slice: Get objects linked to specific image
+export const useObjectsByImageId: (spreadId: string, imageId: string) => SpreadObject[];
+
 
 // === Actions-only Hook (no re-render) ===
 
 export const useSnapshotActions: () => SnapshotActions;
 
 interface SnapshotActions {
-  // Manuscript
-  updateDoc: ManuscriptSlice['updateDoc'];
-  updateDummySpreads: ManuscriptSlice['updateDummySpreads'];
-  addDummySpread: ManuscriptSlice['addDummySpread'];
-  updateDummySpread: ManuscriptSlice['updateDummySpread'];
-  deleteDummySpread: ManuscriptSlice['deleteDummySpread'];
-  reorderDummySpreads: ManuscriptSlice['reorderDummySpreads'];
+  // Docs
+  updateDoc: DocsSlice['updateDoc'];
+
+  // Dummies
+  addDummySpread: DummiesSlice['addDummySpread'];
+  updateDummySpread: DummiesSlice['updateDummySpread'];
+  deleteDummySpread: DummiesSlice['deleteDummySpread'];
+  reorderDummySpreads: DummiesSlice['reorderDummySpreads'];
+  updateDummySpreads: DummiesSlice['updateDummySpreads'];
+
+  // Sketch
+  setSketchDummyId: SketchSlice['setSketchDummyId'];
+  addCharacterSheet: SketchSlice['addCharacterSheet'];
+  removeCharacterSheet: SketchSlice['removeCharacterSheet'];
+  addPropSheet: SketchSlice['addPropSheet'];
+  removePropSheet: SketchSlice['removePropSheet'];
+  clearSketch: SketchSlice['clearSketch'];
 
   // Spreads
   addSpread: SpreadsSlice['addSpread'];
   updateSpread: SpreadsSlice['updateSpread'];
   deleteSpread: SpreadsSlice['deleteSpread'];
   reorderSpreads: SpreadsSlice['reorderSpreads'];
-  // ... nested actions
+  addSpreadImage: SpreadsSlice['addSpreadImage'];
+  updateSpreadImage: SpreadsSlice['updateSpreadImage'];
+  deleteSpreadImage: SpreadsSlice['deleteSpreadImage'];
+  addSpreadTextbox: SpreadsSlice['addSpreadTextbox'];
+  updateSpreadTextbox: SpreadsSlice['updateSpreadTextbox'];
+  deleteSpreadTextbox: SpreadsSlice['deleteSpreadTextbox'];
+  addSpreadObject: SpreadsSlice['addSpreadObject'];
+  updateSpreadObject: SpreadsSlice['updateSpreadObject'];
+  deleteSpreadObject: SpreadsSlice['deleteSpreadObject'];
+  addSpreadAnimation: SpreadsSlice['addSpreadAnimation'];
+  updateSpreadAnimation: SpreadsSlice['updateSpreadAnimation'];
+  deleteSpreadAnimation: SpreadsSlice['deleteSpreadAnimation'];
 
   // Characters
   addCharacter: CharactersSlice['addCharacter'];
   updateCharacter: CharactersSlice['updateCharacter'];
   deleteCharacter: CharactersSlice['deleteCharacter'];
   reorderCharacters: CharactersSlice['reorderCharacters'];
-  // ... nested actions
+  addCharacterVariant: CharactersSlice['addCharacterVariant'];
+  updateCharacterVariant: CharactersSlice['updateCharacterVariant'];
+  deleteCharacterVariant: CharactersSlice['deleteCharacterVariant'];
+  addCharacterVoice: CharactersSlice['addCharacterVoice'];
+  updateCharacterVoice: CharactersSlice['updateCharacterVoice'];
+  deleteCharacterVoice: CharactersSlice['deleteCharacterVoice'];
+  addCharacterCropSheet: CharactersSlice['addCharacterCropSheet'];
+  updateCharacterCropSheet: CharactersSlice['updateCharacterCropSheet'];
+  deleteCharacterCropSheet: CharactersSlice['deleteCharacterCropSheet'];
 
   // Props
   addProp: PropsSlice['addProp'];
   updateProp: PropsSlice['updateProp'];
   deleteProp: PropsSlice['deleteProp'];
   reorderProps: PropsSlice['reorderProps'];
-  // ... nested actions
+  addPropState: PropsSlice['addPropState'];
+  updatePropState: PropsSlice['updatePropState'];
+  deletePropState: PropsSlice['deletePropState'];
+  addPropCropSheet: PropsSlice['addPropCropSheet'];
+  updatePropCropSheet: PropsSlice['updatePropCropSheet'];
+  deletePropCropSheet: PropsSlice['deletePropCropSheet'];
+  addPropSound: PropsSlice['addPropSound'];
+  updatePropSound: PropsSlice['updatePropSound'];
+  deletePropSound: PropsSlice['deletePropSound'];
 
   // Stages
   addStage: StagesSlice['addStage'];
   updateStage: StagesSlice['updateStage'];
   deleteStage: StagesSlice['deleteStage'];
   reorderStages: StagesSlice['reorderStages'];
-  // ... nested actions
+  addStageSetting: StagesSlice['addStageSetting'];
+  updateStageSetting: StagesSlice['updateStageSetting'];
+  deleteStageSetting: StagesSlice['deleteStageSetting'];
+  addStageSound: StagesSlice['addStageSound'];
+  updateStageSound: StagesSlice['updateStageSound'];
+  deleteStageSound: StagesSlice['deleteStageSound'];
 
   // Meta
   markDirty: MetaSlice['markDirty'];
+
+  // Top-level
+  initSnapshot: SnapshotStore['initSnapshot'];
+  resetSnapshot: SnapshotStore['resetSnapshot'];
 }
 ```
 
@@ -359,6 +517,13 @@ function SpreadThumbnail({ id }: { id: string }) {
   const spread = useSpreadById(id);
   // Only re-renders when this specific spread changes
 }
+
+// Image component: subscribe by ID (new)
+function SpreadImageEditor({ spreadId, imageId }: Props) {
+  const image = useSpreadImageById(spreadId, imageId);
+  const { updateSpreadImage } = useSnapshotActions();
+  // Only re-renders when this specific image changes
+}
 ```
 
 ### 6.2 Actions Usage
@@ -366,19 +531,39 @@ function SpreadThumbnail({ id }: { id: string }) {
 ```typescript
 function SpreadEditor({ spreadId }: Props) {
   const spread = useSpreadById(spreadId);
-  const { updateSpread, addSpreadTextbox } = useSnapshotActions();
+  const { updateSpreadImage, addSpreadObject } = useSnapshotActions();
 
-  const handleImageMove = (imageIndex: number, geometry: Geometry) => {
-    updateSpread(spreadId, {
-      images: spread.images.map((img, i) =>
-        i === imageIndex ? { ...img, geometry } : img
-      )
+  const handleImageMove = (imageId: string, geometry: Geometry) => {
+    updateSpreadImage(spreadId, imageId, { geometry });
+  };
+
+  const handleExtractObject = (imageId: string, objectData: Partial<SpreadObject>) => {
+    addSpreadObject(spreadId, {
+      id: crypto.randomUUID(),
+      original_image_id: imageId,  // Link to source image
+      ...objectData,
     });
   };
 }
 ```
 
-### 6.3 Cross-slice Access
+### 6.3 Sketch Workflow
+
+```typescript
+function SketchPanel() {
+  const sketch = useSketch();
+  const characterSheets = useCharacterSheets();
+  const { addCharacterSheet, setSketchDummyId } = useSnapshotActions();
+
+  const handleGenerateSheets = async (dummyId: string) => {
+    setSketchDummyId(dummyId);
+    const sheets = await generateCharacterSheets(dummyId);
+    sheets.forEach(url => addCharacterSheet(url));
+  };
+}
+```
+
+### 6.4 Cross-slice Access
 
 ```typescript
 // Inside a slice, can access other slices via get()
@@ -407,7 +592,9 @@ create<SnapshotStore>()(
     subscribeWithSelector(     // Granular subscriptions
       immer(                   // Immutable updates with mutation syntax
         (...args) => ({
-          ...createManuscriptSlice(...args),
+          ...createDocsSlice(...args),
+          ...createDummiesSlice(...args),
+          ...createSketchSlice(...args),
           ...createSpreadsSlice(...args),
           ...createCharactersSlice(...args),
           ...createPropsSlice(...args),
@@ -423,23 +610,38 @@ create<SnapshotStore>()(
 
 ### 7.2 Backward Compatibility
 
-Existing data without `id` field:
+Existing data without `id` field or old structure:
 
 ```typescript
 initSnapshot: (snapshot) => set((state) => {
   // Ensure all spreads have IDs
   state.spreads = snapshot.spreads.map(s => ({
     ...s,
-    id: s.id || generateSpreadId()
+    id: s.id || crypto.randomUUID(),
+    images: s.images?.map(img => ({
+      ...img,
+      id: img.id || crypto.randomUUID(),  // New: images now have IDs
+    })) || [],
   }));
 
-  // Ensure all dummy spreads have IDs
-  state.manuscript.dummies.forEach(dummy => {
-    dummy.spreads = dummy.spreads.map(s => ({
+  // Initialize docs (new structure)
+  state.docs = snapshot.docs || [];
+
+  // Initialize dummies (new structure)
+  state.dummies = snapshot.dummies || [];
+  state.dummies.forEach(dummy => {
+    dummy.spreads = dummy.spreads?.map(s => ({
       ...s,
-      id: s.id || generateSpreadId()
-    }));
+      id: s.id || crypto.randomUUID(),
+    })) || [];
   });
+
+  // Initialize sketch (new centralized structure)
+  state.sketch = snapshot.sketch || {
+    dummy_id: null,
+    character_sheets: [],
+    prop_sheets: [],
+  };
 });
 ```
 
@@ -450,6 +652,8 @@ initSnapshot: (snapshot) => set((state) => {
 | `useSpreadById(id)` | `Object.is` | Spread reference changes |
 | `useSpreadIds()` | `shallow` | Array content changes |
 | `useSpreadCount()` | `===` | Length changes |
+| `useSpreadImageById(sid, iid)` | `Object.is` | Image reference changes |
+| `useCharacterSheets()` | `shallow` | Array content changes |
 | `useSnapshotActions()` | None | Never (stable reference) |
 
 ### 7.4 Autosave Integration
@@ -481,10 +685,19 @@ export function useAutosave(debounceMs = 60_000) {
 }
 ```
 
+### 7.5 Data Migration Notes
+
+Legacy snapshots có thể thiếu fields mới. `initSnapshot` cần handle:
+
+- **IDs**: Auto-generate `id` cho spreads, images, dummy spreads nếu missing
+- **docs/dummies**: Fallback `[]` nếu không có
+- **sketch**: Fallback `{ dummy_id: null, character_sheets: [], prop_sheets: [] }`
+
+> **Note:** Nếu cần migrate từ old `manuscript` structure hoặc scattered `sketches[]` trong variants/states, implement riêng migration util.
+
 ---
 
 ## 8. Related Docs
 
 - Database Schema: [DATABASE-SCHEMA.md](../../DATABASE-SCHEMA.md)
 - EditorPage: [00-editor-page.md](../editor-page/00-editor-page.md)
-- ManuscriptCreativeSpace: [03-manuscript-creative-space.md](../editor-page/03-manuscript-creative-space.md)

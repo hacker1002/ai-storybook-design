@@ -4,6 +4,8 @@
 
 ## [2026-02-09 10:55] Snapshot Sketch Refactor & Asset Cleanup
 
+**Important:** Editor pipeline steps đổi từ `Idea > Sketch > Illustration > Retouch` -> `Manuscript > Illustration > Retouch`
+
 ### Snapshot Table
 - **manuscript**: REMOVED - tách thành 3 fields riêng
 - **docs[]**: NEW JSONB - manuscript documents (brief, draft, script)
@@ -17,8 +19,9 @@
   }
   ```
 
-### Book.remix
-- **access_resources[]**: string array → object array (`["manuscript", "sketch", "illustration"] -> [{ "type": "character | prop", "name": "...", "key": "asset_key" }]`)
+### Book Table
+- **step (pipeline)**: manuscript, illustration, retouch
+- **remix.access_resources[]**: string array → object array (`["manuscript", "sketch", "illustration"] -> [{ "type": "character | prop", "name": "...", "key": "asset_key" }]`)
 
 ### JSONB spreads[]
 - **images[].id**: NEW UUID

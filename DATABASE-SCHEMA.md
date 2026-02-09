@@ -7,7 +7,7 @@
 | `title` | VARCHAR | Tiêu đề truyện |
 | `description` | TEXT | Mô tả truyện |
 | `owner_id` | UUID | ID người sở hữu |
-| `step` | SMALLINT | 1: manuscript, 2: sketch, 3: illustration |
+| `step` | SMALLINT | 1: manuscript, 2: illustration, 3: retouch |
 | `type` | SMALLINT | 0: source book (thư viện assets, ko có docs/spreads), 1: normal book |
 | `original_language` | VARCHAR | Ngôn ngữ gốc (vi, en) |
 | `current_version` | UUID | Version hiện tại |
@@ -164,7 +164,7 @@ Bảng lưu các vấn đề tồn đọng trong book.
   "new_spread": true,
   "delete_spread": false,
   "languages[]": [{ "name": "Vietnamese", "code": "vi_VN" }],
-  "steps": { "manuscript": true, "sketch": true, "illustration": false },
+  "steps": { "manuscript": true, "illustration": false, "retouch": true },
   "spreads[]": [{ "spread_number": 1, "view": true, "edit": true }]
 }
 ```
@@ -179,7 +179,7 @@ Bảng lưu các vấn đề tồn đọng trong book.
 | `url` | VARCHAR | URL chia sẻ |
 | `privacy` | SMALLINT | Mức độ riêng tư |
 | `passcode` | VARCHAR | Mã truy cập (nếu có) |
-| `access_steps` | JSONB | `{ manuscript, sketch, illustration }` |
+| `access_steps` | JSONB | `{ manuscript, illustration, retouch }` |
 
 ## Bảng Resources (Lookup Tables)
 
