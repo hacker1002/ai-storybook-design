@@ -2,6 +2,39 @@
 
 ---
 
+## [2026-02-09 10:55] Snapshot Sketch Refactor & Asset Cleanup
+
+### Snapshot Table
+- **manuscript**: REMOVED - tách thành 3 fields riêng
+- **docs[]**: NEW JSONB - manuscript documents (brief, draft, script)
+- **dummies[]**: NEW JSONB - dummy spreads với text và art notes
+- **sketch**: NEW JSONB - centralized sketch data
+  ```json
+  {
+    "dummy_id": "uuid",
+    "character_sheets[]": ["img1", "img2"],
+    "prop_sheets[]": ["img1"]
+  }
+  ```
+
+### Book.remix
+- **access_resources[]**: string array → object array (`["manuscript", "sketch", "illustration"] -> [{ "type": "character | prop", "name": "...", "key": "asset_key" }]`)
+
+### JSONB spreads[]
+- **images[].id**: NEW UUID
+- **objects[].original_image_id**: NEW - link to source image
+- **objects[].media_url**: replaces `image_url`
+- **objects[].media_type**: NEW - "image | video" (replaces `video_url`)
+
+### JSONB characters[].variants[], props[].states[], stages[].settings[]
+- **sketches[]**: REMOVED - moved to snapshot.sketch
+
+**Rationale**: Centralize sketch management in `snapshot.sketch` instead of scattered across entities. Simplify asset structure.
+
+Migration: `../supabase/migrations/20260209000001_snapshot_sketch_refactor.sql`
+
+---
+
 ## [2026-02-07 10:20] Add spread ID for optimized rendering
 
 - **JSONB manuscript.dummies[].spreads[]**: thêm `id` (UUID)

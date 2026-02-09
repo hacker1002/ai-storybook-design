@@ -60,7 +60,11 @@
 {
   "languages[]": [{ "name": "English", "code": "en_US" }],
   "price": 0,
-  "access_resources[]": ["manuscript", "sketch", "illustration"]
+  "access_resources[]": [{
+    "type": "character | prop",
+    "name": "Tên hiển thị",
+    "key": "asset_key"
+  }]
 }
 ```
 
@@ -87,7 +91,9 @@
 | `tag` | VARCHAR | Tag đánh dấu |
 | `book_id` | UUID | Link đến Book |
 | `save_type` | SMALLINT | manual save hay autobackup |
-| `manuscript` | JSONB | Manuscript documents & dummies (object) |
+| `docs[]` | JSONB | Manuscript documents (brief, draft, script) |
+| `dummies[]` | JSONB | Dummy spreads với text và art notes |
+| `sketch` | JSONB | Sketch data |
 | `spreads[]` | JSONB | Các spread/trang truyện |
 | `characters[]` | JSONB | Danh sách nhân vật |
 | `props[]` | JSONB | Danh sách đạo cụ |
@@ -357,48 +363,66 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 
 ## Chi tiết JSONB structures
 
-### manuscript structure
+### docs[] structure
 ```json
-{
-  "docs[]": [{
-    "type": "brief | draft | script",
-    "content": "..."
-  }],
-  "dummies[]": [{
-    "type": "prose | poetry",
-    "spreads[]": [{
-      "id": "uuid",
-      "layout": "uuid",
-      "left_page": {
-        "number": 1,
-        "type": "normal_page",
-        "layout": "uuid"
-      },
-      "right_page": {
-        "number": 2,
-        "type": "normal_page",
-        "layout": "uuid"
-      },
-      "images[]": [{
-        "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
-        "art_note": "art description của dummy"
-      }],
-      "textboxes[]": [{
-        "[language_key]": {
-          "text": "...",
-          "geometry": { "x": 0, "y": 0, "w": 100, "h": 50 },
-          "typography": { "size": 16, "color": "#000" }
-        }
-      }]
+[{
+  "type": "brief | draft | script",
+  "content": "..."
+}]
+```
+
+- `type`: `brief` = ý tưởng ngắn, `draft` = bản nháp, `script` = kịch bản hoàn chỉnh
+
+### dummies[] structure
+```json
+[{
+  "type": "prose | poetry",
+  "spreads[]": [{
+    "id": "uuid",
+    "layout": "uuid",
+    "left_page": {
+      "number": 1,
+      "type": "normal_page",
+      "layout": "uuid"
+    },
+    "right_page": {
+      "number": 2,
+      "type": "normal_page",
+      "layout": "uuid"
+    },
+    "images[]": [{
+      "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
+      "art_note": "art description của dummy"
+    }],
+    "textboxes[]": [{
+      "[language_key]": {
+        "text": "...",
+        "geometry": { "x": 0, "y": 0, "w": 100, "h": 50 },
+        "typography": { "size": 16, "color": "#000" }
+      }
     }]
   }]
+}]
+```
+
+- `type`: `prose` = văn xuôi, `poetry` = thơ/vần
+- `layout`, `left_page.layout`, `right_page.layout`: FK → `template_layouts`, cho phép NULL
+- `[language_key]`: key là mã ngôn ngữ (e.g., `en_US`, `vi_VN`, `zh_CN`)
+
+### sketch structure
+Sketch data chứa các sheet ảnh của characters/props được sinh ra từ dummy.
+
+```json
+{
+  "dummy_id": "uuid",
+  "character_sheets[]": ["character_sheet1_img", "character_sheet2_img"],
+  "prop_sheets[]": ["prop_sheet1_img"]
 }
 ```
 
-- `docs[].type`: `brief` = ý tưởng ngắn, `draft` = bản nháp, `script` = kịch bản hoàn chỉnh
-- `dummies[].type`: `prose` = văn xuôi, `poetry` = thơ/vần
-- `dummies[].spreads[].layout`: FK → `template_layouts`, cho phép NULL
-- `[language_key]`: key là mã ngôn ngữ (e.g., `en_US`, `vi_VN`, `zh_CN`)
+- `dummy_id`: FK → dummy được dùng để generate các sheets
+- `character_sheets[]`: Các ảnh sheet chứa nhiều character variant
+- `prop_sheets[]`: Các ảnh sheet chứa nhiều prop state
 
 ### spreads[] structure
 ```json
@@ -413,19 +437,19 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
   "tiny_sketch_media_url": "...",
   "background": { "color": "#fff", "texture": "..." },
   "images[]": [{
+    "id": "uuid",
     "title": "...",
     "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
     "setting": "@stage_key/setting_key",
     "art_note": "art description của dummy",
     "visual_description": "...",
-    "negative_prompt": "...",
     "image_references[]": [{ "title": "...", "media_url": "..." }],
     "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "final_hires_media_url": "..."
   }],
   "textboxes[]": [{
-    "id": "...",
+    "id": "uuid",
     "title": "...",
     "[language_key]": {
       "text": "...",
@@ -437,12 +461,13 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     "audio": { "script": "...", "media_url": "...", "speed": 1, "emotion": "...", "voice": "..." }
   }],
   "objects[]": [{
-    "id": "...",
+    "id": "uuid",
+    "original_image_id": "uuid",
     "name": "key_name",
     "state": "key_state",
-    "type": "character | prop | background | foreground | other",
-    "image_url": "...",
-    "video_url": "...",
+    "type": "raw | character | prop | background | foreground | other",
+    "media_url": "...",
+    "media_type": "image | video",
     "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
     "z-index": 1,
     "status": "...",
@@ -467,13 +492,13 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 ```
 
 - `type`: 1 = dps (double page spread), 0 = non-dps (2 trang nhỏ)
-- `layout`: FK → `template_layouts`, cho phép NULL
+- `layout`, `left_page.layout`, `right_page.layout`: FK → `template_layouts`, cho phép NULL
 - `left_page.type` / `right_page.type`: normal_page, front_matter, back_matter, dedication, ...
-- `left_page.layout` / `right_page.layout`: FK → `template_layouts`, cho phép NULL
 - `background`: màu nền và texture cho spread
 - `images[].setting`: reference tới stage setting (format: `@<stage_key>/<setting_key>`)
 - `textboxes[].[language_key]`: key là mã ngôn ngữ (e.g., `en_US`, `vi_VN`), mỗi textbox có thể có nhiều language
 - `objects[]`: các object trên spread (character, prop, background, foreground, vfx...)
+  - `original_image_id`: object được sinh ra từ image nào
   - `geometry`: vị trí tương đối trên ảnh gốc (%), quy đổi ra vị trí trên spread cho animation
 - `animations[]`: animation cho textbox và object
   - `trigger_type`: on_click (khi click), with_previous (cùng lúc với trước), after_previous (sau cái trước)
@@ -541,8 +566,6 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
       "build": "..."
     },
     "visual_description": "...",
-    "negative_prompt": "...",
-    "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "image_references[]": [{ "title": "...", "media_url": "..." }]
   }],
@@ -577,7 +600,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
   - `type`: 0 = default, 1 = variant
 - `voices[]`: Nhiều giọng nói cho mỗi nhân vật
 - `crop_sheets[]`: Các sheet chứa crops của nhân vật
-  - `crops[]`: Các crop ở các aspect ratio khác nhau để dùng trong spread
+  - `crops[]`: Các crop của nhân vật ở các variants khác nhau dùng trong spread
   - `geometry`: vị trí tương đối trên ảnh gốc (%), quy đổi ra vị trí trên spread cho animation
 
 ### props[] structure
@@ -593,8 +616,6 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     "key": "default",
     "type": 0,
     "visual_description": "...",
-    "negative_prompt": "...",
-    "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "image_references[]": [{ "title": "...", "media_url": "..." }]
   }],
@@ -619,7 +640,7 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 - `states[]`: Các trạng thái của đạo cụ (mới, cũ, hỏng, ...)
   - `type`: 0 = default, 1 = state
 - `crop_sheets[]`: Các sheet chứa crops của prop
-  - `crops[]`: Các crop ở các aspect ratio khác nhau để dùng trong spread
+  - `crops[]`: Các crop của prop states dùng trong spread
   - `geometry`: vị trí tương đối trên ảnh gốc (%), quy đổi ra vị trí trên spread cho animation
 
 ### stages[] structure
@@ -634,7 +655,6 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     "key": "default",
     "type": 0,
     "visual_description": "...",
-    "negative_prompt": "...",
     "temporal": {
       "era": "...",
       "season": "...",
@@ -650,7 +670,6 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
     "emotional": {
       "mood": "..."
     },
-    "sketches[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "image_references[]": [{ "title": "...", "media_url": "..." }]
   }],
