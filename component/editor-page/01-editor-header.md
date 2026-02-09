@@ -168,8 +168,12 @@ interface EditorHeaderProps {
   onSave: () => Promise<void>;
   onNotificationClick: () => void;
   onNavigateHome: () => void;
+  onStepChange: (targetStep: PipelineStep) => void;
+  // ⚡ PRE-VALIDATION: EditorPage validates BEFORE setCurrentStep()
+  // Flow: validate → success → setCurrentStep()
   onLanguageChange: (newLang: Language, prevLang: Language) => void;
-  // ⚡ Callback để EditorPage handle Translation Check Flow
+  // ⚡ POST-VALIDATION: setCurrentLanguage() THEN check translation
+  // Flow: setCurrentLanguage() → check → show TranslationDialog if needed
 }
 
 interface EditorHeaderState {
@@ -185,10 +189,14 @@ interface EditorHeaderState {
 // EditorHeader passes onLanguageChange to LanguageSelector
 // LanguageSelector: setCurrentLanguage() → onLanguageChange()
 
-// StepBreadcrumb inline: useCurrentStep(), setCurrentStep()
+// StepBreadcrumb inline: useCurrentStep() to READ only
+// Step change via onStepChange callback → EditorPage validates → setCurrentStep()
 ```
 
-**Lưu ý:** Language/Step state managed by EditorSettingsStore. LanguageSelector cần callback `onLanguageChange` để notify EditorPage trigger Translation Check Flow.
+**Lưu ý:**
+- Language/Step state managed by EditorSettingsStore
+- **onStepChange (PRE-VALIDATION):** EditorHeader calls `onStepChange(targetStep)`, EditorPage validates, if success then `setCurrentStep()`
+- **onLanguageChange (POST-VALIDATION):** LanguageSelector calls `setCurrentLanguage()` first, then `onLanguageChange()` để EditorPage check translation
 
 ### 2.3 Render Logic (pseudo)
 
@@ -214,7 +222,7 @@ EditorHeader:
           - onClick: setIsEditingTitle(true), setEditTitleValue(bookTitle)
           - cursor: text
 
-    // Center section - StepBreadcrumb (inline, consumes store directly)
+    // Center section - StepBreadcrumb (inline, read store, write via callback)
     RENDER div.flex.items-center.gap-2
       FOR each step in PIPELINE_STEPS:
         IF step.key === currentStep:
@@ -222,7 +230,7 @@ EditorHeader:
         ELSE:
           RENDER button với:
             - text: step.label
-            - onClick: setCurrentStep(step.key)
+            - onClick: onStepChange(step.key)  // ⚡ callback to EditorPage for PRE-VALIDATION
         IF not last step:
           RENDER ChevronRight icon (separator)
 
@@ -288,8 +296,8 @@ interface MenuButtonProps {
 **Mục đích:** Hiển thị step pipeline breadcrumb.
 
 **Store Integration (inline trong EditorHeader):**
-- `useCurrentStep()` - read current step
-- `useEditorSettingsActions().setCurrentStep()` - update step
+- `useCurrentStep()` - READ only
+- Click step → `onStepChange(targetStep)` callback → EditorPage handles PRE-VALIDATION
 
 ---
 
@@ -520,7 +528,10 @@ MenuPopover:
 ### 4.1 Key Design Decisions
 
 **Store-based Language/Step**
-`currentLanguage` và `currentStep` được quản lý bởi EditorSettingsStore. LanguageSelector consume store trực tiếp. StepBreadcrumb render inline trong EditorHeader (không tách component riêng vì logic đơn giản).
+`currentLanguage` và `currentStep` được quản lý bởi EditorSettingsStore. StepBreadcrumb render inline trong EditorHeader (không tách component riêng vì logic đơn giản).
+
+**Step Change via Callback (PRE-VALIDATION)**
+StepBreadcrumb chỉ READ `currentStep` từ store. Khi click step, gọi `onStepChange(targetStep)` callback lên EditorPage. EditorPage validate (Step Transition Validation) trước khi gọi `setCurrentStep()`. Nếu validation fail, hiển thị feedback và không thay đổi step.
 
 **3-Step Pipeline**
 Pipeline gồm 3 steps: `manuscript` → `illustration` → `retouch`. Không có completed/inactive states phức tạp - chỉ có active (pill style) và default (plain text, clickable).
