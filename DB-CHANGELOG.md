@@ -2,6 +2,28 @@
 
 ---
 
+## [2026-02-09 17:55] Create Remix Table & Update JSONB Structures
+
+### New Table: remixes
+- **id**: UUID PK
+- **snapshot_id**: UUID FK → snapshots
+- **spreads[]**: JSONB - simplified spreads (no images[], tiny_sketch_media_url)
+- **assets[]**: JSONB - asset replacements `[{ name, key, type, image_url, target: { name, key } }]`
+
+### JSONB spreads[].objects[]
+- **status**: REMOVED
+- **player_visible**: NEW - visibility in player mode (yes/no)
+- **editor_visible**: NEW - visibility in editor mode (yes/no)
+- **media_type**: added `audio` option (image | video | audio)
+
+### JSONB spreads[].animations[]
+- **type**: NEW - media type being animated (textbox | image | video | audio)
+- **target**: NEW object structure `{ id, type }` replaces flat `target_id`, `target_type`
+
+Migration: `../supabase/migrations/20260209000002_create_remix_table.sql`
+
+---
+
 ## [2026-02-09 10:55] Snapshot Sketch Refactor & Asset Cleanup
 
 **Important:** Editor pipeline steps đổi từ `Idea > Sketch > Illustration > Retouch` -> `Manuscript > Illustration > Retouch`

@@ -99,6 +99,48 @@
 | `props[]` | JSONB | Danh sách đạo cụ |
 | `stages[]` | JSONB | Danh sách bối cảnh |
 
+## Bảng Remix
+Bảng lưu phiên bản remix của snapshot - chỉ chứa spreads và assets được phép thay đổi.
+
+| Field | Type | Mô tả |
+|-------|------|-------|
+| `id` | UUID | Primary key |
+| `snapshot_id` | UUID | FK → snapshots |
+| `spreads[]` | JSONB | Simplified spreads (chỉ textboxes, objects, animations) |
+| `assets[]` | JSONB | Danh sách assets được thay thế |
+
+**spreads[] structure (simplified):**
+```json
+{
+  "id": "uuid",
+  "type": 1,
+  "number": 1,
+  "manuscript": "...",
+  "layout": "uuid",
+  "left_page": { "number": 1, "type": "normal_page", "layout": "uuid" },
+  "right_page": { "number": 2, "type": "normal_page", "layout": "uuid" },
+  "background": { "color": "#fff", "texture": "..." },
+  "textboxes[]": [...],
+  "objects[]": [...],
+  "animations[]": [...]
+}
+```
+*Note: Không có `images[]`, `tiny_sketch_media_url` - sử dụng từ snapshot gốc*
+
+**assets[] structure:**
+```json
+[{
+  "name": "Tên hiển thị",
+  "key": "asset_key",
+  "type": "character | prop",
+  "image_url": "...",
+  "target": {
+    "name": "Tên asset gốc",
+    "key": "original_asset_key"
+  }
+}]
+```
+
 ## Bảng Issues
 Bảng lưu các vấn đề tồn đọng trong book.
 
@@ -467,16 +509,20 @@ Sketch data chứa các sheet ảnh của characters/props được sinh ra từ
     "state": "key_state",
     "type": "raw | character | prop | background | foreground | other",
     "media_url": "...",
-    "media_type": "image | video",
+    "media_type": "image | video | audio",
     "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
     "z-index": 1,
-    "status": "...",
+    "player_visible": true,
+    "editor_visible": true,
     "aspect_ratio": "..."
   }],
   "animations[]": [{
     "order": 1,
-    "target_id": "...",
-    "target_type": "textbox | object",
+    "type": "textbox | image | video | audio",
+    "target": {
+      "id": "uuid",
+      "type": "textbox | object"
+    },
     "trigger_type": "on_click | with_previous | after_previous",
     "effect": {
       "type": 1,
@@ -500,9 +546,13 @@ Sketch data chứa các sheet ảnh của characters/props được sinh ra từ
 - `objects[]`: các object trên spread (character, prop, background, foreground, vfx...)
   - `original_image_id`: object được sinh ra từ image nào
   - `geometry`: vị trí tương đối trên ảnh gốc (%), quy đổi ra vị trí trên spread cho animation
+  - `player_visible`: hiển thị trong player mode (yes/no)
+  - `editor_visible`: hiển thị trong editor mode (yes/no)
 - `animations[]`: animation cho textbox và object
+  - `type`: loại media được animate (textbox, image, video, audio)
+  - `target`: đối tượng chủ thể `{ id, type: "textbox" | "object" }`
   - `trigger_type`: on_click (khi click), with_previous (cùng lúc với trước), after_previous (sau cái trước)
-  - `effect.type`: 1-27, xem bảng Animation Effect Types bên dưới
+  - `effect.type`: 1-17, xem bảng Animation Effect Types bên dưới
   - `effect.geometry`: vị trí đích cho animation motion paths (x, y, w, h)
   - `effect.delay`: thời gian chờ trước khi chạy (ms)
   - `effect.duration`: thời gian diễn ra (ms)
