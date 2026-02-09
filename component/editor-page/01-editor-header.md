@@ -1,5 +1,7 @@
 # EditorHeader: Component Design
 
+📸 **Screenshot:** [screenshots/header.png](screenshots/header.png)
+
 ---
 
 ## 1. Diagrams
@@ -9,10 +11,10 @@
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │                                      EditorHeader                                        │
-│  ┌────────┬────────────────┬────────────────────────┬──────────┬────────────┬─────────┐  │
-│  │MenuBtn │   [BookTitle]  │     StepBreadcrumb     │SaveStatus│ LangSelect │ NotifBtn│  │
-│  │   ≡    │The Hidden Val..│ [I] > S > I > R        │ ✓ Saved  │ English(US)│   🔔    │  │
-│  └────────┴────────────────┴────────────────────────┴──────────┴────────────┴─────────┘  │
+│  ┌────────┬────────────────┬─────────────────────────────┬──────────┬──────────┬───────┐ │
+│  │MenuBtn │   [BookTitle]  │     [StepBreadcrumb]        │SaveStatus│LangSelect│NotifBtn││
+│  │   ≡    │The Hidden Val..│ (Manuscript) > Illus > Ret  │ ✓ Saved  │🌐 EN (US)│  🔔   │ │
+│  └────────┴────────────────┴─────────────────────────────┴──────────┴──────────┴───────┘ │
 │                           ▲ inline render (no child component)                           │
 │                                                                                          │
 │  ┌────────────────────────────────┐                                                      │
@@ -41,12 +43,12 @@
 │           │                │                  │                │                        │
 │           ▼                ▼                  ▼                ▼                        │
 │    ┌───────────┐    ┌───────────┐      ┌───────────────┐  ┌──────────────────────────┐  │
-│    │ MenuBtn   │    │[BookTitle]│      │StepBreadcrumb │  │     Actions Group        │  │
-│    │           │    │ (inline)  │      │               │  │ ┌─────────┬───────────┐  │  │
-│    │ onClick:  │    │           │      │ ⚡ Uses        │  │ │SaveStat │ LangSelect│  │  │
-│    │ toggle    │    │ Render:   │      │ EditorSetting │  │ ├─────────┼───────────┤  │  │
-│    │ isMenuOpen│    │ IF editing│      │ Store direct  │  │ │NotifBtn │           │  │  │
-│    │           │    │  → input  │      │               │  │ └─────────┴───────────┘  │  │
+│    │ MenuBtn   │    │[BookTitle]│      │[Breadcrumb]   │  │     Actions Group        │  │
+│    │           │    │ (inline)  │      │ (inline)      │  │ ┌─────────┬───────────┐  │  │
+│    │ onClick:  │    │           │      │               │  │ │SaveStat │ LangSelect│  │  │
+│    │ toggle    │    │ Render:   │      │ ⚡ Uses        │  │ ├─────────┼───────────┤  │  │
+│    │ isMenuOpen│    │ IF editing│      │ EditorSetting │  │ │NotifBtn │           │  │  │
+│    │           │    │  → input  │      │ Store direct  │  │ └─────────┴───────────┘  │  │
 │    │           │    │ ELSE      │      │               │  │                          │  │
 │    │           │    │  → text   │      │               │  │ ⚡ LangSelect uses        │  │
 │    │           │    │           │      │               │  │ EditorSettingStore direct│  │
@@ -69,44 +71,41 @@
 │  EditorSettingsStore   │
 │  ┌──────────────────┐  │
 │  │ currentLanguage  │──────► LanguageSelector (direct)
-│  │ currentStep      │──────► StepBreadcrumb (direct)
+│  │ currentStep      │──────► StepBreadcrumb inline (direct)
 │  └──────────────────┘  │
 └────────────────────────┘
 ```
 
-### 1.3 Step Breadcrumb Visual States
+### 1.3 Step Breadcrumb Visual States (Inline)
 
-**3 trạng thái:**
+> **Note:** Breadcrumb render inline trong EditorHeader, không tách child component.
 
-| State | Visual | Behavior | Description |
-|-------|--------|----------|-------------|
-| `active` | Solid bg, highlight | Không click | Step hiện tại đang làm việc |
-| `completed` | Normal text, có check | Click → quay lại | Step đã hoàn thành, có thể quay lại |
-| `inactive` | Dim/muted, opacity 50% | Click → skip ahead | Step chưa đến, user có thể skip ahead |
+**3 Steps:** `manuscript` → `illustration` → `retouch`
+
+**2 trạng thái:**
+
+| State | Visual | Behavior |
+|-------|--------|----------|
+| `active` | Pill/chip background với border | Step hiện tại |
+| `default` | Plain text, muted color | Click → navigate |
 
 ```
-Step: idea (active) - Step đầu tiên
+Step: manuscript (active)
 ┌───────────────────────────────────────────────────────────────┐
-│  [Idea]  >  Sketch  >  Illustration  >  Retouch               │
-│   ▲ active   dim         dim             dim                  │
+│  (Manuscript)  >  Illustration  >  Retouch                    │
+│   ▲ active         default         default                    │
 └───────────────────────────────────────────────────────────────┘
 
-Step: sketch (active) - Có thể quay lại idea
+Step: illustration (active)
 ┌───────────────────────────────────────────────────────────────┐
-│  ✓ Idea  >  [Sketch]  >  Illustration  >  Retouch             │
-│  ▲ completed   active       dim            dim                │
+│  Manuscript  >  (Illustration)  >  Retouch                    │
+│   default        ▲ active          default                    │
 └───────────────────────────────────────────────────────────────┘
 
-Step: illustration (active) - Có thể quay lại idea hoặc sketch
+Step: retouch (active)
 ┌───────────────────────────────────────────────────────────────┐
-│  ✓ Idea  >  ✓ Sketch  >  [Illustration]  >  Retouch           │
-│  completed   completed      ▲ active          dim             │
-└───────────────────────────────────────────────────────────────┘
-
-Step: retouch (active) - Có thể quay lại tất cả steps trước
-┌───────────────────────────────────────────────────────────────┐
-│  ✓ Idea  >  ✓ Sketch  >  ✓ Illustration  >  [Retouch]         │
-│  completed   completed      completed        ▲ active         │
+│  Manuscript  >  Illustration  >  (Retouch)                    │
+│   default        default         ▲ active                     │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -114,11 +113,10 @@ Step: retouch (active) - Có thể quay lại tất cả steps trước
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  State        │ Background  │ Text Color  │ Icon   │ Cursor        │
+│  State        │ Background       │ Text Color   │ Cursor            │
 ├─────────────────────────────────────────────────────────────────────┤
-│  active       │ primary     │ white       │ none   │ default       │
-│  completed    │ transparent │ primary     │ ✓      │ pointer       │
-│  inactive     │ transparent │ muted (50%) │ none   │ pointer       │
+│  active       │ pill w/ border   │ primary      │ default           │
+│  default      │ transparent      │ muted        │ pointer           │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -133,7 +131,7 @@ Step: retouch (active) - Có thể quay lại tất cả steps trước
 **Shared Types:**
 
 ```typescript
-type PipelineStep = 'idea' | 'sketch' | 'illustration' | 'retouch';
+type PipelineStep = 'manuscript' | 'illustration' | 'retouch';
 type EditorMode = 'book' | 'asset';  // Maps to books.type: 1=book, 0=asset
 type SaveStatus = 'unsaved' | 'saving' | 'saved';
 
@@ -146,6 +144,12 @@ interface UserPoints {
   current: number;    // 750
   total: number;      // 1000
 }
+
+const PIPELINE_STEPS: { key: PipelineStep; label: string }[] = [
+  { key: 'manuscript', label: 'Manuscript' },
+  { key: 'illustration', label: 'Illustration' },
+  { key: 'retouch', label: 'Retouch' },
+];
 ```
 
 ### 2.2 Interface
@@ -164,6 +168,8 @@ interface EditorHeaderProps {
   onSave: () => Promise<void>;
   onNotificationClick: () => void;
   onNavigateHome: () => void;
+  onLanguageChange: (newLang: Language, prevLang: Language) => void;
+  // ⚡ Callback để EditorPage handle Translation Check Flow
 }
 
 interface EditorHeaderState {
@@ -176,13 +182,13 @@ interface EditorHeaderState {
 **Store Integration:**
 
 ```typescript
-// No selectors needed - children consume store directly
-// EditorHeader chỉ render children, không cần access language/step
+// EditorHeader passes onLanguageChange to LanguageSelector
+// LanguageSelector: setCurrentLanguage() → onLanguageChange()
 
-// No actions needed - children handle their own store updates
+// StepBreadcrumb inline: useCurrentStep(), setCurrentStep()
 ```
 
-**Lưu ý:** `currentLanguage` và `currentStep` removed from props. LanguageSelector và StepBreadcrumb consume EditorSettingsStore trực tiếp.
+**Lưu ý:** Language/Step state managed by EditorSettingsStore. LanguageSelector cần callback `onLanguageChange` để notify EditorPage trigger Translation Check Flow.
 
 ### 2.3 Render Logic (pseudo)
 
@@ -208,13 +214,22 @@ EditorHeader:
           - onClick: setIsEditingTitle(true), setEditTitleValue(bookTitle)
           - cursor: text
 
-    // Center section - StepBreadcrumb consumes store directly
-    RENDER StepBreadcrumb
+    // Center section - StepBreadcrumb (inline, consumes store directly)
+    RENDER div.flex.items-center.gap-2
+      FOR each step in PIPELINE_STEPS:
+        IF step.key === currentStep:
+          RENDER span.pill với step.label (active style)
+        ELSE:
+          RENDER button với:
+            - text: step.label
+            - onClick: setCurrentStep(step.key)
+        IF not last step:
+          RENDER ChevronRight icon (separator)
 
     // Right section
     RENDER div.flex.items-center.gap-2
       RENDER SaveStatus với saveStatus, onSave
-      RENDER LanguageSelector  // consumes store directly
+      RENDER LanguageSelector với onLanguageChange  // store + callback
       RENDER NotificationButton với notificationCount, onNotificationClick
 
   IF isMenuOpen:
@@ -224,11 +239,11 @@ EditorHeader:
 ### 2.4 Visual
 
 ```
-┌───────────────────────────────────────────────────────────────────────────────────────────┐
-│  ┌────────┐  ┌────────────────┐  ┌────────────────────────┐  ┌──────┐ ┌────────┐ ┌──────┐ │
-│  │   ≡    │  │ The Hidden...  │  │ [I] > S > I > R        │  │✓ Saved│ │ 🌐 EN ▾ │ │ 🔔 │ │
-│  └────────┘  └────────────────┘  └────────────────────────┘  └──────┘ └────────┘ └──────┘ │
-└───────────────────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ┌────┐  ┌─────────────────┐  ┌──────────────────────────────────┐  ┌───────┐ ┌───────┐ ┌───┐ │
+│  │ ≡  │  │ The Hidden Val..│  │ (Manuscript) > Illus > Retouch   │  │✓ Saved│ │🌐 EN ▾│ │🔔 │ │
+│  └────┘  └─────────────────┘  └──────────────────────────────────┘  └───────┘ └───────┘ └───┘ │
+└───────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -264,23 +279,15 @@ interface MenuButtonProps {
 
 ---
 
-### 3.2 StepBreadcrumb
+### 3.2 StepBreadcrumb (Inline - Removed as Child)
 
-📄 **Doc:** [component/editor-page/01-01-step-breadcrumb.md](component/editor-page/01-01-step-breadcrumb.md)
+📄 **Doc:** *(inline, không cần file riêng)*
 
-**Mục đích:** Breadcrumb navigation giữa 4 steps. Click step trước hoặc sau để chuyển step.
+> Render inline trong EditorHeader vì logic đơn giản (chỉ map steps + highlight active).
 
-**Props & Callbacks:**
+**Mục đích:** Hiển thị step pipeline breadcrumb.
 
-```typescript
-interface StepBreadcrumbProps {
-  // No props - component consumes EditorSettingsStore directly
-}
-```
-
-**Store Integration:** *(defined in component's own doc)*
-
-Component sử dụng:
+**Store Integration (inline trong EditorHeader):**
 - `useCurrentStep()` - read current step
 - `useEditorSettingsActions().setCurrentStep()` - update step
 
@@ -338,25 +345,76 @@ No notifications:     Has notifications:
 
 ---
 
-### 3.5 LanguageSelector
+### 3.5 LanguageSelector (Inline Design)
 
-📄 **Doc:** [component/editor-page/01-02-language-selector.md](component/editor-page/01-02-language-selector.md)
+📄 **Doc:** *(inline, không tách file riêng)*
 
-**Mục đích:** Dropdown chọn ngôn ngữ hiển thị trong editor. Đặt trực tiếp trên header để dễ truy cập.
+**Mục đích:** Dropdown chọn ngôn ngữ hiển thị trong editor. Đặt trực tiếp trên header để dễ truy cập. Khi đổi ngôn ngữ, cần notify parent để trigger Translation Check Flow.
 
 **Props & Callbacks:**
 
 ```typescript
 interface LanguageSelectorProps {
-  // No props - component consumes EditorSettingsStore directly
+  onLanguageChange: (newLang: Language, prevLang: Language) => void;
+  // Callback ra EditorPage để trigger Translation Check Flow
+  // EditorPage sẽ check xem content đã được translate chưa
+}
+
+interface LanguageSelectorState {
+  isOpen: boolean;
 }
 ```
 
-**Store Integration:** *(defined in component's own doc)*
+**Constants:**
 
-Component sử dụng:
+```typescript
+const AVAILABLE_LANGUAGES: Language[] = [
+  { code: 'en_US', name: 'English (US)' },
+  { code: 'vi_VN', name: 'Tiếng Việt' },
+  { code: 'ja_JP', name: '日本語' },
+  { code: 'ko_KR', name: '한국어' },
+  { code: 'zh_CN', name: '中文 (简体)' },
+];
+```
+
+**Store Integration:**
 - `useCurrentLanguage()` - read current language
-- `useEditorSettingsActions().setCurrentLanguage()` - update language
+- `useEditorSettingsActions().setCurrentLanguage()` - update store
+
+**Render Logic (pseudo):**
+```
+LanguageSelector:
+  currentLang = useCurrentLanguage()
+
+  RENDER button.trigger
+    - Globe icon + currentLang.name + ChevronDown
+    - onClick: toggle isOpen
+
+  IF isOpen:
+    RENDER dropdown (portal, positioned below trigger)
+      FOR each lang in AVAILABLE_LANGUAGES:
+        RENDER option với:
+          - Checkmark if lang.code === currentLang.code
+          - lang.name
+          - onClick:
+              prevLang = currentLang
+              setCurrentLanguage(lang)
+              onLanguageChange(lang, prevLang)
+              setIsOpen(false)
+```
+
+**Flow khi select language:**
+```
+User click language option
+  → setCurrentLanguage(newLang) // update store
+  → onLanguageChange(newLang, prevLang) // notify parent
+    → EditorPage handles Translation Check Flow
+```
+
+**Translation Check Flow (handled by EditorPage):**
+- Check if content exists for new language
+- If not: prompt user to translate or show empty state
+- If yes: load content for selected language
 
 **Visual:**
 
@@ -374,13 +432,18 @@ Closed:                       Open:
                               └─────────────────────┘
 ```
 
+**Notes:**
+- Languages từ static constant `AVAILABLE_LANGUAGES`
+- Click outside → close dropdown
+- Keyboard: Escape → close, Enter → select, ↑↓ → navigate
+
 ---
 
-### 3.6 MenuPopover
+### 3.6 MenuPopover (Inline Design)
 
-📄 **Doc:** [component/editor-page/01-03-menu-popover.md](component/editor-page/01-03-menu-popover.md)
+📄 **Doc:** *(inline, không tách file riêng)*
 
-**Mục đích:** Popover menu chứa points, navigation home, và editor mode display.
+**Mục đích:** Popover menu chứa user points display, navigation home, và editor mode info (display only).
 
 **Props & Callbacks:**
 
@@ -394,6 +457,33 @@ interface MenuPopoverProps {
 }
 ```
 
+**Render Logic (pseudo):**
+```
+MenuPopover:
+  IF NOT isOpen: return null
+
+  RENDER Popover (portal, positioned below MenuButton)
+    // Points Section
+    RENDER div.points-section
+      RENDER span "✨ Points"
+      RENDER span "{current} / {total}"
+      RENDER ProgressBar với value={current/total * 100}
+
+    RENDER Divider
+
+    // Home Navigation
+    RENDER button.menu-item
+      - ← icon + "Home"
+      - onClick: onNavigateHome(), onClose()
+
+    RENDER Divider
+
+    // Editor Mode (display only)
+    RENDER div.menu-item.disabled
+      - ⚙️ icon + "Editor Mode: {editorMode}"
+      - No onClick (display only)
+```
+
 **Visual:**
 
 ```
@@ -401,27 +491,26 @@ interface MenuPopoverProps {
 │  ✨ Points        750 / 1000    │
 │  [████████████░░░░░░░░]  75%    │
 ├─────────────────────────────────┤
-│      ← Home                     │
+│  ← Home                         │
 ├─────────────────────────────────┤
-│   ⚙️ Editor Mode: Book           │
+│  ⚙️ Editor Mode: Book            │
 └─────────────────────────────────┘
+     ▲
+     │ anchor to MenuButton
 ```
 
----
+**Behavior:**
+- Click outside → onClose()
+- Click Home → navigate + close
+- Editor Mode: read-only, shows current mode (Book/Asset)
+- Escape key → onClose()
 
-### 3.7 PointsDisplay
-
-📄 **Doc:** *(inline trong MenuPopover)*
-
-**Mục đích:** Hiển thị user points với progress bar trong MenuPopover.
-
-**Props & Callbacks:**
+**PointsDisplay (inline trong MenuPopover):**
 
 ```typescript
-interface PointsDisplayProps {
-  current: number;
-  total: number;
-}
+// Không tách component, render trực tiếp trong MenuPopover
+// Progress bar: width = (current / total) * 100%
+// Color: primary khi < 80%, warning khi >= 80%, danger khi >= 95%
 ```
 
 ---
@@ -431,13 +520,25 @@ interface PointsDisplayProps {
 ### 4.1 Key Design Decisions
 
 **Store-based Language/Step**
-`currentLanguage` và `currentStep` được quản lý bởi EditorSettingsStore. LanguageSelector và StepBreadcrumb consume store trực tiếp, không qua EditorHeader props. Giảm prop drilling và re-renders không cần thiết.
+`currentLanguage` và `currentStep` được quản lý bởi EditorSettingsStore. LanguageSelector consume store trực tiếp. StepBreadcrumb render inline trong EditorHeader (không tách component riêng vì logic đơn giản).
+
+**3-Step Pipeline**
+Pipeline gồm 3 steps: `manuscript` → `illustration` → `retouch`. Không có completed/inactive states phức tạp - chỉ có active (pill style) và default (plain text, clickable).
 
 **Menu State is Local**
 `isMenuOpen` là local state của EditorHeader. Không cần lift lên EditorPage vì menu chỉ ảnh hưởng UI trong phạm vi EditorHeader.
 
 **Language Selector on Header**
 Language selector đặt trực tiếp trên header (không trong menu) vì là action thường xuyên sử dụng khi edit multi-language content. Giảm số click cần thiết.
+
+**Language Change + Translation Check Flow**
+Khi user đổi ngôn ngữ:
+1. LanguageSelector gọi `setCurrentLanguage()` để update store
+2. Sau đó callback `onLanguageChange(newLang, prevLang)` ra EditorPage
+3. EditorPage handle Translation Check Flow:
+   - Check content tồn tại cho ngôn ngữ mới không
+   - Nếu chưa: prompt translate hoặc show empty state
+   - Nếu có: load content cho ngôn ngữ đã chọn
 
 **Editor Mode Display Only**
 Editor mode được hiển thị trong menu nhưng không thay đổi được từ UI. Mode được xác định bởi permissions hoặc share link context.
@@ -460,8 +561,8 @@ MenuPopover và LanguageSelector đóng khi click outside. Sử dụng portal đ
 | Breakpoint | Behavior |
 |------------|----------|
 | Desktop (>1024px) | Full layout như design |
-| Tablet (768-1024px) | Truncate BookTitle, hide step labels (chỉ hiện icons), collapse LanguageSelector to icon only |
-| Mobile (<768px) | Hide StepBreadcrumb (show in Menu), LanguageSelector collapse to globe icon |
+| Tablet (768-1024px) | Truncate BookTitle, collapse LanguageSelector to icon only |
+| Mobile (<768px) | Hide breadcrumb (show in Menu), LanguageSelector collapse to globe icon |
 
 ### 4.4 Animation
 
