@@ -1,6 +1,10 @@
 # IconRail: Component Design
 
-**Screenshot:** `screenshots/icon-rail.png`
+**Screenshots:**
+- Manuscript Dummy: `screenshots/manuscript-dummy-space.png`
+- Manuscript Sketch: `screenshots/manuscript-sketch-space.png`
+- Retouch Remix: `screenshots/Retouch-remix-space.png`
+- History: `screenshots/history-space.png`
 
 ---
 
@@ -12,19 +16,20 @@
 ┌────────────────────────────────────────────┐
 │               IconRail                     │
 │  ┌──────────────────────────────────────┐  │
-│  │ IconRailItem - Manuscript (active)   │  │
-│  │ IconRailItem - Characters            │  │
-│  │ IconRailItem - Props                 │  │
-│  │ IconRailItem - Stages                │  │
-│  ├──────────────────────────────────────┤  │  ← Separator
-│  │ IconRailItem - Spreads               │  │
-│  │ IconRailItem - Objects               │  │
-│  │ IconRailItem - Animations            │  │
-│  ├──────────────────────────────────────┤  │  ← Separator
-│  │ IconRailItem - Flags                 │  │
-│  │ IconRailItem - Shares                │  │
-│  │ IconRailItem - Collaborators         │  │
-│  │ IconRailItem - Settings              │  │
+│  │ TOP: STEP-SPECIFIC ICONS             │  │
+│  │ ─────────────────────────────────────│  │
+│  │ Manuscript: doc, dummy, sketch       │  │
+│  │ Illustration: character, prop,       │  │
+│  │               stage, spread          │  │
+│  │ Retouch: object, animation, remix    │  │
+│  │                                      │  │
+│  │           (flex spacer)              │  │
+│  │                                      │  │
+│  │ BOTTOM: DEFAULT ICONS                │  │
+│  │ ─────────────────────────────────────│  │
+│  │ history, flag, share, collaborator   │  │
+│  ├──────────────────────────────────────┤  │  ← Separator (only above setting)
+│  │ setting                              │  │
 │  └──────────────────────────────────────┘  │
 └────────────────────────────────────────────┘
 ```
@@ -46,48 +51,47 @@
 │  ┌────────────────────────────────────────────────────────────────┐  │
 │  │  Props: activeCreativeSpace, onCreativeSpaceChange             │  │
 │  │  Store: currentStep via useCurrentStep()                       │  │
+│  │  Derived: getIconsForStep(currentStep)                         │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 │         │                                                            │
-│    FOR EACH item IN ICON_RAIL_ITEMS:                                 │
+│    STRUCTURE: [stepIcons] + spacer + [DEFAULT_ICONS] + sep + setting │
 │         │                                                            │
 │         ▼                                                            │
 │  ┌────────────────────────────────────────────────────────────────┐  │
-│  │                        IconRailItem                             │  │
-│  │  Props:                                                         │  │
-│  │  • item: IconRailItemConfig                                     │  │
-│  │  • isActive: boolean                                            │  │
-│  │  • isEnabled: boolean                                           │  │
-│  │  Callback:                                                      │  │
-│  │  • onClick: () => void                                          │  │
+│  │                        IconRailItem                            │  │
+│  │  Props:                                                        │  │
+│  │  • item: IconRailItemConfig                                    │  │
+│  │  • isActive: boolean                                           │  │
+│  │  Callback:                                                     │  │
+│  │  • onClick: () => void                                         │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.3 Visual States (theo screenshot)
+### 1.3 Visual States
 
 ```
-Default:                Active:                  Disabled:
-┌────────────────┐      ┌────────────────┐       ┌────────────────┐
-│                │      │ ┌────────────┐ │       │                │
-│   ┌────────┐   │      │ │   Icon     │ │       │   ┌────────┐   │
-│   │  Icon  │   │      │ │  (white)   │ │       │   │  Icon  │   │
-│   └────────┘   │      │ └────────────┘ │       │   └────────┘   │
-│                │      │  blue bg,      │       │  (grayed out)  │
-└────────────────┘      │  rounded-lg    │       └────────────────┘
+Default:                Active:
+┌────────────────┐      ┌────────────────┐
+│                │      │ ┌────────────┐ │
+│   ┌────────┐   │      │ │   Icon     │ │
+│   │  Icon  │   │      │ │  (white)   │ │
+│   └────────┘   │      │ └────────────┘ │
+│                │      │  blue bg,      │
+└────────────────┘      │  rounded-lg    │
                         └────────────────┘
-                              ↑                       ↑
-                        filled bg (primary)     opacity: 0.4
-                        white icon              cursor: not-allowed
+                              ↑
+                        filled bg (primary)
+                        white icon
 ```
 
-### 1.4 Step → Enabled Items
+### 1.4 Step → Icon Mapping
 
-| currentStep | Enabled CreativeSpaces |
-|-------------|--------------------|
-| `idea` | manuscript, flags, shares, collabs, config |
-| `sketch` | + characters, props, stages, spreads |
-| `illustration` | (same as sketch) |
-| `retouch` | + objects, animations |
+| currentStep | Step-specific Icons | Default Icons |
+|-------------|---------------------|---------------|
+| `manuscript` | doc, dummy, sketch | history, flag, share, collaborator, setting |
+| `illustration` | character, prop, stage, spread | history, flag, share, collaborator, setting |
+| `retouch` | object, animation, remix | history, flag, share, collaborator, setting |
 
 ---
 
@@ -95,22 +99,27 @@ Default:                Active:                  Disabled:
 
 ### 2.1 Overview
 
-**Mục đích:** Sidebar navigation dọc bên trái Editor. Render 11 IconRailItem với 2 separators. Items enabled/disabled dựa trên `currentStep`.
+**Mục đích:** Sidebar navigation dọc bên trái Editor. Render step-specific icons + default icons với 1 separator giữa. Icons thay đổi hoàn toàn dựa trên `currentStep`.
 
 **Shared Types:**
 
 ```typescript
-type PipelineStep = 'idea' | 'sketch' | 'illustration' | 'retouch';
+type PipelineStep = 'manuscript' | 'illustration' | 'retouch';
 
-type CreativeSpaceType =
-  | 'manuscript' | 'characters' | 'props' | 'stages' | 'spreads'
-  | 'objects' | 'animations' | 'flags' | 'shares' | 'collabs' | 'config';
+// Step-specific creative spaces
+type ManuscriptSpace = 'doc' | 'dummy' | 'sketch';
+type IllustrationSpace = 'character' | 'prop' | 'stage' | 'spread';
+type RetouchSpace = 'object' | 'animation' | 'remix';
+
+// Default creative spaces (always available)
+type DefaultSpace = 'history' | 'flag' | 'share' | 'collaborator' | 'setting';
+
+type CreativeSpaceType = ManuscriptSpace | IllustrationSpace | RetouchSpace | DefaultSpace;
 
 interface IconRailItemConfig {
   id: CreativeSpaceType;
   icon: string;               // Lucide icon name
   label: string;              // Tooltip text
-  enabledFromStep: PipelineStep;
 }
 ```
 
@@ -121,7 +130,6 @@ interface IconRailItemConfig {
 ```typescript
 interface IconRailProps {
   activeCreativeSpace: CreativeSpaceType;
-  // currentStep via useCurrentStep() - no prop drilling
   onCreativeSpaceChange: (creativeSpace: CreativeSpaceType) => void;
 }
 
@@ -140,29 +148,46 @@ currentStep = useCurrentStep();  // ⚡ no prop drilling
 ### 2.3 Configuration
 
 ```typescript
-const STEP_ORDER: Record<PipelineStep, number> = {
-  idea: 0,
-  sketch: 1,
-  illustration: 2,
-  retouch: 3,
-};
-
-const ICON_RAIL_ITEMS: IconRailItemConfig[] = [
-  { id: 'manuscript',  icon: 'FileText',  label: 'Manuscript',    enabledFromStep: 'idea' },
-  { id: 'characters',  icon: 'Smile',     label: 'Characters',    enabledFromStep: 'sketch' },
-  { id: 'props',       icon: 'Box',       label: 'Props',         enabledFromStep: 'sketch' },
-  { id: 'stages',      icon: 'Mountain',  label: 'Stages',        enabledFromStep: 'sketch' },
-  { id: 'spreads',     icon: 'BookOpen',  label: 'Spreads',       enabledFromStep: 'sketch' },
-  { id: 'objects',     icon: 'Layers',    label: 'Objects',       enabledFromStep: 'retouch' },
-  { id: 'animations',  icon: 'Zap',       label: 'Animations',    enabledFromStep: 'retouch' },
-  { id: 'flags',       icon: 'Flag',      label: 'Flags',         enabledFromStep: 'idea' },
-  { id: 'shares',      icon: 'Share2',    label: 'Share Links',   enabledFromStep: 'idea' },
-  { id: 'collabs',     icon: 'Users',     label: 'Collaborators', enabledFromStep: 'idea' },
-  { id: 'config',      icon: 'Settings',  label: 'Settings',      enabledFromStep: 'idea' },
+// Step-specific icons
+const MANUSCRIPT_ICONS: IconRailItemConfig[] = [
+  { id: 'doc',    icon: 'FileText',   label: 'Document' },
+  { id: 'dummy',  icon: 'LayoutGrid', label: 'Dummy Layout' },
+  { id: 'sketch', icon: 'Pencil',     label: 'Sketch' },
 ];
 
-function isCreativeSpaceEnabled(item: IconRailItemConfig, currentStep: PipelineStep): boolean {
-  return STEP_ORDER[currentStep] >= STEP_ORDER[item.enabledFromStep];
+const ILLUSTRATION_ICONS: IconRailItemConfig[] = [
+  { id: 'character', icon: 'Smile',    label: 'Characters' },
+  { id: 'prop',      icon: 'Box',      label: 'Props' },
+  { id: 'stage',     icon: 'Mountain', label: 'Stages' },
+  { id: 'spread',    icon: 'BookOpen', label: 'Spreads' },
+];
+
+const RETOUCH_ICONS: IconRailItemConfig[] = [
+  { id: 'object',    icon: 'Layers',    label: 'Objects' },
+  { id: 'animation', icon: 'Zap',       label: 'Animations' },
+  { id: 'remix',     icon: 'RefreshCw', label: 'Remix' },
+];
+
+// Default icons (bottom, always visible)
+const DEFAULT_ICONS: IconRailItemConfig[] = [
+  { id: 'history',      icon: 'History',  label: 'History' },
+  { id: 'flag',         icon: 'Flag',     label: 'Flags' },
+  { id: 'share',        icon: 'Share2',   label: 'Share Links' },
+  { id: 'collaborator', icon: 'Users',    label: 'Collaborators' },
+];
+
+// Setting icon (separated at very bottom)
+const SETTING_ICON: IconRailItemConfig =
+  { id: 'setting', icon: 'Settings', label: 'Settings' };
+
+const STEP_ICONS: Record<PipelineStep, IconRailItemConfig[]> = {
+  manuscript: MANUSCRIPT_ICONS,
+  illustration: ILLUSTRATION_ICONS,
+  retouch: RETOUCH_ICONS,
+};
+
+function getIconsForStep(step: PipelineStep): IconRailItemConfig[] {
+  return STEP_ICONS[step] ?? MANUSCRIPT_ICONS;
 }
 ```
 
@@ -170,63 +195,109 @@ function isCreativeSpaceEnabled(item: IconRailItemConfig, currentStep: PipelineS
 
 ```
 IconRail:
-  // Get currentStep from EditorSettingsStore (no prop drilling)
   currentStep = useCurrentStep()
+  stepIcons = getIconsForStep(currentStep)
 
-  RENDER nav container với flex-col, bg-background, py-2
+  RENDER nav container với flex-col, h-full, bg-background, py-2
 
-  FOR EACH item IN ICON_RAIL_ITEMS:
-    isEnabled = isCreativeSpaceEnabled(item, currentStep)
+  // TOP: Step-specific icons
+  FOR EACH item IN stepIcons:
     isActive = activeCreativeSpace === item.id
+    RENDER IconRailItem với item, isActive, onClick
 
-    RENDER IconRailItem với item, isActive, isEnabled, onClick
+  // Flex spacer (push default icons to bottom)
+  RENDER div với flex-1
 
-    // Separators
-    IF item.id === 'stages':
-      RENDER Separator
-    IF item.id === 'animations':
-      RENDER Separator
+  // BOTTOM: Default icons (no separator)
+  FOR EACH item IN DEFAULT_ICONS:
+    isActive = activeCreativeSpace === item.id
+    RENDER IconRailItem với item, isActive, onClick
+
+  // Separator line (only above setting)
+  RENDER Separator
+
+  // Setting icon (very bottom)
+  RENDER IconRailItem với SETTING_ICON, isActive, onClick
 ```
 
-### 2.5 Visual
+### 2.5 Visual by Step
 
+**Manuscript Step:**
 ```
 ┌─────────────────────┐
 │  ┌───────────────┐  │
-│  │ 📄 Manuscript │  │  ← active (blue bg, white icon)
+│  │ 📄 Doc        │  │  ← FileText      ┐
+│  └───────────────┘  │                  │
+│  ┌───────────────┐  │                  │ TOP
+│  │ ⊞ Dummy       │  │  ← LayoutGrid    │ (step icons)
+│  └───────────────┘  │                  │
+│  ┌───────────────┐  │                  │
+│  │ ✏️ Sketch      │  │  ← Pencil        ┘
 │  └───────────────┘  │
+│                     │
+│    (flex spacer)    │
+│                     │
+│  ┌───────────────┐  │                  ┐
+│  │ 🕐 History    │  │  ← History       │
+│  └───────────────┘  │                  │
+│  ┌───────────────┐  │                  │ BOTTOM
+│  │ 🚩 Flags      │  │                  │ (default icons)
+│  └───────────────┘  │                  │
+│  ┌───────────────┐  │                  │
+│  │ 🔗 Share      │  │                  │
+│  └───────────────┘  │                  │
+│  ┌───────────────┐  │                  │
+│  │ 👥 Collabs    │  │                  ┘
+│  └───────────────┘  │
+│  ─────────────────  │  ← Separator (only here)
 │  ┌───────────────┐  │
-│  │ 😊 Characters │  │
+│  │ ⚙️ Settings    │  │  ← isolated at bottom
 │  └───────────────┘  │
+└─────────────────────┘
+```
+
+**Illustration Step:**
+```
+┌─────────────────────┐
 │  ┌───────────────┐  │
-│  │ 📦 Props      │  │
+│  │ 😊 Character  │  │  ← Smile         ┐
+│  └───────────────┘  │                  │
+│  ┌───────────────┐  │                  │ TOP
+│  │ 📦 Prop       │  │  ← Box           │
+│  └───────────────┘  │                  │
+│  ┌───────────────┐  │                  │
+│  │ ⛰️ Stage      │  │  ← Mountain      │
+│  └───────────────┘  │                  │
+│  ┌───────────────┐  │                  │
+│  │ 📖 Spread     │  │  ← BookOpen      ┘
 │  └───────────────┘  │
-│  ┌───────────────┐  │
-│  │ ⛰️ Stages     │  │
-│  └───────────────┘  │
+│                     │
+│    (flex spacer)    │
+│                     │
+│  ... (default icons)│  ← BOTTOM
 │  ─────────────────  │  ← Separator
+│  ⚙️ Settings         │
+└─────────────────────┘
+```
+
+**Retouch Step:**
+```
+┌─────────────────────┐
 │  ┌───────────────┐  │
-│  │ 📖 Spreads    │  │
+│  │ 📚 Object     │  │  ← Layers        ┐
+│  └───────────────┘  │                  │ TOP
+│  ┌───────────────┐  │                  │
+│  │ ⚡ Animation   │  │  ← Zap           │
+│  └───────────────┘  │                  │
+│  ┌───────────────┐  │                  │
+│  │ 🔄 Remix      │  │  ← RefreshCw     ┘
 │  └───────────────┘  │
-│  ┌───────────────┐  │
-│  │ 📚 Objects    │  │  ← disabled (grayed)
-│  └───────────────┘  │
-│  ┌───────────────┐  │
-│  │ ⚡ Animations  │  │  ← disabled (grayed)
-│  └───────────────┘  │
+│                     │
+│    (flex spacer)    │
+│                     │
+│  ... (default icons)│  ← BOTTOM
 │  ─────────────────  │  ← Separator
-│  ┌───────────────┐  │
-│  │ 🚩 Flags      │  │
-│  └───────────────┘  │
-│  ┌───────────────┐  │
-│  │ 🔗 Shares     │  │
-│  └───────────────┘  │
-│  ┌───────────────┐  │
-│  │ 👥 Collabs    │  │
-│  └───────────────┘  │
-│  ┌───────────────┐  │
-│  │ ⚙️ Settings    │  │
-│  └───────────────┘  │
+│  ⚙️ Settings         │
 └─────────────────────┘
 ```
 
@@ -241,7 +312,7 @@ IconRail:
 
 📄 **Doc:** *(inline, không cần file riêng)*
 
-**Mục đích:** Icon button đơn lẻ. Handle active/hover/disabled states, show tooltip on hover.
+**Mục đích:** Icon button đơn lẻ. Handle active/hover states, show tooltip on hover.
 
 **Props & Callbacks:**
 
@@ -249,15 +320,14 @@ IconRail:
 interface IconRailItemProps {
   item: IconRailItemConfig;
   isActive: boolean;
-  isEnabled: boolean;
   onClick: () => void;
 }
 ```
 
-**Visual (theo screenshot):**
+**Visual:**
 
 ```
-Normal (enabled):        Active:                  Hover:
+Normal:                  Active:                  Hover:
 ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
 │                  │     │                  │     │                  │
 │    ┌────────┐    │     │  ┌────────────┐  │     │    ┌────────┐    │
@@ -275,40 +345,58 @@ Normal (enabled):        Active:                  Hover:
 
 ### 4.1 Key Design Decisions
 
-**Flat Structure**
-Render 11 items trực tiếp, không có intermediate group component. Đơn giản, dễ maintain.
+**Dynamic Icon Set**
+Icons thay đổi hoàn toàn dựa trên `currentStep`, không phải enable/disable. Khi user chuyển step, icon rail render bộ icons hoàn toàn khác.
 
 **Active State = Filled Background**
-Theo screenshot: active item có background primary (blue) với icon màu trắng, rounded-lg. Khác với left accent bar pattern.
+Theo screenshot: active item có background primary (blue) với icon màu trắng, rounded-lg.
 
-**Progressive Unlock**
-Items disabled dựa trên `enabledFromStep`. Disabled items hiển thị (grayed) để user biết sẽ unlock ở step nào.
+**Top-Bottom Layout với Flex Spacer**
+Step icons ở top, default icons ở bottom, flex spacer đẩy default icons xuống. Separator chỉ xuất hiện trên icon Settings để tách biệt với các default icons khác.
 
 **Store-based currentStep**
 `currentStep` lấy từ `EditorSettingsStore` thay vì props để tránh prop drilling từ EditorPage.
 
-### 4.2 Icon Mapping (theo screenshot)
+### 4.2 Icon Mapping
 
-| CreativeSpace | Icon (Lucide) | Visual |
-|-----------|---------------|--------|
-| manuscript | FileText | Document with lines |
-| characters | Smile | Smiley face |
-| props | Box | 3D cube |
-| stages | Mountain | Mountains |
-| spreads | BookOpen | Open book |
-| objects | Layers | Stacked layers |
-| animations | Zap | Lightning bolt |
-| flags | Flag | Flag |
-| shares | Share2 | Share nodes |
-| collabs | Users | Multiple people |
-| config | Settings | Gear |
+| CreativeSpace | Icon (Lucide) | Step |
+|---------------|---------------|------|
+| doc | FileText | manuscript |
+| dummy | LayoutGrid | manuscript |
+| sketch | Pencil | manuscript |
+| character | Smile | illustration |
+| prop | Box | illustration |
+| stage | Mountain | illustration |
+| spread | BookOpen | illustration |
+| object | Layers | retouch |
+| animation | Zap | retouch |
+| remix | RefreshCw | retouch |
+| history | History | default |
+| flag | Flag | default |
+| share | Share2 | default |
+| collaborator | Users | default |
+| setting | Settings | default |
 
-### 4.3 Separator Positions
+### 4.3 Step Transition Behavior
 
-| After Item | Position | Visual Gap |
-|------------|----------|------------|
-| `stages` (index 3) | After item 4 | Horizontal line |
-| `animations` (index 6) | After item 7 | Horizontal line + larger gap |
+Khi `currentStep` thay đổi:
+1. Icon rail re-renders với bộ icons mới
+2. Nếu `activeCreativeSpace` không còn valid cho step mới → auto-select first icon của step mới
+3. Ví dụ: đang ở `doc` (manuscript) → chuyển sang illustration → auto-select `character`
+
+```typescript
+// Handle step transition
+useEffect(() => {
+  const validSpaces = [
+    ...getIconsForStep(currentStep).map(i => i.id),
+    ...DEFAULT_ICONS.map(i => i.id),
+    SETTING_ICON.id
+  ];
+  if (!validSpaces.includes(activeCreativeSpace)) {
+    onCreativeSpaceChange(getIconsForStep(currentStep)[0].id);
+  }
+}, [currentStep]);
+```
 
 ### 4.4 Accessibility
 
@@ -317,7 +405,6 @@ Items disabled dựa trên `enabledFromStep`. Disabled items hiển thị (graye
 | role | `navigation` on container |
 | aria-current | `page` for active item |
 | aria-label | item.label |
-| aria-disabled | `true` for disabled items |
 | keyboard | Arrow keys navigate, Enter/Space select |
 
 ---
