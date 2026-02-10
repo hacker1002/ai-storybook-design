@@ -2,90 +2,113 @@
 
 Overview of all API endpoints for AI Storybook Canvas.
 
-## Chat API
+## Endpoints
 
-| # | Endpoint | Agent | Description | File |
-|---|----------|-------|-------------|------|
-| 0 | chat/story-brainstorming | Story Consultant | Chat với AI để brainstorm ý tưởng truyện. Tự động extract parameters từ conversation. | [chat/00-story-brainstorming.md](./chat/00-story-brainstorming.md) |
-
-## Text Generation API
-
-### Manuscript Generation (Multi-Step Pipeline)
-
-| # | Endpoint | Agent | Description | File |
-|---|----------|-------|-------------|------|
-| 0 | generate-manuscript | Orchestrator | Điều phối việc tạo manuscript hoàn chỉnh qua 5 bước tuần tự. | [text-generation/00-generate-manuscript.md](./text-generation/00-generate-manuscript.md) |
-| 1 | generate-story-draft | Story Teller | Phân tích ý tưởng và tạo khung truyện ban đầu: character/prop/stage bible, phân tích nghệ thuật, phân chia nội dung từng spread. | [text-generation/01-generate-story-draft.md](./text-generation/01-generate-story-draft.md) |
-| 2 | generate-spread-visual-plan | Art Director | Tạo visual design cho characters, props, stages và kịch bản hình ảnh cơ bản cho từng spread. | [text-generation/02-generate-spread-visual-plan.md](./text-generation/02-generate-spread-visual-plan.md) |
-| 3 | generate-text-refinement | Word Smith | Biên tập và tinh chỉnh nội dung text trong textboxes[] của mỗi spread. | [text-generation/03-generate-text-refinement.md](./text-generation/03-generate-text-refinement.md) |
-| 4 | generate-spread-composition | Art Director | Thiết kế bố cục cho mỗi spread: xác định geometry cho images và textboxes. | [text-generation/04-generate-spread-composition.md](./text-generation/04-generate-spread-composition.md) |
-| 5 | generate-quality-check | Tester Agents | Kiểm tra chất lượng nội dung qua nhiều góc nhìn. | [text-generation/05-generate-quality-check.md](./text-generation/05-generate-quality-check.md) |
-
-### Visual Description Generation
-
-| # | Endpoint | Agent | Description | File |
-|---|----------|-------|-------------|------|
-| 6 | generate-visual-description-character | Visual Descriptor | Tối ưu mô tả hình ảnh cho AI sinh ảnh character. | [text-generation/06-generate-visual-description-character.md](./text-generation/06-generate-visual-description-character.md) |
-| 7 | generate-visual-description-prop | Visual Descriptor | Tối ưu mô tả hình ảnh cho AI sinh ảnh prop. | [text-generation/07-generate-visual-description-prop.md](./text-generation/07-generate-visual-description-prop.md) |
-| 8 | generate-visual-description-stage | Visual Descriptor | Tối ưu mô tả hình ảnh cho AI sinh ảnh stage/background. | [text-generation/08-generate-visual-description-stage.md](./text-generation/08-generate-visual-description-stage.md) |
-| 9 | generate-visual-description-spread | Visual Descriptor | Tối ưu mô tả hình ảnh cho AI sinh ảnh spread. | [text-generation/09-generate-visual-description-spread.md](./text-generation/09-generate-visual-description-spread.md) |
-
-### Translation & Poetry
-
-| # | Endpoint | Agent | Description | File |
-|---|----------|-------|-------------|------|
-| 10 | translate-content | Translator | Dịch nội dung truyện sang ngôn ngữ khác. | [text-generation/10-translate-content.md](./text-generation/10-translate-content.md) |
-| 11 | generate-poetry | Word Smith | Tạo thơ từ nội dung văn xuôi. Hỗ trợ thể loại Việt Nam và quốc tế. | [text-generation/11-generate-poetry.md](./text-generation/11-generate-poetry.md) |
+| Category | Description | Folder |
+|----------|-------------|--------|
+| Chat API | Chat-based AI interactions (brainstorming, assistant) | [chat/](./chat/) |
+| Doc API | Document generation and manipulation | [doc/](./doc/) |
+| Text Generation API | Multi-step manuscript pipeline, visual descriptions, translation | [text-generation/](./text-generation/) |
 
 ---
 
 ## Enum Mappings
 
-### target_audience
+### book_type
 ```typescript
-const TARGET_AUDIENCE_MAP = {
-  1: { key: 'preschool', label: 'Preschool (2-5 years)' },
-  2: { key: 'primary', label: 'Primary (6-8 years)' },
-  3: { key: 'tweens', label: 'Tweens (9-10 years)' }
-};
-```
-
-### genre
-```typescript
-const GENRE_MAP = {
-  1: { key: 'fantasy', label: 'Fantasy' },
-  2: { key: 'scifi', label: 'Science Fiction' },
-  3: { key: 'mystery', label: 'Mystery' },
-  4: { key: 'romance', label: 'Romance' },
-  5: { key: 'horror', label: 'Horror' }
+const BOOK_TYPE_MAP = {
+  1: 'Picture Book',        // Sách tranh
+  2: 'Illustrated Story',   // Truyện chữ có hình
+  3: 'Comic',
+  4: 'Manga'
 };
 ```
 
 ### dimension
 ```typescript
 const DIMENSION_MAP = {
-  1: { key: 'square', label: 'Square (20x20cm)' },
-  2: { key: 'landscape', label: 'A4 Landscape (29.7x21cm)' },
-  3: { key: 'portrait', label: 'A4 Portrait (21x29.7cm)' }
+  1: 'Square 8.5×8.5 (216×216mm)',
+  2: 'Portrait 8×10 (203×254mm)',
+  3: 'Portrait 6×9 (152×229mm)',
+  4: 'Portrait 8.5×11 (216×279mm)',
+  5: 'Portrait A4 (210×297mm)',
+  6: 'Square 8.25×8.25 (210×210mm)',
+  7: 'Square 8×8 (203×203mm)'
+};
+```
+
+### target_audience
+```typescript
+const TARGET_AUDIENCE_MAP = {
+  1: 'Kindergarten (2-3)',
+  2: 'Preschool (4-5)',
+  3: 'Primary (6-8)',
+  4: 'Middle Grade (9+)'
+};
+```
+
+### target_core_value
+```typescript
+const TARGET_CORE_VALUE_MAP = {
+  1: 'Dũng cảm',
+  2: 'Quan tâm',
+  3: 'Trung thực',
+  4: 'Kiên trì',
+  5: 'Biết ơn',
+  6: 'Bản lĩnh',
+  7: 'Thấu cảm',
+  8: 'Chính trực',
+  9: 'Vị tha',
+  10: 'Tự thức',
+  11: 'Tình bạn',
+  12: 'Hợp tác',
+  13: 'Chấp nhận sự khác biệt',
+  14: 'Tử tế',
+  15: 'Tò mò',
+  16: 'Tự lập',
+  17: 'Xử lý nỗi sợ',
+  18: 'Quản lý cảm xúc',
+  19: 'Chuyển giao',
+  20: 'Bảo vệ môi trường',
+  21: 'Trí tưởng tượng'
+};
+```
+
+### format_genre
+```typescript
+const FORMAT_GENRE_MAP = {
+  1: 'Narrative Picture Books',
+  2: 'Lullaby/Bedtime Books',
+  3: 'Concept Books',
+  4: 'Non-fiction Picture Books',
+  5: 'Early Reader',
+  6: 'Wordless Picture Books'
+};
+```
+
+### content_genre
+```typescript
+const CONTENT_GENRE_MAP = {
+  1: 'Mystery',
+  2: 'Fantasy',
+  3: 'Realistic Fiction',
+  4: 'Historical Fiction',
+  5: 'Science Fiction',
+  6: 'Folklore/Fairy Tales',
+  7: 'Humor',
+  8: 'Horror/Scary',
+  9: 'Biography',
+  10: 'Informational',
+  11: 'Memoir'
 };
 ```
 
 ### writing_style
 ```typescript
 const WRITING_STYLE_MAP = {
-  1: { key: 'narrative', label: 'Narrative' },
-  2: { key: 'rhyming', label: 'Rhyming' },
-  3: { key: 'humorous', label: 'Humorous Fiction' }
-};
-```
-
-### book_type
-```typescript
-const BOOK_TYPE_MAP = {
-  0: { key: 'picture_book', label: 'Picture Book' },
-  1: { key: 'illustrated_story', label: 'Illustrated Story' },
-  2: { key: 'comic', label: 'Comic' },
-  3: { key: 'manga', label: 'Manga' }
+  1: 'Narrative',       // Văn xuôi
+  2: 'Rhyming',         // Thơ/Vần điệu
+  3: 'Humorous Fiction' // Hài hước
 };
 ```
 
