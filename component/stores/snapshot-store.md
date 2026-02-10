@@ -77,7 +77,7 @@ export interface SyncState {
   error: string | null;
 }
 
-export type DocType = 'brief' | 'draft' | 'script';
+export type DocType = 'brief' | 'draft' | 'script' | 'other';
 export type DummyType = 'prose' | 'poetry';
 ```
 
@@ -87,7 +87,7 @@ export type DummyType = 'prose' | 'poetry';
 
 ### 3.1 DocsSlice
 
-Manages manuscript documents (brief, draft, script).
+Manages manuscript documents (brief, draft, script, other).
 
 ```typescript
 interface DocsSlice {
@@ -96,7 +96,10 @@ interface DocsSlice {
 
   // Actions
   setDocs: (docs: ManuscriptDoc[]) => void;
-  updateDoc: (docType: DocType, content: string) => void;
+  addDoc: (doc: ManuscriptDoc) => void;                    // Add new doc (typically 'other' type)
+  updateDoc: (index: number, updates: Partial<ManuscriptDoc>) => void;
+  updateDocTitle: (index: number, title: string) => void;  // For 'other' type
+  deleteDoc: (index: number) => void;                      // Only for 'other' type
   getDoc: (docType: DocType) => ManuscriptDoc | undefined;
 }
 ```
@@ -352,8 +355,8 @@ export const useIsSaving: () => boolean;
 
 // Docs
 export const useDocs: () => ManuscriptDoc[];
-export const useDoc: (type: DocType) => ManuscriptDoc | undefined;
-export const useDocContent: (type: DocType) => string;
+export const useDocByIndex: (index: number) => ManuscriptDoc | undefined;
+export const useDocByType: (type: DocType) => ManuscriptDoc | undefined;
 
 // Dummies
 export const useDummies: () => ManuscriptDummy[];
@@ -413,7 +416,10 @@ export const useSnapshotActions: () => SnapshotActions;
 
 interface SnapshotActions {
   // Docs
+  addDoc: DocsSlice['addDoc'];
   updateDoc: DocsSlice['updateDoc'];
+  updateDocTitle: DocsSlice['updateDocTitle'];
+  deleteDoc: DocsSlice['deleteDoc'];
 
   // Dummies
   addDummySpread: DummiesSlice['addDummySpread'];

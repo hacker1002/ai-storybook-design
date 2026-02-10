@@ -2,6 +2,18 @@
 
 ---
 
+## [2026-02-10 10:05] Add docs[] title & other type
+
+### JSONB docs[]
+- **type**: Added `other` option (brief | draft | script | other)
+- **title**: NEW field - user-entered document title
+
+**Rationale**: `other` cho phép user tự thêm docs tuỳ ý (không thuộc brief/draft/script). `title` cho phép user đặt tên cho document.
+
+Migration: N/A (JSONB field, backward compatible - existing docs có thể không có title)
+
+---
+
 ## [2026-02-09 17:55] Create Remix Table & Update JSONB Structures
 
 ### New Table: remixes

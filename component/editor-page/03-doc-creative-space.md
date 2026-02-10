@@ -80,10 +80,11 @@
 **Shared Types:**
 
 ```typescript
-type DocType = 'brief' | 'draft' | 'script';
+type DocType = 'brief' | 'draft' | 'script' | 'other';
 
 interface ManuscriptDoc {
   type: DocType;
+  title: string;    // User-defined title (editable for 'other' type)
   content: string;
 }
 ```
@@ -98,7 +99,7 @@ interface DocCreativeSpaceProps {
 }
 
 interface DocCreativeSpaceState {
-  activeDocType: DocType;  // 'brief' | 'draft' | 'script'
+  activeDocIndex: number;  // Index of currently selected doc
 }
 ```
 
@@ -106,11 +107,10 @@ interface DocCreativeSpaceState {
 
 ```typescript
 // SnapshotStore Selectors
-docs = useDocs();                    // ManuscriptDoc[]
-activeDoc = useDoc(activeDocType);   // Selected doc content
+docs = useDocs();  // ManuscriptDoc[]
 
 // SnapshotStore Actions
-{ updateDoc } = useSnapshotActions();
+{ setDocs, updateDoc, addDoc, deleteDoc, updateDocTitle } = useSnapshotActions();
 ```
 
 ### 2.3 Render Logic (pseudo)
@@ -119,24 +119,42 @@ activeDoc = useDoc(activeDocType);   // Selected doc content
 DocCreativeSpace:
   // Store selectors
   docs = useDocs()
-  activeDoc = useDoc(activeDocType)
-  { updateDoc } = useSnapshotActions()
+  { updateDoc, addDoc, deleteDoc, updateDocTitle } = useSnapshotActions()
 
-  // Initial state: first doc type
-  [activeDocType, setActiveDocType] = useState('brief')
+  // Local state
+  [activeDocIndex, setActiveDocIndex] = useState(0)
 
-  handleDocTypeChange(type):
-    setActiveDocType(type)
+  // Computed
+  activeDoc = docs[activeDocIndex] || null
+
+  handleDocSelect(index):
+    setActiveDocIndex(index)
+
+  handleAddDoc():
+    addDoc({ type: 'other', title: 'Other', content: '' })
+    setActiveDocIndex(docs.length)  // Select new doc
+
+  handleUpdateDocTitle(index, title):
+    updateDocTitle(index, title)
+
+  handleDeleteDoc(index):
+    deleteDoc(index)
+    IF activeDocIndex >= docs.length - 1:
+      setActiveDocIndex(Math.max(0, docs.length - 2))
 
   handleContentChange(content):
-    updateDoc(activeDocType, { content })
+    updateDoc(activeDocIndex, { content })
 
   RENDER Container (flex row):
 
     // Left panel
     RENDER DocSidebar với:
-      - activeDocType
-      - onDocTypeChange: handleDocTypeChange
+      - docs
+      - activeDocIndex
+      - onDocSelect: handleDocSelect
+      - onAddDoc: handleAddDoc
+      - onUpdateDocTitle: handleUpdateDocTitle
+      - onDeleteDoc: handleDeleteDoc
 
     // Right panel
     RENDER ManuscriptDocEditor với:
@@ -195,16 +213,20 @@ DocCreativeSpace:
 
 ### 3.1 DocSidebar
 
-📄 **Doc:** [component/editor-page/03-01-doc-sidebar.md](component/editor-page/03-01-doc-sidebar.md)
+📄 **Doc:** [03-01-doc-sidebar.md](03-01-doc-sidebar.md)
 
-**Mục đích:** Left sidebar với accordion-style tabs. Each tab expands to show PromptPanel for AI generation.
+**Mục đích:** Left sidebar với accordion-style tabs. Supports adding 'other' type docs with editable titles.
 
 **Props & Callbacks:**
 
 ```typescript
 interface DocSidebarProps {
-  activeDocType: DocType;
-  onDocTypeChange: (type: DocType) => void;
+  docs: ManuscriptDoc[];
+  activeDocIndex: number;
+  onDocSelect: (index: number) => void;
+  onAddDoc: () => void;
+  onUpdateDocTitle: (index: number, title: string) => void;
+  onDeleteDoc: (index: number) => void;
 }
 ```
 

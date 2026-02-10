@@ -408,12 +408,14 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 ### docs[] structure
 ```json
 [{
-  "type": "brief | draft | script",
+  "type": "brief | draft | script | other",
+  "title": "Tiêu đề document",
   "content": "..."
 }]
 ```
 
-- `type`: `brief` = ý tưởng ngắn, `draft` = bản nháp, `script` = kịch bản hoàn chỉnh
+- `type`: `brief` = ý tưởng ngắn, `draft` = bản nháp, `script` = kịch bản hoàn chỉnh, `other` = docs do user tự thêm
+- `title`: Tiêu đề document (user nhập tự do)
 
 ### dummies[] structure
 ```json

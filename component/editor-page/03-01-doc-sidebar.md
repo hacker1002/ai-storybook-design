@@ -49,34 +49,30 @@
 ### 1.2 Data Flow
 
 ```
-        ┌─────────────────────────────┐
-        │       DocCreativeSpace      │
-        │     (parent component)      │
-        └─────────────┬───────────────┘
-                      │ (props)
-                      ▼
-┌───────────────────────────────────────────────────────────────────────────────────┐
-│                                DocSidebar                                         │
-│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
-│  │  Props: activeDocType, onDocTypeChange                                      │  │
-│  │  Local State: expandedDocType, promptInputs, isGenerating                   │  │
-│  └─────────────────────────────────────────────────────────────────────────────┘  │
-│         │                                                                         │
-│         ▼                                                                         │
-│  ┌───────────────────────────────────────────────────────────────────────────┐    │
-│  │                           DocTabItem × 3                                  │    │
-│  │  Props:                                                                   │    │
-│  │  • docType: DocType                                                       │    │
-│  │  • isActive: boolean                                                      │    │
-│  │  • isExpanded: boolean                                                    │    │
-│  │  • promptInput: string                                                    │    │
-│  │  • isGenerating: boolean                                                  │    │
-│  │  Callbacks:                                                               │    │
-│  │  • onToggle: () => void                                                   │    │
-│  │  • onPromptChange: (value: string) => void                                │    │
-│  │  • onGenerate: () => void                                                 │    │
-│  └───────────────────────────────────────────────────────────────────────────┘    │
-└───────────────────────────────────────────────────────────────────────────────────┘
+  ┌─────────────────┐     ┌─────────────────┐
+  │   BookStore     │     │ DocCreativeSpace│
+  │  (settings,     │     │    (parent)     │
+  │   references)   │     └────────┬────────┘
+  └────────┬────────┘              │ (props)
+           │                       ▼
+           │    ┌───────────────────────────────────────────────────────┐
+           │    │                     DocSidebar                        │
+           └───►│  ┌─────────────────────────────────────────────────┐  │
+                │  │  Props: docs, activeDocIndex, callbacks         │  │
+                │  │  Store: bookSettings, bookReferences            │  │
+                │  │  Local: expandedIndex, editingTitleIndex, etc.  │  │
+                │  └─────────────────────────────────────────────────┘  │
+                │         │                                             │
+                │         ▼                                             │
+                │  ┌───────────────────────────────────────────────┐    │
+                │  │              DocTabItem × N                   │    │
+                │  │  Props: doc, isActive, isExpanded, etc.       │    │
+                │  │  ┌─────────────────────────────────────────┐  │    │
+                │  │  │  PromptPanel (Brief only: attributes)   │  │    │
+                │  │  │  → uses bookSettings, bookReferences    │  │    │
+                │  │  └─────────────────────────────────────────┘  │    │
+                │  └───────────────────────────────────────────────┘    │
+                └───────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -90,12 +86,12 @@
 **Shared Types:**
 
 ```typescript
-type DocType = 'brief' | 'draft' | 'script';
+type DocType = 'brief' | 'draft' | 'script' | 'other';
 
-interface DocTabConfig {
+interface ManuscriptDoc {
   type: DocType;
-  icon: string;       // Lucide icon name
-  label: string;
+  title: string;    // User-defined title (editable for 'other' type)
+  content: string;
 }
 ```
 
@@ -105,32 +101,52 @@ interface DocTabConfig {
 
 ```typescript
 interface DocSidebarProps {
-  activeDocType: DocType;
-  onDocTypeChange: (type: DocType) => void;
+  docs: ManuscriptDoc[];                     // All docs from store
+  activeDocIndex: number;                    // Currently selected doc index
+  onDocSelect: (index: number) => void;
+  onAddDoc: () => void;                      // Add new 'other' type doc
+  onUpdateDocTitle: (index: number, title: string) => void;
+  onDeleteDoc: (index: number) => void;      // Only for 'other' type
 }
 
 interface DocSidebarState {
-  expandedDocType: DocType | null;           // Which accordion is expanded
-  promptInputs: Record<DocType, string>;     // Prompt per doc type
-  isGenerating: Record<DocType, boolean>;    // Loading state per doc type
+  expandedIndex: number | null;              // Which accordion is expanded
+  editingTitleIndex: number | null;          // Which doc title is being edited
+  promptInputs: Record<number, string>;      // Prompt per doc index
+  isGenerating: Record<number, boolean>;     // Loading state per doc
 }
 ```
 
 **Store Integration:**
 
 ```typescript
-// No direct store access - pure presentational with callbacks
-// Generate action will be handled by parent via callback or separate hook
+// BookStore - for Brief tab attributes
+bookSettings = useBookSettings();    // bookType, dimension, targetAudience, targetCoreValue, formatGenre, contentGenre, writingStyle
+bookReferences = useBookReferences(); // eraId, locationId, artstyleId
+{ updateSettings, updateReferences } = useBookActions();
+
+// Generate action handled via callback or separate hook
 ```
 
 ### 2.3 Configuration
 
 ```typescript
-const DOC_TABS: DocTabConfig[] = [
-  { type: 'brief',  icon: 'FileText', label: 'Brief' },
-  { type: 'draft',  icon: 'FileText', label: 'Draft' },
-  { type: 'script', icon: 'FileText', label: 'Script' },
-];
+// Fixed doc types (cannot delete, title not editable)
+const FIXED_DOC_TYPES: DocType[] = ['brief', 'draft', 'script'];
+
+// Default titles for fixed types
+const DEFAULT_TITLES: Record<DocType, string> = {
+  brief: 'Brief',
+  draft: 'Draft',
+  script: 'Script',
+  other: 'Other',  // Default for new 'other' docs
+};
+
+// Check if doc type allows title editing
+const isEditableTitle = (type: DocType) => type === 'other';
+
+// Check if doc type allows deletion
+const isDeletable = (type: DocType) => type === 'other';
 ```
 
 ### 2.4 Render Logic (pseudo)
@@ -138,51 +154,73 @@ const DOC_TABS: DocTabConfig[] = [
 ```
 DocSidebar:
   // Props from parent
-  { activeDocType, onDocTypeChange } = props
+  { docs, activeDocIndex, onDocSelect, onAddDoc, onUpdateDocTitle, onDeleteDoc } = props
 
   // Local state
-  [expandedDocType, setExpandedDocType] = useState(activeDocType)
-  [promptInputs, setPromptInputs] = useState({ brief: '', draft: '', script: '' })
-  [isGenerating, setIsGenerating] = useState({ brief: false, draft: false, script: false })
+  [expandedIndex, setExpandedIndex] = useState(activeDocIndex)
+  [editingTitleIndex, setEditingTitleIndex] = useState(null)
+  [promptInputs, setPromptInputs] = useState({})
+  [isGenerating, setIsGenerating] = useState({})
 
-  handleToggle(docType):
-    IF expandedDocType === docType:
-      setExpandedDocType(null)
+  handleToggle(index):
+    IF expandedIndex === index:
+      setExpandedIndex(null)
     ELSE:
-      setExpandedDocType(docType)
-      onDocTypeChange(docType)  // Also set active when expanding
+      setExpandedIndex(index)
+      onDocSelect(index)  // Also set active when expanding
 
-  handlePromptChange(docType, value):
-    setPromptInputs({ ...promptInputs, [docType]: value })
+  handleAddDoc():
+    onAddDoc()  // Parent adds new 'other' doc with title "Other"
+    // After add, auto-expand and start editing title
+    setEditingTitleIndex(docs.length)  // New doc index
 
-  handleGenerate(docType):
-    setIsGenerating({ ...isGenerating, [docType]: true })
-    // Call generate API (via hook or callback)
-    // On complete: setIsGenerating({ ...isGenerating, [docType]: false })
+  handleStartEditTitle(index):
+    IF isEditableTitle(docs[index].type):
+      setEditingTitleIndex(index)
+
+  handleFinishEditTitle(index, newTitle):
+    onUpdateDocTitle(index, newTitle || 'Other')  // Fallback if empty
+    setEditingTitleIndex(null)
+
+  handlePromptChange(index, value):
+    setPromptInputs({ ...promptInputs, [index]: value })
+
+  handleGenerate(index):
+    setIsGenerating({ ...isGenerating, [index]: true })
+    // Call generate API
+    // On complete: setIsGenerating({ ...isGenerating, [index]: false })
 
   RENDER Container (flex column):
 
-    // Header
+    // Header with Add button
     RENDER SidebarHeader:
       - title: "Docs"
-      - addButton: null (no add functionality for fixed doc types)
+      - onAddClick: handleAddDoc
 
     // Accordion tabs
-    FOR EACH tab IN DOC_TABS:
-      isActive = activeDocType === tab.type
-      isExpanded = expandedDocType === tab.type
+    FOR EACH (doc, index) IN docs:
+      isActive = activeDocIndex === index
+      isExpanded = expandedIndex === index
+      isEditingTitle = editingTitleIndex === index
+      canEditTitle = isEditableTitle(doc.type)
+      canDelete = isDeletable(doc.type)
 
       RENDER DocTabItem với:
-        - docType: tab.type
-        - icon: tab.icon
-        - label: tab.label
+        - doc
+        - index
         - isActive
         - isExpanded
-        - promptInput: promptInputs[tab.type]
-        - isGenerating: isGenerating[tab.type]
-        - onToggle: () => handleToggle(tab.type)
-        - onPromptChange: (v) => handlePromptChange(tab.type, v)
-        - onGenerate: () => handleGenerate(tab.type)
+        - isEditingTitle
+        - canEditTitle
+        - canDelete
+        - promptInput: promptInputs[index] || ''
+        - isGenerating: isGenerating[index] || false
+        - onToggle: () => handleToggle(index)
+        - onStartEditTitle: () => handleStartEditTitle(index)
+        - onFinishEditTitle: (title) => handleFinishEditTitle(index, title)
+        - onDelete: () => onDeleteDoc(index)
+        - onPromptChange: (v) => handlePromptChange(index, v)
+        - onGenerate: () => handleGenerate(index)
 ```
 
 ### 2.5 Visual
@@ -232,6 +270,47 @@ DocSidebar:
 └────────────────────────────────┘
 ```
 
+**With "Other" docs:**
+
+```
+┌────────────────────────────────┐
+│ Docs                      [+]  │  ← Click [+] to add new 'other' doc
+│ 📄 Brief                    >  │
+│ 📄 Draft                    >  │
+│ 📄 Script                   >  │
+│ 📄 Research Notes       [✎] >  │  ← 'other' type, hover shows edit icon
+│ 📄 Character Bio        [✎] >  │
+└────────────────────────────────┘
+```
+
+**Editing Title (hover → click pencil):**
+
+```
+┌────────────────────────────────┐
+│ Docs                      [+]  │
+│ 📄 Brief                    >  │
+│ 📄 Draft                    >  │
+│ 📄 Script                   >  │
+│ ┌────────────────────────────┐ │
+│ │ Research Notes         [✓] │ │  ← Input mode, confirm on blur/enter
+│ └────────────────────────────┘ │
+└────────────────────────────────┘
+```
+
+**New Doc Added (auto edit mode):**
+
+```
+┌────────────────────────────────┐
+│ Docs                      [+]  │
+│ 📄 Brief                    >  │
+│ 📄 Draft                    >  │
+│ 📄 Script                   >  │
+│ ┌────────────────────────────┐ │
+│ │ Other                  [✓] │ │  ← Auto-focus, select all text
+│ └────────────────────────────┘ │
+└────────────────────────────────┘
+```
+
 **Generating State:**
 
 ```
@@ -258,31 +337,51 @@ DocSidebar:
 
 ### 3.1 SidebarHeader
 
-**Mục đích:** Header với title và optional add button.
+**Mục đích:** Header với title và add button.
 
-**Elements (không phải component riêng):**
+**Props:**
 
-| Element | Type | Notes |
-|---------|------|-------|
-| Title | `<span>` | "Docs" |
-| Add button | `<button>` | Hidden/disabled (no add for fixed doc types) |
+```typescript
+interface SidebarHeaderProps {
+  title: string;
+  onAddClick: () => void;
+}
+```
+
+**Visual:**
+
+```
+┌────────────────────────────────┐
+│ Docs                      [+]  │
+└────────────────────────────────┘
+```
+
+| Element | Notes |
+|---------|-------|
+| Title | "Docs" |
+| Add button `[+]` | Click → add new 'other' doc |
 
 ### 3.2 DocTabItem
 
-**Mục đích:** Accordion tab item. Expandable với PromptPanel.
+**Mục đích:** Accordion tab item. Expandable với PromptPanel. Supports editable title for 'other' type.
 
 **Props & Callbacks:**
 
 ```typescript
 interface DocTabItemProps {
-  docType: DocType;
-  icon: string;
-  label: string;
+  doc: ManuscriptDoc;
+  index: number;
   isActive: boolean;
   isExpanded: boolean;
+  isEditingTitle: boolean;
+  canEditTitle: boolean;        // true for 'other' type
+  canDelete: boolean;           // true for 'other' type
   promptInput: string;
   isGenerating: boolean;
   onToggle: () => void;
+  onStartEditTitle: () => void;
+  onFinishEditTitle: (title: string) => void;
+  onDelete: () => void;
   onPromptChange: (value: string) => void;
   onGenerate: () => void;
 }
@@ -291,9 +390,19 @@ interface DocTabItemProps {
 **Visual:**
 
 ```
-Collapsed:
+Collapsed (fixed type):
 ┌────────────────────────────────────────────────────┐
 │ 📄 Brief                                         > │
+└────────────────────────────────────────────────────┘
+
+Collapsed (other type - hover):
+┌────────────────────────────────────────────────────┐
+│ 📄 Research Notes                        [✎][🗑] > │  ← Hover shows edit + delete
+└────────────────────────────────────────────────────┘
+
+Editing Title:
+┌────────────────────────────────────────────────────┐
+│ 📄 [Research Notes________________]          [✓] > │  ← Input, Enter/blur to save
 └────────────────────────────────────────────────────┘
 
 Expanded:
@@ -324,16 +433,21 @@ Active + Collapsed:
 
 **Attribute Fields (Brief only):**
 
-| Field | Required | Options Source |
-|-------|----------|----------------|
-| TARGET AUDIENCE | ✅ | Constants / Book settings |
-| CORE VALUE | ✅ | Constants / Book settings |
-| FORMAT GENRE | ✅ | Constants |
-| CONTENT GENRE | ✅ | Constants |
-| ERA | ❌ | Constants |
-| LOCATION | ❌ | Constants |
+| Field | Required | Store Field | Options |
+|-------|----------|-------------|---------|
+| TARGET AUDIENCE | ✅ | `bookSettings.targetAudience` | Constants |
+| CORE VALUE | ✅ | `bookSettings.targetCoreValue` | Constants |
+| FORMAT GENRE | ✅ | `bookSettings.formatGenre` | Constants |
+| CONTENT GENRE | ✅ | `bookSettings.contentGenre` | Constants |
+| ERA | ❌ | `bookReferences.eraId` | DB lookup (eras table) |
+| LOCATION | ❌ | `bookReferences.locationId` | DB lookup (locations table) |
 
-> **Note:** Draft and Script tabs show only PROMPT field (no attributes).
+**Store Binding:**
+- Values read from `useBookSettings()` / `useBookReferences()`
+- Changes update via `updateSettings()` / `updateReferences()`
+- Changes persist to BookStore → saved to DB
+
+> **Note:** Draft, Script, Other tabs show only PROMPT field (no attributes).
 
 ---
 
@@ -349,8 +463,22 @@ Only one tab expanded at a time. Expanding a new tab collapses the previous one 
 - `isExpanded`: Which tab's PromptPanel is visible (local state)
 - Expanding always sets active, but clicking outside doesn't collapse
 
+**Fixed vs Other Doc Types**
+
+| Behavior | Fixed (brief/draft/script) | Other |
+|----------|---------------------------|-------|
+| Title editable | ❌ | ✅ (hover → pencil icon) |
+| Deletable | ❌ | ✅ |
+| PromptPanel | Full (Brief) / Prompt only (Draft/Script) | Prompt only |
+
+**Add New Doc Flow**
+1. Click [+] → add new doc with `type: 'other'`, `title: 'Other'`
+2. Auto-expand new doc
+3. Auto-enter title edit mode (input focused, text selected)
+4. User types new title → blur/Enter to confirm
+
 **Attribute Fields Location**
-Attribute fields (TARGET AUDIENCE, CORE VALUE, etc.) appear only in Brief tab. Draft and Script tabs show only the PROMPT textarea since they build on previous content.
+Attribute fields (TARGET AUDIENCE, CORE VALUE, etc.) appear only in Brief tab. Draft, Script, and Other tabs show only the PROMPT textarea.
 
 **Generate Dependency Chain**
 
@@ -359,6 +487,7 @@ Attribute fields (TARGET AUDIENCE, CORE VALUE, etc.) appear only in Brief tab. D
 | Brief | Attributes + Prompt | Story framework |
 | Draft | Brief content + Prompt | Full narrative |
 | Script | Draft content + Prompt | Scene-by-scene script |
+| Other | Prompt only | Freeform content |
 
 ### 4.2 Layout Constants
 
