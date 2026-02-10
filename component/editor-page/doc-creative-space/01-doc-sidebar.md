@@ -1,6 +1,6 @@
 # DocSidebar: Component Design
 
-> **Parent:** [DocCreativeSpace](component/editor-page/doc-creative-space/00-doc-creative-space.md)
+> **Parent:** [DocCreativeSpace](./README.md)
 
 **Screenshot:** `screenshots/manuscript-docs-space.png`
 

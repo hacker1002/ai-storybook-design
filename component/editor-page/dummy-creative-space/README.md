@@ -227,7 +227,7 @@ DummyCreativeSpace:
 
 ### 3.1 DummySidebar
 
-📄 **Doc:** [component/editor-page/dummy-creative-space/01-dummy-sidebar.md](component/editor-page/dummy-creative-space/01-dummy-sidebar.md)
+📄 **Doc:** [01-dummy-sidebar.md](./01-dummy-sidebar.md)
 
 **Mục đích:** Left sidebar với dynamic dummy list. Accordion-style với PromptPanel per dummy.
 
@@ -245,7 +245,7 @@ interface DummySidebarProps {
 
 ### 3.2 ManuscriptSpreadView
 
-📄 **Doc:** [component/editor-page/shared/manuscript-spread-view/00-manuscript-spread-view.md](component/editor-page/shared/manuscript-spread-view/00-manuscript-spread-view.md)
+📄 **Doc:** [README.md](../shared/manuscript-spread-view/README.md)
 
 **Mục đích:** Spread grid/editor view. **REUSE** - already designed, renumbered from `03-03`.
 

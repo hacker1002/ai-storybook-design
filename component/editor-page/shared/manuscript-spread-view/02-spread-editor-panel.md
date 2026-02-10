@@ -429,7 +429,7 @@ SpreadEditorPanel:
 
 ### 3.1 EditableImage
 
-📄 **Doc:** [component/editor-page/shared/manuscript-spread-view/02-01-editable-image.md](component/editor-page/shared/manuscript-spread-view/02-01-editable-image.md)
+📄 **Doc:** [02-01-editable-image.md](./02-01-editable-image.md)
 
 **Mục đích:** Image placeholder trong canvas. Selection only, không handle drag/resize.
 
@@ -452,7 +452,7 @@ interface EditableImageProps {
 
 ### 3.2 EditableTextbox
 
-📄 **Doc:** [component/editor-page/shared/manuscript-spread-view/02-02-editable-textbox.md](component/editor-page/shared/manuscript-spread-view/02-02-editable-textbox.md)
+📄 **Doc:** [02-02-editable-textbox.md](./02-02-editable-textbox.md)
 
 **Mục đích:** Editable textbox trong canvas. Selection và text editing only.
 
@@ -476,7 +476,7 @@ interface EditableTextboxProps {
 
 ### 3.3 SelectionFrame
 
-📄 **Doc:** [component/editor-page/shared/manuscript-spread-view/02-03-selection-frame.md](component/editor-page/shared/manuscript-spread-view/02-03-selection-frame.md)
+📄 **Doc:** [02-03-selection-frame.md](./02-03-selection-frame.md)
 
 **Mục đích:** Visual selection overlay với 8 resize handles. Handles ALL drag/resize interactions.
 

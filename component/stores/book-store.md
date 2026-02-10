@@ -199,4 +199,4 @@ export function useBookAutosave(debounceMs = 5_000) {
 ## 7. Related Docs
 
 - Database Schema: [DATABASE-SCHEMA.md](DATABASE-SCHEMA.md)
-- EditorPage: [00-editor-page.md](component/editor-page/00-editor-page.md)
+- EditorPage: [README.md](../editor-page/README.md)

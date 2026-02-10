@@ -1,6 +1,6 @@
 # DummySidebar: Component Design
 
-> **Parent:** [DummyCreativeSpace](component/editor-page/dummy-creative-space/00-dummy-creative-space.md)
+> **Parent:** [DummyCreativeSpace](./README.md)
 
 **Screenshot:** `screenshots/manuscript-dummy-space.png`
 

@@ -9,23 +9,23 @@
     * [Snapshot Store](component/stores/snapshot-store.md)
     * [Editor Settings Store](component/stores/editor-settings-store.md)
   * **Editor Page** 📁
-    * [Editor Page](component/editor-page/00-editor-page.md)
+    * [Editor Page](component/editor-page/README.md)
     * [Editor Header](component/editor-page/01-editor-header.md)
     * [Icon Rail](component/editor-page/02-icon-rail.md)
     * Doc CreativeSpace 📁
-      * [Doc CreativeSpace](component/editor-page/doc-creative-space/00-doc-creative-space.md)
+      * [Doc CreativeSpace](component/editor-page/doc-creative-space/README.md)
       * [Doc Sidebar](component/editor-page/doc-creative-space/01-doc-sidebar.md)
       * [Doc Editor](component/editor-page/doc-creative-space/02-manuscript-doc-editor.md)
     * Dummy CreativeSpace 📁
-      * [Dummy CreativeSpace](component/editor-page/dummy-creative-space/00-dummy-creative-space.md)
+      * [Dummy CreativeSpace](component/editor-page/dummy-creative-space/README.md)
       * [Dummy Sidebar](component/editor-page/dummy-creative-space/01-dummy-sidebar.md)
     * Sketch CreativeSpace 📁
-      * [Sketch CreativeSpace](component/editor-page/sketch-creative-space/00-sketch-creative-space.md)
+      * [Sketch CreativeSpace](component/editor-page/sketch-creative-space/README.md)
       * [Sketch Sidebar](component/editor-page/sketch-creative-space/01-sketch-sidebar.md)
       * [Sketch Viewer](component/editor-page/sketch-creative-space/02-sketch-viewer.md)
   * **Shared Components** 📁
     * Manuscript Spread View 📁
-      * [Manuscript Spread View](component/editor-page/shared/manuscript-spread-view/00-manuscript-spread-view.md)
+      * [Manuscript Spread View](component/editor-page/shared/manuscript-spread-view/README.md)
       * [Spread View Header](component/editor-page/shared/manuscript-spread-view/01-spread-view-header.md)
       * [Spread Editor Panel](component/editor-page/shared/manuscript-spread-view/02-spread-editor-panel.md)
         * [Editable Image](component/editor-page/shared/manuscript-spread-view/02-01-editable-image.md)

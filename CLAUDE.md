@@ -41,11 +41,11 @@ ai-storybook-design/
 │   ├── stores/                  # Zustand store designs
 │   │   └── snapshot-store.md
 │   └── editor-page/             # Editor page components
-│       ├── 00-editor-page.md
+│       ├── README.md            # Page root (was 00-editor-page.md)
 │       ├── 01-editor-header.md
 │       ├── 02-icon-rail.md
 │       ├── doc-creative-space/      # Creative space folder
-│       │   ├── 00-doc-creative-space.md
+│       │   ├── README.md            # Space root (was 00-doc-creative-space.md)
 │       │   └── 01-doc-sidebar.md
 │       ├── dummy-creative-space/
 │       ├── sketch-creative-space/
@@ -87,48 +87,57 @@ cp template-design/app-template.md app/{feature-group}/{feature-name}.md
 - `{feature-name}`: tên tính năng (kebab-case)
 
 ### Component Design
+
+- Trong trường hợp component đơn giản (1 cấp), không chia làm các component con sâu hơn:
+
 ```bash
-cp template-design/component-template.md component/{page-name}/{hierarchy}-{component-name}.md
+cp template-design/component-template.md component/{page-name}/{component-name}.md
 ```
-- `{page-name}`: tên page (editor-page, dashboard, ...)
-- `{hierarchy}`: **Dash hierarchy** thể hiện parent-child relationship
-- `{component-name}`: tên component (kebab-case)
+
+- Nếu component phức tạp và phải chia làm nhiều cấp component con, tạo 1 thư mục cho component đó:
+
+```bash
+cp -r template-design/component-template.md component/{page-name}/{component-name}/README.md
+cp template-design/component-template.md component/{page-name}/{component-name}/{01-child-xx}.md
+cp template-design/component-template.md component/{page-name}/{component-name}/{02-child-yy}.md
+...
+```
 
 #### Folder-Based Hierarchy Convention
 
-Khi số lượng component lớn, sử dụng **folder** để tổ chức theo creative space hoặc component group.
-
 | Type | Location | Format |
 |------|----------|--------|
-| Page root | `editor-page/` | `00-editor-page.md` |
+| Page root | `editor-page/` | `README.md` |
 | Direct children of page | `editor-page/` | `01-editor-header.md`, `02-icon-rail.md` |
-| Creative space | `editor-page/{name}/` | Folder name = component name |
-| Creative space root | `{folder}/` | `00-{component-name}.md` |
-| Creative space children | `{folder}/` | `01-`, `02-`, ... |
+| Creative space | `editor-page/{component-name}/` | Folder name = component name |
+| Creative space root | `{space path}/` | `README.md` |
+| Creative space direct children | `{space path}/` | `01-`, `02-`, ... |
+| Creative space nested children | `{space path}/{component}/` | `README.md`, `01-` `02-`, ... |
 | Shared components | `editor-page/shared/{component}/` | Reusable across spaces |
 
 **Quy tắc:**
 - **Folder name** = component name (kebab-case), thay thế cho parent ID
-- **Root file** trong folder luôn là `00-{component-name}.md`
-- **Children** trong folder: `01-`, `02-`, `03-`, ... (reset numbering per folder)
-- **Nested children**: `{parent-nn}-{child-nn}` (e.g., `02-01-editable-image.md`)
-- **Shared folder**: `shared/{component-name}/` cho components dùng chung
+- **Root file** trong folder luôn là `README.md`
+- **Direct Children** trong folder: `01-`, `02-`, `03-`, ... (reset numbering per folder)
+- **Nested children root**: `{parent-path}/{child-folder}/README.md`
+- **Nested grant children**: `{parent-path}/{child-folder}/{xx-grant-child}.md`
+- **Shared folder**: `shared/{component}/` cho components dùng chung
 
 **Ví dụ cấu trúc:**
 ```
 editor-page/
-├── 00-editor-page.md               # Page root
+├── README.md                       # Page root
 ├── 01-editor-header.md             # Direct child of page
 ├── 02-icon-rail.md                 # Direct child of page
 │
 ├── doc-creative-space/             # Creative space folder
-│   ├── 00-doc-creative-space.md    # Folder root
+│   ├── README.md                   # Space root
 │   ├── 01-doc-sidebar.md           # Child of folder
 │   └── 02-manuscript-doc-editor.md
 │
 ├── shared/                         # Shared components
 │   └── manuscript-spread-view/     # Reusable component group
-│       ├── 00-manuscript-spread-view.md
+│       ├── README.md
 │       ├── 01-spread-view-header.md
 │       ├── 02-spread-editor-panel.md
 │       ├── 02-01-editable-image.md # Nested child of 02
@@ -139,6 +148,7 @@ editor-page/
 
 **Lợi ích:**
 - Folder name tự mô tả, dễ navigate
+- README.md luôn hiển thị cho root component trong thư mục
 - Numbering reset per folder, tránh số quá dài
 - Shared folder tái sử dụng components
 - Sort tự nhiên theo thứ tự trong mỗi folder
@@ -151,10 +161,6 @@ editor-page/
 - **Cố gắng** đặt tên component, api, feature 1 cách rõ ràng, dễ hiểu, tránh nhập nhằng
 - Keep docs focused on specifications, not implementation details
 - Định nghĩa TypeScript interfaces rõ ràng cho input/output
-- **(IMPORTANT) Link tới các file doc khác:** luôn dùng full path từ root, bất kể đang ở folder nào
-  - `[Doc CreativeSpace](component/editor-page/doc-creative-space/00-doc-creative-space.md)`
-  - `[Spread View](component/editor-page/shared/manuscript-spread-view/00-manuscript-spread-view.md)`
-  - `[Snapshot Store](component/stores/snapshot-store.md)`
 
 ---
 

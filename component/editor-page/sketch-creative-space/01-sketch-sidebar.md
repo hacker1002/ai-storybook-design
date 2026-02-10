@@ -1,6 +1,6 @@
 # SketchSidebar: Component Design
 
-> **Parent:** [SketchCreativeSpace](component/editor-page/sketch-creative-space/00-sketch-creative-space.md)
+> **Parent:** [SketchCreativeSpace](./README.md)
 
 **Screenshot:** `screenshots/manuscript-sketch-space.png`
 

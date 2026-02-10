@@ -213,7 +213,7 @@ DocCreativeSpace:
 
 ### 3.1 DocSidebar
 
-📄 **Doc:** [component/editor-page/doc-creative-space/01-doc-sidebar.md](component/editor-page/doc-creative-space/01-doc-sidebar.md)
+📄 **Doc:** [01-doc-sidebar.md](./01-doc-sidebar.md)
 
 **Mục đích:** Left sidebar với accordion-style tabs. Supports adding 'other' type docs with editable titles.
 
@@ -234,7 +234,7 @@ interface DocSidebarProps {
 
 ### 3.2 ManuscriptDocEditor
 
-📄 **Doc:** [component/editor-page/doc-creative-space/02-manuscript-doc-editor.md](component/editor-page/doc-creative-space/02-manuscript-doc-editor.md)
+📄 **Doc:** [02-manuscript-doc-editor.md](./02-manuscript-doc-editor.md)
 
 **Mục đích:** Rich text/Markdown editor. **REUSE** - no changes needed.
 

@@ -384,7 +384,7 @@ Loading:                          Error:
 
 ### 3.1 EditorHeader
 
-📄 **Doc:** [component/editor-page/01-editor-header.md](component/editor-page/01-editor-header.md)
+📄 **Doc:** [01-editor-header.md](./01-editor-header.md)
 
 **Mục đích:** Top navigation bar. Hiển thị book info, step navigation, language selector, và quick actions.
 
@@ -413,7 +413,7 @@ interface EditorHeaderProps {
 
 ### 3.2 IconRail
 
-📄 **Doc:** [component/editor-page/02-icon-rail.md](component/editor-page/02-icon-rail.md)
+📄 **Doc:** [02-icon-rail.md](./02-icon-rail.md)
 
 **Mục đích:** Sidebar navigation dọc bên trái chứa icons để chuyển giữa các CreativeSpace.
 
@@ -431,7 +431,7 @@ interface IconRailProps {
 
 ### 3.3 DocCreativeSpace
 
-📄 **Doc:** [component/editor-page/doc-creative-space/00-doc-creative-space.md](doc-creative-space/00-doc-creative-space.md)
+📄 **Doc:** [README.md](./doc-creative-space/README.md)
 
 📸 **Screenshot:** `screenshots/manuscript-docs-space.png`
 
@@ -449,7 +449,7 @@ interface DocCreativeSpaceProps {
 
 ### 3.4 DummyCreativeSpace
 
-📄 **Doc:** [component/editor-page/dummy-creative-space/00-dummy-creative-space.md](dummy-creative-space/00-dummy-creative-space.md)
+📄 **Doc:** [README.md](./dummy-creative-space/README.md)
 
 📸 **Screenshot:** `screenshots/manuscript-dummy-space.png`
 
@@ -467,7 +467,7 @@ interface DummyCreativeSpaceProps {
 
 ### 3.5 SketchCreativeSpace
 
-📄 **Doc:** [component/editor-page/sketch-creative-space/00-sketch-creative-space.md](sketch-creative-space/00-sketch-creative-space.md)
+📄 **Doc:** [README.md](./sketch-creative-space/README.md)
 
 📸 **Screenshot:** `screenshots/manuscript-sketch-space.png`
 
@@ -485,7 +485,7 @@ interface SketchCreativeSpaceProps {
 
 ### 3.6 CharactersCreativeSpace
 
-📄 **Doc:** [component/editor-page/06-characters-creative-space.md](component/editor-page/06-characters-creative-space.md)
+📄 **Doc:** [06-characters-creative-space.md](./06-characters-creative-space.md)
 
 📸 **Screenshot:** `screenshots/Illustration-character-space.png`
 
@@ -503,7 +503,7 @@ interface CharactersCreativeSpaceProps {
 
 ### 3.7 PropsCreativeSpace
 
-📄 **Doc:** [component/editor-page/07-props-creative-space.md](component/editor-page/07-props-creative-space.md)
+📄 **Doc:** [07-props-creative-space.md](./07-props-creative-space.md)
 
 📸 **Screenshot:** `screenshots/Illustration-prop-space.png`
 
@@ -521,7 +521,7 @@ interface PropsCreativeSpaceProps {
 
 ### 3.8 StagesCreativeSpace
 
-📄 **Doc:** [component/editor-page/08-stages-creative-space.md](component/editor-page/08-stages-creative-space.md)
+📄 **Doc:** [08-stages-creative-space.md](./08-stages-creative-space.md)
 
 📸 **Screenshot:** `screenshots/Illustration-stage-space.png`
 
@@ -539,7 +539,7 @@ interface StagesCreativeSpaceProps {
 
 ### 3.9 SpreadsCreativeSpace ⚡
 
-📄 **Doc:** [component/editor-page/09-spreads-creative-space.md](component/editor-page/09-spreads-creative-space.md)
+📄 **Doc:** [09-spreads-creative-space.md](./09-spreads-creative-space.md)
 
 📸 **Screenshot:** `screenshots/Illustration-spread-space.png`
 
@@ -574,7 +574,7 @@ interface SpreadsCreativeSpaceProps {
 
 ### 3.10 ObjectsCreativeSpace
 
-📄 **Doc:** [component/editor-page/10-objects-creative-space.md](component/editor-page/10-objects-creative-space.md)
+📄 **Doc:** [10-objects-creative-space.md](./10-objects-creative-space.md)
 
 📸 **Screenshot:** `screenshots/Retouch-object-space.png`
 
@@ -592,7 +592,7 @@ interface ObjectsCreativeSpaceProps {
 
 ### 3.11 AnimationsCreativeSpace ⚡
 
-📄 **Doc:** [component/editor-page/11-animations-creative-space.md](component/editor-page/11-animations-creative-space.md)
+📄 **Doc:** [11-animations-creative-space.md](./11-animations-creative-space.md)
 
 📸 **Screenshot:** `screenshots/Retouch-animation-space.png`
 
@@ -612,7 +612,7 @@ interface AnimationsCreativeSpaceProps {
 
 ### 3.12 RemixCreativeSpace ⚡
 
-📄 **Doc:** [component/editor-page/12-remix-creative-space.md](component/editor-page/12-remix-creative-space.md)
+📄 **Doc:** [12-remix-creative-space.md](./12-remix-creative-space.md)
 
 📸 **Screenshot:** `screenshots/Retouch-remix-space.png`
 
@@ -632,7 +632,7 @@ interface RemixCreativeSpaceProps {
 
 ### 3.13 HistoryCreativeSpace ⚡
 
-📄 **Doc:** [component/editor-page/13-history-creative-space.md](component/editor-page/13-history-creative-space.md)
+📄 **Doc:** [13-history-creative-space.md](./13-history-creative-space.md)
 
 📸 **Screenshot:** `screenshots/history-space.png`
 
@@ -652,7 +652,7 @@ interface HistoryCreativeSpaceProps {
 
 ### 3.14 IssuesCreativeSpace
 
-📄 **Doc:** [component/editor-page/14-issues-creative-space.md](component/editor-page/14-issues-creative-space.md)
+📄 **Doc:** [14-issues-creative-space.md](./14-issues-creative-space.md)
 
 **Mục đích:** Hiển thị và xử lý các vấn đề (quality warnings, consistency issues).
 
@@ -670,7 +670,7 @@ interface IssuesCreativeSpaceProps {
 
 ### 3.15 SharesCreativeSpace
 
-📄 **Doc:** [component/editor-page/15-shares-creative-space.md](component/editor-page/15-shares-creative-space.md)
+📄 **Doc:** [15-shares-creative-space.md](./15-shares-creative-space.md)
 
 **Mục đích:** Quản lý share links (public preview, client review, team draft).
 
@@ -687,7 +687,7 @@ interface SharesCreativeSpaceProps {
 
 ### 3.16 CollaboratorsCreativeSpace
 
-📄 **Doc:** [component/editor-page/16-collaborators-creative-space.md](component/editor-page/16-collaborators-creative-space.md)
+📄 **Doc:** [16-collaborators-creative-space.md](./16-collaborators-creative-space.md)
 
 **Mục đích:** Quản lý collaborators và permissions (languages, steps, spreads access).
 
@@ -705,7 +705,7 @@ interface CollaboratorsCreativeSpaceProps {
 
 ### 3.17 ConfigCreativeSpace
 
-📄 **Doc:** [component/editor-page/17-config-creative-space.md](component/editor-page/17-config-creative-space.md)
+📄 **Doc:** [17-config-creative-space.md](./17-config-creative-space.md)
 
 **Mục đích:** Cấu hình book: general, creative, typography, layout, remix, export.
 
@@ -722,7 +722,7 @@ interface ConfigCreativeSpaceProps {
 
 ### 3.18 RightSidebar (AI Assistant) ⚡
 
-📄 **Doc:** [component/editor-page/18-right-sidebar.md](component/editor-page/18-right-sidebar.md)
+📄 **Doc:** [18-right-sidebar.md](./18-right-sidebar.md)
 
 **Mục đích:** Panel AI Assistant hỗ trợ người dùng. Contextual với creativeSpace hiện tại.
 
@@ -779,7 +779,7 @@ interface AISidebarToggleProps {
 
 ### 3.20 TranslationNotAvailableDialog
 
-📄 **Doc:** [component/editor-page/20-translation-not-available-dialog.md](component/editor-page/20-translation-not-available-dialog.md)
+📄 **Doc:** [20-translation-not-available-dialog.md](./20-translation-not-available-dialog.md)
 
 **Mục đích:** Dialog xác nhận khi user chọn language mà chưa có translation trong textboxes.
 

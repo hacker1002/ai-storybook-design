@@ -1,6 +1,6 @@
 # EditableImage: Component Design
 
-> **Parent:** [SpreadEditorPanel](component/editor-page/shared/manuscript-spread-view/02-spread-editor-panel.md)
+> **Parent:** [SpreadEditorPanel](./02-spread-editor-panel.md)
 
 ---
 

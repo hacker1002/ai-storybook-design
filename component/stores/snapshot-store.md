@@ -755,4 +755,4 @@ Legacy snapshots có thể thiếu fields mới. `initSnapshot` cần handle:
 ## 8. Related Docs
 
 - Database Schema: [DATABASE-SCHEMA.md](DATABASE-SCHEMA.md)
-- EditorPage: [00-editor-page.md](component/editor-page/00-editor-page.md)
+- EditorPage: [README.md](../editor-page/README.md)

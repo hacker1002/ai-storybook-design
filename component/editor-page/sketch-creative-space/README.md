@@ -265,7 +265,7 @@ SketchCreativeSpace:
 
 ### 3.1 SketchSidebar
 
-📄 **Doc:** [component/editor-page/sketch-creative-space/01-sketch-sidebar.md](component/editor-page/sketch-creative-space/01-sketch-sidebar.md)
+📄 **Doc:** [01-sketch-sidebar.md](./01-sketch-sidebar.md)
 
 **Mục đích:** Left sidebar với accordion tabs for Characters, Props, Spreads. PromptPanel for Characters/Props only.
 
@@ -282,7 +282,7 @@ interface SketchSidebarProps {
 
 ### 3.2 SketchViewer
 
-📄 **Doc:** [component/editor-page/sketch-creative-space/02-sketch-viewer.md](component/editor-page/sketch-creative-space/02-sketch-viewer.md)
+📄 **Doc:** [02-sketch-viewer.md](./02-sketch-viewer.md)
 
 **Mục đích:** Image sheet viewer with large preview and horizontal filmstrip. Used only for Characters and Props tabs.
 
@@ -300,7 +300,7 @@ interface SketchViewerProps {
 
 ### 3.3 ManuscriptSpreadView
 
-📄 **Doc:** [component/editor-page/shared/manuscript-spread-view/00-manuscript-spread-view.md](component/editor-page/shared/manuscript-spread-view/00-manuscript-spread-view.md)
+📄 **Doc:** [README.md](../shared/manuscript-spread-view/README.md)
 
 **Mục đích:** Spread editor view. **REUSE** - used for Spreads tab with `mode='finalize'`.
 
