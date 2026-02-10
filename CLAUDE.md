@@ -330,39 +330,29 @@ editor-page/
 ## Prompt Template System
 
 ### Variable Syntax
-- **Pattern:** `{%variable_name%}`
-- **Example:** `{%story_idea%}`, `{%language%}`, `{%categories_text%}`
+- **Pattern:** `{%request.variable_name%}`
+- **Example:** `{%request.prompt%}`, `{%request.language%}`, `{%request.categories%}`
 - JSON trong content **không cần escape** - giữ nguyên `{}` bình thường
 
 ### Naming Convention
-| Type | Pattern | Example |
-|------|---------|---------|
-| System prompt | `{AGENT}_SYSTEM` | `STORY_TELLER_SYSTEM` |
-| User template | `{FUNCTION}_USER_TEMPLATE` | `STORY_DRAFT_USER_TEMPLATE` |
+| Type | Pattern | Example | Nội dung |
+|------|---------|---------|----------|
+| Skill prompt | `{API/FUNCTION}_SKILL` | `GENERATE_BRIEF_SKILL` | skill cần có để thực hiện công việc |
+| System prompt | `{API/FUNCTION}_SYSTEM` | `GENERATE_BRIEF_SYSTEM` | Yêu cầu của công việc, user prompt, param đầu vào |
 
 ### Content Example
 
 ```
-Analyze the following story idea and create a complete story framework:
+Ý tưởng truyện từ tác giả:
+---
+{%request.prompt%}
+---
 
-## STORY IDEA
-{%story_idea%}
+Hãy tạo 3 briefs khác biệt rõ rệt cho ý tưởng này.
+Trả về JSON array gồm 3 objects với các trường:
+title, logline, plot_summary, main_character, story_question, theme_message, unique_angle
 
-## ATTRIBUTES
-- Story Types: {%story_types%}
-- Target Audience: {%audience%}
-- Length: {%length%}
-- Art Style Reference: {%art_style_desc%}
-- Language: {%language%}
-
-## OUTPUT FORMAT
-Return ONLY valid JSON:
-{
-  "metadata": {
-    "title": "Story title",
-    "summary": "Brief summary"
-  }
-}
+Tất cả giá trị phải là string.
 ```
 
 ---

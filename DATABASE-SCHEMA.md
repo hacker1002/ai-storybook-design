@@ -304,11 +304,11 @@ Bảng lưu các vấn đề tồn đọng trong book.
 | `name` | VARCHAR | **UNIQUE** key (UPPER_SNAKE_CASE) - dùng để query từ code |
 | `content` | TEXT | Nội dung prompt với `{%variable%}` placeholders |
 | `model` | VARCHAR | Model AI sử dụng (e.g., `gemini-3-flash-preview`) |
-| `type` | SMALLINT | Loại prompt: storytelling, pacing, art direction, wordsmith, draw |
+| `type` | SMALLINT | Loại prompt: 0: skill, 1: system_prompt |
 | `created_at` | TIMESTAMPTZ | Thời điểm tạo |
 | `updated_at` | TIMESTAMPTZ | Thời điểm cập nhật |
 
-**Xem chi tiết:** [Prompt Template System](#prompt-template-system)
+**Xem chi tiết:** [Prompt Template System](./CLAUDE.md#prompt-template-system)
 
 ### prompt_versions
 Lưu lịch sử thay đổi của prompt templates. **Auto-populated** bởi trigger khi UPDATE `prompt_templates.content`.
