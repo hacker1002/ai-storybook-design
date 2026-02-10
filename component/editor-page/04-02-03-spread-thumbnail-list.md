@@ -231,7 +231,7 @@ SpreadThumbnailList:
 
 ### 3.1 SpreadThumbnail
 
-📄 **Doc:** [`component/editor-page/03-03-03-01-spread-thumbnail.md`](component/editor-page/03-03-03-01-spread-thumbnail.md)
+📄 **Doc:** [`component/editor-page/04-02-03-01-spread-thumbnail.md`](component/editor-page/04-02-03-01-spread-thumbnail.md)
 
 **Mục đích:** Thumbnail preview của một spread, dùng chung cho cả horizontal và grid layouts.
 
