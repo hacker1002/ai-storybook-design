@@ -8,8 +8,9 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `eras`: Truy vấn era description (optional context)
-- `locations`: Truy vấn location description (optional context)
+- `prompt_templates`: Lấy GENERATE_BRIEF_SKILL, GENERATE_BRIEF_SYSTEM prompts + model
+- `eras`: Truy vấn era name, description (nếu chỉ truyền id)
+- `locations`: Truy vấn location name, description (nếu chỉ truyền id)
 
 ## Parameters
 
@@ -41,14 +42,6 @@ interface GenerateBriefRequest {
 }
 ```
 
-### Target Audience Mapping
-| Value | Name | Age Range | Reading Level |
-|-------|------|-----------|---------------|
-| 1 | Kindergarten | 2-3 tuổi | Từ rất đơn giản, câu 3-5 từ |
-| 2 | Preschool | 4-5 tuổi | Từ đơn giản, câu ngắn |
-| 3 | Primary | 6-8 tuổi | Câu phức, từ vựng đa dạng |
-| 4 | Middle Grade | 9+ tuổi | Nội dung phức tạp, đa chủ đề |
-
 ## Result
 
 ```typescript
@@ -74,110 +67,12 @@ interface BriefItem {
 
 ## Prompt Templates
 
-> **Template Names:**
-> - Skill: `GENERATE_BRIEF_SKILL`
-> - System: `GENERATE_BRIEF_SYSTEM`
+| Type | Name | Description |
+|------|------|-------------|
+| System | `GENERATE_BRIEF_SYSTEM` | User request + output format |
+| Skill | `WRITING_BRIEF_SKILL` | Role + knowledge (story question, plot types, age requirements) |
 
-### Skill Prompt (Role + Knowledge)
-
-```
-# ROLE
-Bạn là chuyên gia sáng tạo nội dung sách tranh (picture book) với kinh nghiệm sâu rộng
-trong ngành xuất bản trẻ em. Nhiệm vụ của bạn là biến ý tưởng thô thành các brief chuyên nghiệp,
-mỗi brief phải khiến người duyệt thấy NGAY tại sao ý tưởng này xứng đáng trở thành sách.
-
-# KIẾN THỨC NỀN TẢNG
-
-## Story Question (Câu Hỏi Cốt Lõi)
-Mỗi truyện tranh hay đều ẩn chứa MỘT câu hỏi lớn mà người đọc muốn tìm câu trả lời.
-Ví dụ:
-  "Where the Wild Things Are" → Làm sao kiểm soát cơn giận?
-  "We Found a Hat" → Hai chú rùa có chia sẻ được chiếc mũ?
-  "Chrysanthemum" → Liệu cô bé có tự hào về cái tên của mình?
-
-Câu hỏi này KHÔNG được viết trực tiếp vào truyện, nhưng phải sáng rõ trong đầu người viết
-và xuyên suốt mọi chi tiết.
-
-## 7 Kiểu Cốt Truyện Cơ Bản (Christopher Booker)
-1. Overcoming the Monster: Đối mặt và chiến thắng mối đe dọa
-2. Rags to Riches: Từ bị xem thường đến được công nhận
-3. The Quest: Hành trình tìm kiếm với chướng ngại
-4. Voyage and Return: Đến thế giới mới → phiêu lưu → trở về đã thay đổi
-5. Comedy: Hiểu lầm → rắc rối leo thang → sự thật được hé lộ
-6. Tragedy (hiếm, thường mềm hóa): Sai lầm → hậu quả → bài học
-7. Rebirth: Nhân vật bế tắc → xúc tác thay đổi → biến đổi
-
-## 4 Loại Xung Đột
-1. Character vs Self: Đấu tranh nội tâm (sợ hãi, tự ti, kiểm soát cảm xúc)
-2. Character vs Others: Xung đột giữa các nhân vật (bạn bè, gia đình, kẻ bắt nạt)
-3. Character vs Society: Đi ngược lại chuẩn mực (khác biệt, thách thức kỳ vọng)
-4. Character vs Nature: Đối mặt với thiên nhiên/môi trường
-
-## Yêu Cầu Theo Nhóm Tuổi
-| Tuổi | Đặc điểm cốt truyện |
-|------|---------------------|
-| 2-4  | Rất đơn giản, cụ thể, ít nhân vật, nhân quả rõ, kết thúc vui |
-| 4-6  | Tình huống xã hội, thử thách cảm xúc, hài hước, có sự trưởng thành |
-| 6-8  | Cảm xúc phức tạp hơn, nhiều tầng ý nghĩa, kết thúc tinh tế |
-
-## Tiêu Chí Đánh Giá Ý Tưởng
-Mỗi brief phải đạt điểm cao trên 7 chiều:
-1. Format Fit: Phù hợp format sách tranh
-2. Plot Clarity: Cốt truyện rõ ràng
-3. Conflict Strength: Xung đột hấp dẫn, liên quan (relatable)
-4. Uniqueness: Góc nhìn mới mẻ, không "đã thấy 1000 lần"
-5. Age Appropriateness: Phù hợp nhóm tuổi
-6. Illustration Potential: Gợi mở không gian cho minh họa
-7. Universal Appeal: Ai cũng thấy đồng cảm
-
-# NHIỆM VỤ
-
-Từ ý tưởng của user, tạo ra ĐÚNG 3 briefs. Mỗi brief phải:
-
-1. Có TITLE hấp dẫn, ngắn gọn, trẻ có thể đọc được
-2. Có LOGLINE 1 câu khiến người nghe tò mò ngay lập tức
-3. Có PLOT SUMMARY ngắn gọn (3~5 câu) phác họa cốt truyện chính:
-   mở đầu → xung đột → cao trào → kết thúc
-4. Có MAIN CHARACTER với đặc điểm nổi bật phù hợp plot
-5. Trả lời được STORY QUESTION: câu hỏi cốt lõi
-6. Thể hiện rõ THEME/MESSAGE: thông điệp, bài học
-7. Nêu được UNIQUE ANGLE: điều gì khiến truyện này đặc biệt
-
-3 briefs phải KHÁC BIỆT RÕ RỆT về:
-  - Góc tiếp cận (cùng ý tưởng nhưng kể khác nhau)
-  - Kiểu cốt truyện (nếu có thể)
-  - Tone/mood (vui nhộn vs trữ tình vs phiêu lưu...)
-  - Nhân vật (đặc điểm, loài, tính cách)
-
-# QUY TẮC
-
-- KHÔNG viết cốt truyện chi tiết, chỉ phác thảo đủ để thấy tiềm năng
-- KHÔNG chia trang, KHÔNG viết dialogue cụ thể
-- MỖI brief phải đứng độc lập, tự nó đã hấp dẫn
-- Ngôn ngữ brief phải chuyên nghiệp nhưng dễ hiểu
-- Luôn kiểm tra: ý tưởng có "đã bị làm 1000 lần" không?
-  Nếu có, phải tìm FRESH ANGLE thực sự mới
-
-# OUTPUT FORMAT
-
-Trả về JSON array gồm 3 objects, mỗi object có các trường:
-title, logline, plot_summary, main_character, story_question, theme_message, unique_angle
-```
-
-### System Prompt (User Request)
-
-```
-Ý tưởng truyện từ tác giả:
----
-{%request.prompt%}
----
-
-Hãy tạo 3 briefs khác biệt rõ rệt cho ý tưởng này.
-Trả về JSON array gồm 3 objects với các trường:
-title, logline, plot_summary, main_character, story_question, theme_message, unique_angle
-
-Tất cả giá trị phải là string.
-```
+**Skill Reference:** `@@Skill sử dụng: WRITING_BRIEF_SKILL`
 
 ## Flow
 
@@ -186,38 +81,32 @@ Tất cả giá trị phải là string.
    - prompt: required, non-empty string
    - llmContext: required object with targetAudience, targetCoreValue, formatGenre, contentGenre
 
-2. Build prompts
+2. Build prompts (Prompt Build Logic)
+   a. Fetch system prompt: GENERATE_BRIEF_SYSTEM
+   b. Extract skill names: parse "@@Skill sử dụng: ..." → ['WRITING_BRIEF_SKILL']
+   c. Fetch skill prompts from DB
+   d. Combine: skillPrompts + systemPrompt
 
-   systemPrompt = GENERATE_BRIEF_SKILL
+3. Enrich with context
+   - IF era.id (missing name/desc): Query eras → append to prompt
+   - IF location.id (missing name/desc): Query locations → append to prompt
+   - Append Story Attributes:
+     • targetAudience → TARGET_AUDIENCE_MAP
+     • targetCoreValue → TARGET_CORE_VALUE_MAP
+     • formatGenre → FORMAT_GENRE_MAP
+     • contentGenre → CONTENT_GENRE_MAP
 
-   IF llmContext.era:
-     systemPrompt += "\n\n## Era Context\n" + era.name + ": " + era.description
+4. Render variables
+   - Replace {%request.prompt%} with user input
 
-   IF llmContext.location:
-     systemPrompt += "\n\n## Location Context\n" + location.name + ": " + location.description
+5. Call LLM
+   - model: from prompt_templates.model
+   - thinking_level: high, temperature: 2, responseMimeType: text/plain
 
-   systemPrompt += "\n\n## Story Attributes\n"
-   systemPrompt += "- Target Audience: " + mapTargetAudience(llmContext.targetAudience)
-   systemPrompt += "- Core Value: " + mapCoreValue(llmContext.targetCoreValue)
-   systemPrompt += "- Format Genre: " + mapFormatGenre(llmContext.formatGenre)
-   systemPrompt += "- Content Genre: " + mapContentGenre(llmContext.contentGenre)
+6. Parse & validate response
+   - JSON array, length = 3, all required fields as strings
 
-   userPrompt = GENERATE_BRIEF_SYSTEM.replace("{%request.prompt%}", request.prompt)
-
-3. Call LLM
-   - model: gemini-3-pro
-   - system: systemPrompt
-   - user: userPrompt
-   - thinking_level: high
-   - temperature: 2
-   - responseMimeType: text/plain
-
-4. Parse response
-   - Parse JSON array from LLM response
-   - Validate array length = 3
-   - Validate each item has required fields (all strings)
-
-5. Return { success, data: BriefItem[], meta }
+7. Return { success, data: BriefItem[], meta }
 ```
 
 ## Error Handling

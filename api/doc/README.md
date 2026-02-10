@@ -39,13 +39,6 @@ interface LLMContext {
 }
 ```
 
-## Prompt Template System
-
-### Template Variables
-- `{%request.prompt%}` - User input prompt
-- `{%request.brief%}` - Selected brief JSON (for draft)
-- `{%request.draft%}` - Selected draft JSON (for script)
-
 ## Design Principles
 
 1. **Stateless APIs** - Không lưu DB, client tự quản lý flow

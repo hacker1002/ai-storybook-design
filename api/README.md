@@ -12,6 +12,33 @@ Overview of all API endpoints for AI Storybook Canvas.
 
 ---
 
+## Prompt Template System
+
+### Naming Convention
+| Type | Pattern | Example | DB `type` |
+|------|---------|---------|-----------|
+| System prompt | `{API}_SYSTEM` | `GENERATE_BRIEF_SYSTEM` | 1 |
+| Skill prompt | `{SKILL}_SKILL` | `WRITING_BRIEF_SKILL` | 0 |
+
+### Skill Reference
+System prompt chứa marker: `@@Skill sử dụng: SKILL_NAME` hoặc `@@Skill sử dụng: SKILL_1, SKILL_2`
+
+### Build Flow
+```
+1. Fetch System Prompt ({API}_SYSTEM)
+2. Extract Skill Names (parse "@@Skill sử dụng: ...")
+3. Fetch Skill Prompt(s)
+4. Build Final = Skill(s) + System
+5. Render Variables ({%request.prompt%}, ...)
+```
+
+### Template Variables
+- `{%request.prompt%}` - User input prompt
+- `{%request.brief%}` - Selected brief JSON (for draft)
+- `{%request.draft%}` - Selected draft JSON (for script)
+
+---
+
 ## Enum Mappings
 
 ### book_type

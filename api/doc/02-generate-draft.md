@@ -8,8 +8,9 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `eras`: Truy vấn era description (optional context)
-- `locations`: Truy vấn location description (optional context)
+- `prompt_templates`: Lấy GENERATE_DRAFT_SKILL, GENERATE_DRAFT_SYSTEM prompts + model
+- `eras`: Truy vấn era name, description (nếu chỉ truyền id)
+- `locations`: Truy vấn location name, description (nếu chỉ truyền id)
 
 ## Parameters
 
@@ -87,143 +88,12 @@ interface CharacterProfile {
 
 ## Prompt Templates
 
-> **Template Names:**
-> - Skill: `GENERATE_DRAFT_SKILL`
-> - System: `GENERATE_DRAFT_SYSTEM`
+| Type | Name | Description |
+|------|------|-------------|
+| System | `GENERATE_DRAFT_SYSTEM` | User request + output format |
+| Skill | `WRITING_DRAFT_SKILL` | Role + knowledge (3-act structure, 6W, character bible, voice) |
 
-### Skill Prompt (Role + Knowledge)
-
-```
-# ROLE
-Bạn là tác giả sách tranh chuyên nghiệp, đang triển khai brief thành bản draft hoàn chỉnh.
-Draft là bản kể chuyện ĐẦY ĐỦ, chưa chia trang, nhưng đã có giọng văn, nhân vật sống động,
-và mạch truyện logic từ đầu đến cuối.
-
-# KIẾN THỨC NỀN TẢNG
-
-## Cấu Trúc 3 Hồi (Three-Act Structure cho Picture Book)
-
-### Hồi 1 — Mở đầu (ngắn, tối đa nửa trang đánh máy)
-- Giới thiệu nhân vật chính + đặc điểm nổi bật
-- Thiết lập bối cảnh (thời gian, không gian)
-- Nêu vấn đề/mong muốn của nhân vật
-- Sự kiện kích hoạt (inciting incident) đẩy vào Hồi 2
-
-### Hồi 2 — Phát triển (dài nhất)
-- Nhân vật HÀNH ĐỘNG để giải quyết vấn đề
-- Mỗi nỗ lực đều thất bại hoặc dẫn đến vấn đề mới
-- Sử dụng Nhịp 3 (Rule of Three): 3 lần thử, mỗi lần leo thang
-- Xây dựng suspense: người đọc lo lắng cho nhân vật
-- Kết thúc Hồi 2 bằng khoảnh khắc tuyệt vọng (all seems lost)
-
-### Hồi 3 — Kết thúc (ngắn, dứt khoát)
-- Nhân vật TỰ MÌNH tìm ra giải pháp (không có người lớn cứu)
-- Giải pháp phải bất ngờ nhưng hợp lý (không trùng hợp may mắn)
-- Nhân vật THAY ĐỔI — học được điều gì đó
-- Gỡ mọi nút thắt còn lại
-- KHÔNG thuyết giáo, để bài học tự toát ra
-
-## Viết Mạnh: Two Ss
-
-### S1 — SCENES (Cảnh)
-- Viết CẢNH, không viết tóm tắt
-- Cảnh = hành động diễn ra real-time, có thể dàn dựng trên sân khấu
-- SAI: "Hai người bạn làm lành" → ĐÚNG: viết dialogue + hành động cụ thể
-- Mỗi cảnh cần: hành động khác nhau, nhân vật mới, bối cảnh thay đổi,
-  hoặc cường độ cảm xúc thay đổi
-
-### S2 — SHOW, DON'T TELL
-- KHÔNG nói "Mèo rất sợ" → SHOW qua hành vi: "Mèo co rúm sau chậu cây, đuôi quấn chặt quanh chân"
-- Dialogue phải cho thấy TÍNH CÁCH, không chỉ truyền tin
-- Để minh họa (illustrator) có không gian kể câu chuyện riêng
-
-## Character Bible
-Mỗi nhân vật cần:
-1. TÊN: phù hợp văn hóa, dễ nhớ, dễ đọc
-2. NGOẠI HÌNH: đặc điểm nhận dạng rõ (nhưng không mô tả quá chi tiết, để cho illustrator)
-3. TÍNH CÁCH: điểm mạnh VÀ điểm yếu cụ thể
-4. MUỐN GÌ: mong muốn rõ ràng, cụ thể
-5. ARC: thay đổi như thế nào từ đầu đến cuối
-
-## 6W
-- WHO: Nhân vật chính là ai, có đặc điểm gì
-- WHAT: Chuyện gì xảy ra (problem/goal)
-- WHEN: Bối cảnh thời gian
-- WHERE: Bối cảnh không gian
-- WHY: Tại sao nhân vật hành động (motivation)
-- HOW: Nhân vật giải quyết vấn đề bằng cách nào
-
-## Nguyên Tắc Số Từ
-| Format | Số từ |
-|--------|-------|
-| Board book (0-3 tuổi) | 100-200 |
-| Picture book (2-8 tuổi) | 300-800 |
-| Picture storybook (4-8) | 800-1500 |
-
-## Giọng Văn (Voice)
-- Phải NHẤT QUÁN từ đầu đến cuối
-- Phải PHÙ HỢP nhóm tuổi (đơn giản cho bé nhỏ, tinh tế hơn cho lớn)
-- Có thể: vui nhộn, trữ tình, phiêu lưu, dịu dàng, hài hước khô...
-- Dialogue mỗi nhân vật phải có GIỌNG RIÊNG
-
-# NHIỆM VỤ
-
-Từ brief đã chọn, tạo ra ĐÚNG 2 drafts. Mỗi draft phải:
-
-1. Trả lời đầy đủ 6W
-2. Có Character Bible cho từng nhân vật
-3. Kể CỐT TRUYỆN ĐẦY ĐỦ theo Three-Act Structure
-4. Sử dụng giọng văn NHẤT QUÁN và phù hợp
-5. Bao gồm DIALOGUE MẪU cho thấy giọng nhân vật
-6. Đảm bảo LOGIC: không có lỗ hổng cốt truyện
-7. CHƯA chia trang — đây là bản narrative liền mạch
-
-2 drafts phải KHÁC BIỆT RÕ RỆT về:
-  - GIỌNG VĂN (voice/tone): vd draft 1 vui nhộn, draft 2 trữ tình
-  - CÁCH KỂ: có thể khác POV, khác nhịp điệu, khác cách mở đầu
-
-# QUY TẮC
-
-- Nhân vật chính PHẢI TỰ giải quyết vấn đề (không deus ex machina)
-- Nhân vật chính PHẢI thay đổi/trưởng thành
-- KHÔNG thuyết giáo, KHÔNG moral tường minh
-- Viết CẢNH (scenes), KHÔNG tóm tắt
-- SHOW, DON'T TELL
-- Để KHÔNG GIAN cho illustrator: không mô tả quá chi tiết visual
-- Nhịp 3 (Rule of Three) cho cấu trúc thử thách
-- Suspense: người đọc phải LO cho nhân vật
-
-# OUTPUT FORMAT
-
-Trả về JSON array gồm 2 objects, mỗi object có các trường:
-title, voice_style, who, what, when, where, why, how,
-characters (array of CharacterProfile), full_narrative
-```
-
-### System Prompt (User Request)
-
-```
-Brief đã được chọn:
----
-{%request.brief%}
----
-
-Ghi chú bổ sung từ tác giả:
----
-{%request.prompt%}
----
-
-Hãy triển khai brief này thành 2 drafts với giọng văn khác nhau.
-
-Trả về JSON array gồm 2 objects, mỗi object có:
-- title (string)
-- voice_style (string): mô tả giọng văn
-- who, what, when, where, why, how (string): trả lời 6W
-- characters (array of objects, mỗi object có: name, role, appearance, personality, want, arc)
-- full_narrative (string): cốt truyện đầy đủ, bao gồm dialogue mẫu
-
-Tất cả giá trị phải là string (trừ characters là array).
-```
+**Skill Reference:** `@@Skill sử dụng: WRITING_DRAFT_SKILL`
 
 ## Flow
 
@@ -233,41 +103,33 @@ Tất cả giá trị phải là string (trừ characters là array).
    - prompt: required string
    - llmContext: required object with targetAudience, targetCoreValue, formatGenre, contentGenre
 
-2. Build prompts
+2. Build prompts (Prompt Build Logic)
+   a. Fetch system prompt: GENERATE_DRAFT_SYSTEM
+   b. Extract skill names: parse "@@Skill sử dụng: ..." → ['WRITING_DRAFT_SKILL']
+   c. Fetch skill prompts from DB
+   d. Combine: skillPrompts + systemPrompt
 
-   systemPrompt = GENERATE_DRAFT_SKILL
+3. Enrich with context
+   - IF era.id (missing name/desc): Query eras → append to prompt
+   - IF location.id (missing name/desc): Query locations → append to prompt
+   - Append Story Attributes:
+     • targetAudience → TARGET_AUDIENCE_MAP
+     • targetCoreValue → TARGET_CORE_VALUE_MAP
+     • formatGenre → FORMAT_GENRE_MAP
+     • contentGenre → CONTENT_GENRE_MAP
 
-   IF llmContext.era:
-     systemPrompt += "\n\n## Era Context\n" + era.name + ": " + era.description
+4. Render variables
+   - Replace {%request.brief%} with JSON.stringify(brief)
+   - Replace {%request.prompt%} with user input
 
-   IF llmContext.location:
-     systemPrompt += "\n\n## Location Context\n" + location.name + ": " + location.description
+5. Call LLM
+   - model: from prompt_templates.model
+   - thinking_level: high, temperature: 2, responseMimeType: text/plain
 
-   systemPrompt += "\n\n## Story Attributes\n"
-   systemPrompt += "- Target Audience: " + mapTargetAudience(llmContext.targetAudience)
-   systemPrompt += "- Core Value: " + mapCoreValue(llmContext.targetCoreValue)
-   systemPrompt += "- Format Genre: " + mapFormatGenre(llmContext.formatGenre)
-   systemPrompt += "- Content Genre: " + mapContentGenre(llmContext.contentGenre)
+6. Parse & validate response
+   - JSON array, length = 2, validate characters array structure
 
-   userPrompt = GENERATE_DRAFT_SYSTEM
-     .replace("{%request.brief%}", JSON.stringify(brief))
-     .replace("{%request.prompt%}", request.prompt)
-
-3. Call LLM
-   - model: gemini-3-pro
-   - system: systemPrompt
-   - user: userPrompt
-   - thinking_level: high
-   - temperature: 2
-   - responseMimeType: text/plain
-
-4. Parse response
-   - Parse JSON array from LLM response
-   - Validate array length = 2
-   - Validate each item has required fields
-   - Validate characters array structure
-
-5. Return { success, data: DraftItem[], meta }
+7. Return { success, data: DraftItem[], meta }
 ```
 
 ## Error Handling

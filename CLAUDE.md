@@ -330,29 +330,29 @@ editor-page/
 ## Prompt Template System
 
 ### Variable Syntax
-- **Pattern:** `{%request.variable_name%}`
-- **Example:** `{%request.prompt%}`, `{%request.language%}`, `{%request.categories%}`
+- **Pattern:** `{%variable_name%}` hoặc `{%request.variable_name%}`
+- **Example:** `{%request.prompt%}`, `{%request.brief%}`, `{%request.draft%}`
 - JSON trong content **không cần escape** - giữ nguyên `{}` bình thường
 
 ### Naming Convention
-| Type | Pattern | Example | Nội dung |
-|------|---------|---------|----------|
-| Skill prompt | `{API/FUNCTION}_SKILL` | `GENERATE_BRIEF_SKILL` | skill cần có để thực hiện công việc |
-| System prompt | `{API/FUNCTION}_SYSTEM` | `GENERATE_BRIEF_SYSTEM` | Yêu cầu của công việc, user prompt, param đầu vào |
 
-### Content Example
+| Type | Pattern | Example | DB `type` |
+|------|---------|---------|-----------|
+| System prompt | `{API/FUNCTION}_SYSTEM` | `GENERATE_BRIEF_SYSTEM` | 1 |
+| Skill prompt | `{SKILL_NAME}_SKILL` | `WRITING_BRIEF_SKILL` | 0 |
 
+**Lưu ý:** Mỗi API endpoint chỉ có **1 system prompt**.
+
+### Skill Reference
+
+System prompt chứa marker để reference skill(s):
 ```
-Ý tưởng truyện từ tác giả:
----
-{%request.prompt%}
----
+@@Skill sử dụng: WRITING_BRIEF_SKILL
+```
 
-Hãy tạo 3 briefs khác biệt rõ rệt cho ý tưởng này.
-Trả về JSON array gồm 3 objects với các trường:
-title, logline, plot_summary, main_character, story_question, theme_message, unique_angle
-
-Tất cả giá trị phải là string.
+Có thể reference nhiều skills (comma-separated):
+```
+@@Skill sử dụng: WRITING_SCRIPT_SKILL, PACING_SKILL
 ```
 
 ---
