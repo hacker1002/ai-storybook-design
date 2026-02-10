@@ -193,5 +193,5 @@ Store visible in Redux DevTools under name `editor-settings-store`.
 
 ## 8. Related Docs
 
-- Snapshot Store: [snapshot-store.md](./snapshot-store.md)
-- EditorPage: [00-editor-page.md](../editor-page/00-editor-page.md)
+- Snapshot Store: [snapshot-store.md](component/stores/snapshot-store.md)
+- EditorPage: [00-editor-page.md](component/editor-page/00-editor-page.md)

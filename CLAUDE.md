@@ -42,6 +42,15 @@ ai-storybook-design/
 │   │   └── snapshot-store.md
 │   └── editor-page/             # Editor page components
 │       ├── 00-editor-page.md
+│       ├── 01-editor-header.md
+│       ├── 02-icon-rail.md
+│       ├── doc-creative-space/      # Creative space folder
+│       │   ├── 00-doc-creative-space.md
+│       │   └── 01-doc-sidebar.md
+│       ├── dummy-creative-space/
+│       ├── sketch-creative-space/
+│       ├── shared/                  # Shared components
+│       │   └── manuscript-spread-view/
 │       └── screenshots/
 │
 └── template-design/             # Design Templates
@@ -85,38 +94,54 @@ cp template-design/component-template.md component/{page-name}/{hierarchy}-{comp
 - `{hierarchy}`: **Dash hierarchy** thể hiện parent-child relationship
 - `{component-name}`: tên component (kebab-case)
 
-#### Dash Hierarchy Convention
+#### Folder-Based Hierarchy Convention
 
-| Level | Format | Ví dụ |
-|-------|--------|-------|
-| Root (page) | `00-{name}` | `00-editor-page.md` |
-| Child of root | `{nn}-{name}` | `01-editor-header.md` |
-| Child of non-root | `{parent-id}-{nn}-{name}` | `01-01-logo.md`, `03-02-01-canvas.md` |
+Khi số lượng component lớn, sử dụng **folder** để tổ chức theo creative space hoặc component group.
+
+| Type | Location | Format |
+|------|----------|--------|
+| Page root | `editor-page/` | `00-editor-page.md` |
+| Direct children of page | `editor-page/` | `01-editor-header.md`, `02-icon-rail.md` |
+| Creative space | `editor-page/{name}/` | Folder name = component name |
+| Creative space root | `{folder}/` | `00-{component-name}.md` |
+| Creative space children | `{folder}/` | `01-`, `02-`, ... |
+| Shared components | `editor-page/shared/{component}/` | Reusable across spaces |
 
 **Quy tắc:**
-- Root component **luôn** bắt đầu bằng `00-`
-- Children trực tiếp của root: `01-`, `02-`, `03-`, ...
-- Children của non-root: ghép id cha + số thứ tự con
-
-**Important:** luôn kiểm tra xem số thứ tự của các component cùng cấp (cùng cha) để đặt đúng số thứ tự của component hiện tại
+- **Folder name** = component name (kebab-case), thay thế cho parent ID
+- **Root file** trong folder luôn là `00-{component-name}.md`
+- **Children** trong folder: `01-`, `02-`, `03-`, ... (reset numbering per folder)
+- **Nested children**: `{parent-nn}-{child-nn}` (e.g., `02-01-editable-image.md`)
+- **Shared folder**: `shared/{component-name}/` cho components dùng chung
 
 **Ví dụ cấu trúc:**
 ```
 editor-page/
-├── 00-editor-page.md           # Root (page component)
-├── 01-editor-header.md         # Child of root
-├── 01-01-logo.md               # Child of 01
-├── 02-icon-rail.md             # Child of root
-├── 03-manuscript-creative-space.md  # Child of root
-├── 03-01-page-canvas.md        # Child of 03
-└── 03-01-01-layer-panel.md     # Child of 03-01
+├── 00-editor-page.md               # Page root
+├── 01-editor-header.md             # Direct child of page
+├── 02-icon-rail.md                 # Direct child of page
+│
+├── doc-creative-space/             # Creative space folder
+│   ├── 00-doc-creative-space.md    # Folder root
+│   ├── 01-doc-sidebar.md           # Child of folder
+│   └── 02-manuscript-doc-editor.md
+│
+├── shared/                         # Shared components
+│   └── manuscript-spread-view/     # Reusable component group
+│       ├── 00-manuscript-spread-view.md
+│       ├── 01-spread-view-header.md
+│       ├── 02-spread-editor-panel.md
+│       ├── 02-01-editable-image.md # Nested child of 02
+│       └── 03-spread-thumbnail-list.md
+│
+└── screenshots/
 ```
 
 **Lợi ích:**
-- Root luôn nhận diện qua prefix `00-`
-- Children của root ngắn gọn (không cần prefix `00-`)
-- Hierarchy rõ ràng qua việc ghép id cha
-- Sort tự nhiên theo thứ tự
+- Folder name tự mô tả, dễ navigate
+- Numbering reset per folder, tránh số quá dài
+- Shared folder tái sử dụng components
+- Sort tự nhiên theo thứ tự trong mỗi folder
 
 ---
 
@@ -126,12 +151,12 @@ editor-page/
 - **Cố gắng** đặt tên component, api, feature 1 cách rõ ràng, dễ hiểu, tránh nhập nhằng
 - Keep docs focused on specifications, not implementation details
 - Định nghĩa TypeScript interfaces rõ ràng cho input/output
-- **(IMPORTANT) Link tới các file doc khác** phải có đầy đủ path từ root vào. Ví dụ: 
- - stores design: [Snapshot Store](component/stores/snapshot-store.md)
- - component design: [Manuscript CreativeSpace](component/editor-page/03-manuscript-creative-space.md)
- - api design: [00 - Brainstorming Initial](api/chat/00-story-brainstorming-initial.md)
- - app feture: [Story Idea Brainstorming](app/ai-assistant/story-idea-brainstorming.md)
+- **(IMPORTANT) Link tới các file doc khác:** luôn dùng full path từ root, bất kể đang ở folder nào
+  - `[Doc CreativeSpace](component/editor-page/doc-creative-space/00-doc-creative-space.md)`
+  - `[Spread View](component/editor-page/shared/manuscript-spread-view/00-manuscript-spread-view.md)`
+  - `[Snapshot Store](component/stores/snapshot-store.md)`
 
+---
 
 ## Quy tắc khi thiết kế Component
 

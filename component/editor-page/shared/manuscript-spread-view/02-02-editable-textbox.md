@@ -1,6 +1,6 @@
 # EditableTextbox: Component Design
 
-> **Parent:** [SpreadEditorPanel](component/editor-page/04-02-02-spread-editor-panel.md)
+> **Parent:** [SpreadEditorPanel](component/editor-page/shared/manuscript-spread-view/02-spread-editor-panel.md)
 
 ---
 

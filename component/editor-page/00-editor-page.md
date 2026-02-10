@@ -431,7 +431,7 @@ interface IconRailProps {
 
 ### 3.3 DocCreativeSpace
 
-📄 **Doc:** [component/editor-page/03-doc-creative-space.md](component/editor-page/03-doc-creative-space.md)
+📄 **Doc:** [component/editor-page/doc-creative-space/00-doc-creative-space.md](doc-creative-space/00-doc-creative-space.md)
 
 📸 **Screenshot:** `screenshots/manuscript-docs-space.png`
 
@@ -449,7 +449,7 @@ interface DocCreativeSpaceProps {
 
 ### 3.4 DummyCreativeSpace
 
-📄 **Doc:** [component/editor-page/04-dummy-creative-space.md](component/editor-page/04-dummy-creative-space.md)
+📄 **Doc:** [component/editor-page/dummy-creative-space/00-dummy-creative-space.md](dummy-creative-space/00-dummy-creative-space.md)
 
 📸 **Screenshot:** `screenshots/manuscript-dummy-space.png`
 
@@ -467,7 +467,7 @@ interface DummyCreativeSpaceProps {
 
 ### 3.5 SketchCreativeSpace
 
-📄 **Doc:** [component/editor-page/05-sketch-creative-space.md](component/editor-page/05-sketch-creative-space.md)
+📄 **Doc:** [component/editor-page/sketch-creative-space/00-sketch-creative-space.md](sketch-creative-space/00-sketch-creative-space.md)
 
 📸 **Screenshot:** `screenshots/manuscript-sketch-space.png`
 

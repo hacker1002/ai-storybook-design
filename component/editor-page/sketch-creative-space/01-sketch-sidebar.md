@@ -1,6 +1,6 @@
 # SketchSidebar: Component Design
 
-> **Parent:** [SketchCreativeSpace](component/editor-page/05-sketch-creative-space.md)
+> **Parent:** [SketchCreativeSpace](component/editor-page/sketch-creative-space/00-sketch-creative-space.md)
 
 **Screenshot:** `screenshots/manuscript-sketch-space.png`
 
@@ -11,7 +11,7 @@
 ### 1.1 Component Hierarchy
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────┐
+┌─────────────────────────────────────────────────────────────────────────────────┐
 │                               SketchSidebar                                     │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
 │  │  SidebarHeader                                                           │   │
@@ -38,7 +38,7 @@
 │  │  │ (no PromptPanel - info text only)                                  │  │   │
 │  │  └────────────────────────────────────────────────────────────────────┘  │   │
 │  └──────────────────────────────────────────────────────────────────────────┘   │
-└────────────────────────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 1.2 Data Flow
@@ -191,7 +191,7 @@ SketchSidebar:
 ┌────────────────────────────────┐
 │ Sketch                    [⚏]  │
 │ ┌────────────────────────────┐ │
-│ │ ◎ Characters           ∨ │ │  ← Expanded, Active
+│ │ ◎ Characters             ∨ │ │  ← Expanded, Active
 │ │ ────────────────────────── │ │
 │ │ PROMPT                     │ │
 │ │ ┌────────────────────────┐ │ │
@@ -202,8 +202,8 @@ SketchSidebar:
 │ │ │     ✨ Generate        │ │ │
 │ │ └────────────────────────┘ │ │
 │ └────────────────────────────┘ │
-│ ◎ Props                    > │  ← Collapsed
-│ ▣ Spreads                  > │  ← Collapsed
+│ ◎ Props                    >   │  ← Collapsed
+│ ▣ Spreads                  >   │  ← Collapsed
 └────────────────────────────────┘
 ```
 
@@ -212,9 +212,9 @@ SketchSidebar:
 ```
 ┌────────────────────────────────┐
 │ Sketch                    [⚏]  │
-│ ◎ Characters               > │  ← Collapsed
+│ ◎ Characters               >   │  ← Collapsed
 │ ┌────────────────────────────┐ │
-│ │ ◎ Props                ∨ │ │  ← Expanded, Active
+│ │ ◎ Props                 ∨  │ │  ← Expanded, Active
 │ │ ────────────────────────── │ │
 │ │ PROMPT                     │ │
 │ │ ┌────────────────────────┐ │ │
@@ -225,7 +225,7 @@ SketchSidebar:
 │ │ │     ✨ Generate        │ │ │
 │ │ └────────────────────────┘ │ │
 │ └────────────────────────────┘ │
-│ ▣ Spreads                  > │  ← Collapsed
+│ ▣ Spreads                  >   │  ← Collapsed
 └────────────────────────────────┘
 ```
 
@@ -234,10 +234,10 @@ SketchSidebar:
 ```
 ┌────────────────────────────────┐
 │ Sketch                    [⚏]  │
-│ ◎ Characters               > │  ← Collapsed
-│ ◎ Props                    > │  ← Collapsed
+│ ◎ Characters               >   │  ← Collapsed
+│ ◎ Props                    >   │  ← Collapsed
 │ ┌────────────────────────────┐ │
-│ │ ▣ Spreads              ∨ │ │  ← Expanded, Active
+│ │ ▣ Spreads               ∨  │ │  ← Expanded, Active
 │ │ ────────────────────────── │ │
 │ │                            │ │
 │ │  View and edit your final  │ │
@@ -252,9 +252,9 @@ SketchSidebar:
 ```
 ┌────────────────────────────────┐
 │ Sketch                    [⚏]  │
-│ ◎ Characters               > │
-│ ◎ Props                    > │
-│ ▣ Spreads                  > │
+│ ◎ Characters               >   │
+│ ◎ Props                    >   │
+│ ▣ Spreads                  >   │
 └────────────────────────────────┘
 ```
 

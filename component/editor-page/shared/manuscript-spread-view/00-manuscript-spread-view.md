@@ -298,7 +298,7 @@ ManuscriptSpreadView:
 
 ### 3.1 SpreadViewHeader
 
-📄 **Doc:** [`component/editor-page/04-02-01-spread-view-header.md`](component/editor-page/04-02-01-spread-view-header.md)
+📄 **Doc:** [component/editor-page/shared/manuscript-spread-view/01-spread-view-header.md](component/editor-page/shared/manuscript-spread-view/01-spread-view-header.md)
 
 **Mục đích:** Header toolbar với toggle button và dual-purpose slider (zoom/columns).
 
@@ -337,7 +337,7 @@ Grid Mode:
 
 ### 3.2 SpreadEditorPanel
 
-📄 **Doc:** [`component/editor-page/04-02-02-spread-editor-panel.md`](component/editor-page/04-02-02-spread-editor-panel.md)
+📄 **Doc:** [component/editor-page/shared/manuscript-spread-view/02-spread-editor-panel.md](component/editor-page/shared/manuscript-spread-view/02-spread-editor-panel.md)
 
 **Mục đích:** Inline editor panel cho selected spread, thay thế SpreadEditModal.
 
@@ -391,7 +391,7 @@ spread = mode === 'dummy'
 
 ### 3.3 SpreadThumbnailList
 
-📄 **Doc:** [`component/editor-page/04-02-03-spread-thumbnail-list.md`](component/editor-page/04-02-03-spread-thumbnail-list.md)
+📄 **Doc:** [component/editor-page/shared/manuscript-spread-view/03-spread-thumbnail-list.md](component/editor-page/shared/manuscript-spread-view/03-spread-thumbnail-list.md)
 
 **Mục đích:** Unified thumbnails container cho cả horizontal filmstrip và vertical grid.
 
@@ -456,7 +456,7 @@ spreadIds = mode === 'dummy'
 
 ### 3.4 SpreadThumbnail
 
-📄 **Doc:** [`component/editor-page/04-02-03-01-spread-thumbnail.md`](component/editor-page/04-02-03-01-spread-thumbnail.md)
+📄 **Doc:** [component/editor-page/shared/manuscript-spread-view/03-01-spread-thumbnail.md](component/editor-page/shared/manuscript-spread-view/03-01-spread-thumbnail.md)
 
 **Mục đích:** Thumbnail preview của một spread, dùng chung cho cả horizontal và grid layouts.
 

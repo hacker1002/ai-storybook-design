@@ -32,9 +32,9 @@ Thiết kế kiến trúc component cho các trang chính.
 | [Editor Page](component/editor-page/00-editor-page.md) | Root component của trang editor, quản lý creativeSpace và navigation |
 | [Editor Header](component/editor-page/01-editor-header.md) | Top navigation bar với step breadcrumb, language selector, save status |
 | [Icon Rail](component/editor-page/02-icon-rail.md) | Vertical navigation rail với creativeSpace icons |
-| [Doc CreativeSpace](component/editor-page/03-doc-creative-space.md) | Brief/Draft/Script editing với DocSidebar + ManuscriptDocEditor |
-| [Dummy CreativeSpace](component/editor-page/04-dummy-creative-space.md) | Dynamic dummy list + ManuscriptSpreadView (⚡ language-aware) |
-| [Sketch CreativeSpace](component/editor-page/05-sketch-creative-space.md) | Characters/Props/Spreads với SketchViewer + ManuscriptSpreadView |
+| [Doc CreativeSpace](component/editor-page/doc-creative-space/00-doc-creative-space.md) | Brief/Draft/Script editing với DocSidebar + ManuscriptDocEditor |
+| [Dummy CreativeSpace](component/editor-page/dummy-creative-space/00-dummy-creative-space.md) | Dynamic dummy list + ManuscriptSpreadView (⚡ language-aware) |
+| [Sketch CreativeSpace](component/editor-page/sketch-creative-space/00-sketch-creative-space.md) | Characters/Props/Spreads với SketchViewer + ManuscriptSpreadView |
 
 ### App Features
 User-facing features và flows.
