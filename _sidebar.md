@@ -5,6 +5,7 @@
 
 * **Component Design**
   * **Stores**
+    * [Book Store](component/stores/book-store.md)
     * [Snapshot Store](component/stores/snapshot-store.md)
     * [Editor Settings Store](component/stores/editor-settings-store.md)
   * [Editor Page](component/editor-page/00-editor-page.md)

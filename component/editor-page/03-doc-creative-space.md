@@ -213,7 +213,7 @@ DocCreativeSpace:
 
 ### 3.1 DocSidebar
 
-📄 **Doc:** [03-01-doc-sidebar.md](03-01-doc-sidebar.md)
+📄 **Doc:** [component/editor-page/03-01-doc-sidebar.md](component/editor-page/03-01-doc-sidebar.md)
 
 **Mục đích:** Left sidebar với accordion-style tabs. Supports adding 'other' type docs with editable titles.
 
