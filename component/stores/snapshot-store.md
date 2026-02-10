@@ -106,7 +106,7 @@ interface DocsSlice {
 
 ### 3.2 DummiesSlice
 
-Manages dummy spreads for prose and poetry versions.
+Manages dummy versions (multiple versions per book, each with spreads).
 
 ```typescript
 interface DummiesSlice {
@@ -116,18 +116,20 @@ interface DummiesSlice {
   // Actions
   setDummies: (dummies: ManuscriptDummy[]) => void;
 
-  // Dummy-level
-  getDummy: (dummyType: DummyType) => ManuscriptDummy | undefined;
-  updateDummyType: (fromType: DummyType, toType: DummyType) => void;
+  // Dummy-level CRUD (ID-based)
+  addDummy: (dummy: ManuscriptDummy) => void;
+  updateDummy: (dummyId: string, updates: Partial<ManuscriptDummy>) => void;
+  deleteDummy: (dummyId: string) => void;
+  getDummy: (dummyId: string) => ManuscriptDummy | undefined;
 
-  // Spread-level
-  addDummySpread: (dummyType: DummyType, spread: DummySpread) => void;
-  updateDummySpread: (dummyType: DummyType, spreadId: string, updates: Partial<DummySpread>) => void;
-  deleteDummySpread: (dummyType: DummyType, spreadId: string) => void;
-  reorderDummySpreads: (dummyType: DummyType, fromIndex: number, toIndex: number) => void;
+  // Spread-level (ID-based)
+  addDummySpread: (dummyId: string, spread: DummySpread) => void;
+  updateDummySpread: (dummyId: string, spreadId: string, updates: Partial<DummySpread>) => void;
+  deleteDummySpread: (dummyId: string, spreadId: string) => void;
+  reorderDummySpreads: (dummyId: string, fromIndex: number, toIndex: number) => void;
 
   // Bulk update
-  updateDummySpreads: (dummyType: DummyType, spreads: DummySpread[]) => void;
+  updateDummySpreads: (dummyId: string, spreads: DummySpread[]) => void;
 }
 ```
 
@@ -358,12 +360,13 @@ export const useDocs: () => ManuscriptDoc[];
 export const useDocByIndex: (index: number) => ManuscriptDoc | undefined;
 export const useDocByType: (type: DocType) => ManuscriptDoc | undefined;
 
-// Dummies
+// Dummies (ID-based)
 export const useDummies: () => ManuscriptDummy[];
-export const useDummy: (type: DummyType) => ManuscriptDummy | undefined;
-export const useDummySpreads: (type: DummyType) => DummySpread[];
-export const useDummySpreadIds: (type: DummyType) => string[];  // shallow compare
-export const useDummySpreadById: (type: DummyType, id: string) => DummySpread | undefined;
+export const useDummyIds: () => string[];  // shallow compare
+export const useDummyById: (dummyId: string) => ManuscriptDummy | undefined;
+export const useDummySpreads: (dummyId: string) => DummySpread[];
+export const useDummySpreadIds: (dummyId: string) => string[];  // shallow compare
+export const useDummySpreadById: (dummyId: string, spreadId: string) => DummySpread | undefined;
 
 // Sketch
 export const useSketch: () => Sketch;
@@ -421,7 +424,10 @@ interface SnapshotActions {
   updateDocTitle: DocsSlice['updateDocTitle'];
   deleteDoc: DocsSlice['deleteDoc'];
 
-  // Dummies
+  // Dummies (ID-based)
+  addDummy: DummiesSlice['addDummy'];
+  updateDummy: DummiesSlice['updateDummy'];
+  deleteDummy: DummiesSlice['deleteDummy'];
   addDummySpread: DummiesSlice['addDummySpread'];
   updateDummySpread: DummiesSlice['updateDummySpread'];
   deleteDummySpread: DummiesSlice['deleteDummySpread'];
@@ -553,7 +559,45 @@ function SpreadEditor({ spreadId }: Props) {
 }
 ```
 
-### 6.3 Sketch Workflow
+### 6.3 Dummy Workflow (ID-based)
+
+```typescript
+// List dummies
+function DummyList() {
+  const dummyIds = useDummyIds();  // shallow compare
+  return dummyIds.map(id => <DummyItem key={id} dummyId={id} />);
+}
+
+// Single dummy item
+function DummyItem({ dummyId }: { dummyId: string }) {
+  const dummy = useDummyById(dummyId);
+  const { updateDummy, deleteDummy } = useSnapshotActions();
+
+  const handleRename = (title: string) => {
+    updateDummy(dummyId, { title });
+  };
+
+  const handleDelete = () => {
+    deleteDummy(dummyId);
+  };
+}
+
+// Create new dummy
+function CreateDummyButton() {
+  const { addDummy } = useSnapshotActions();
+
+  const handleCreate = () => {
+    addDummy({
+      id: crypto.randomUUID(),
+      title: 'New Dummy',
+      type: 'prose',
+      spreads: [],
+    });
+  };
+}
+```
+
+### 6.5 Sketch Workflow
 
 ```typescript
 function SketchPanel() {
@@ -569,7 +613,7 @@ function SketchPanel() {
 }
 ```
 
-### 6.4 Cross-slice Access
+### 6.6 Cross-slice Access
 
 ```typescript
 // Inside a slice, can access other slices via get()
@@ -633,14 +677,16 @@ initSnapshot: (snapshot) => set((state) => {
   // Initialize docs (new structure)
   state.docs = snapshot.docs || [];
 
-  // Initialize dummies (new structure)
-  state.dummies = snapshot.dummies || [];
-  state.dummies.forEach(dummy => {
-    dummy.spreads = dummy.spreads?.map(s => ({
+  // Initialize dummies (ID-based structure)
+  state.dummies = (snapshot.dummies || []).map((dummy, index) => ({
+    ...dummy,
+    id: dummy.id || crypto.randomUUID(),
+    title: dummy.title || `Dummy ${index + 1}`,
+    spreads: dummy.spreads?.map(s => ({
       ...s,
       id: s.id || crypto.randomUUID(),
-    })) || [];
-  });
+    })) || [],
+  }));
 
   // Initialize sketch (new centralized structure)
   state.sketch = snapshot.sketch || {
@@ -655,6 +701,8 @@ initSnapshot: (snapshot) => set((state) => {
 
 | Selector | Comparison | Re-render when |
 |----------|------------|----------------|
+| `useDummyById(id)` | `Object.is` | Dummy reference changes |
+| `useDummyIds()` | `shallow` | Array content changes |
 | `useSpreadById(id)` | `Object.is` | Spread reference changes |
 | `useSpreadIds()` | `shallow` | Array content changes |
 | `useSpreadCount()` | `===` | Length changes |
@@ -696,6 +744,7 @@ export function useAutosave(debounceMs = 60_000) {
 Legacy snapshots có thể thiếu fields mới. `initSnapshot` cần handle:
 
 - **IDs**: Auto-generate `id` cho spreads, images, dummy spreads nếu missing
+- **Dummy ID/Title**: Auto-generate `id` và `title` cho dummies nếu missing (dummies giờ được identify bằng ID, không phải type)
 - **docs/dummies**: Fallback `[]` nếu không có
 - **sketch**: Fallback `{ dummy_id: null, character_sheets: [], prop_sheets: [] }`
 

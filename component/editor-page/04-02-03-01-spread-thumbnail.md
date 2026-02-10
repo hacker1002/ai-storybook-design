@@ -35,21 +35,20 @@
 ### 1.2 Data Flow
 
 ```
-        ┌─────────────────────────────┐        ┌───────────────────────┐
-        │      SnapshotStore          │        │  EditorSettingsStore  │
-        │  ┌───────────────────────┐  │        │   (Zustand global)    │
-        │  │ useDummySpreadById()  │  │        │                       │
-        │  │ useSpreadById()       │  │        │ • currentLanguage     │
-        │  └───────────────────────┘  │        └───────────┬───────────┘
-        └──────────────┬──────────────┘                    │
-                       │ (selectors)                       │ (selector)
-                       ▼                                   ▼
+                    ┌─────────────────────────────┐
+                    │      SnapshotStore          │
+                    │  ┌───────────────────────┐  │
+                    │  │ useDummySpreadById()  │  │
+                    │  │ useSpreadById()       │  │
+                    │  └───────────────────────┘  │
+                    └──────────────┬──────────────┘
+                                   │ (selectors)
+                                   ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                           SpreadThumbnail                                │
 │  ┌────────────────────────────────────────────────────────────────────┐  │
 │  │  Props: spreadId, mode, dummyType?, isSelected,                    │  │
 │  │         displayMode, isDragEnabled, onClick, onDragStart, onDragEnd│  │
-│  │  Store: currentLanguage via useCurrentLanguage()                   │  │
 │  └────────────────────────────────────────────────────────────────────┘  │
 │  ┌────────────────────────────────────────────────────────────────────┐  │
 │  │  Local State: (none - read-only thumbnail)                         │  │
@@ -61,7 +60,6 @@
 │  │  • leftPageNum, rightPageNum, label                                 │ │
 │  │  • scaledGeometry per image/textbox                                 │ │
 │  │  • displayText per image (art_note | visual_description)            │ │
-│  │  • langContent per textbox (currentLanguage.code)                   │ │
 │  └─────────────────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
@@ -85,8 +83,6 @@
 ### 2.1 Overview
 
 **Mục đích:** Thumbnail preview của một spread trong grid. Hiển thị dummy images dạng khung chữ nhật với text, textboxes overlay lên trên images, theo đúng geometry và typography.
-
-**Language impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox content lấy từ `textbox[currentLanguage.code]`
 
 **Shared Types:**
 
@@ -124,9 +120,8 @@ interface Typography {
 interface SpreadThumbnailProps {
   spreadId: string;
   mode: SpreadViewMode;
-  dummyType?: DummyType;                 // Required when mode='dummy'
+  dummyId?: string;                      // Required when mode='dummy'
   isSelected: boolean;
-  // currentLanguage via useCurrentLanguage() - no prop drilling
   displayMode: 'dummy' | 'finalize';
   isDragEnabled?: boolean;
   isDragging?: boolean;
@@ -141,12 +136,9 @@ interface SpreadThumbnailProps {
 **Store Integration:**
 
 ```typescript
-// EditorSettingsStore (global UI state)
-currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
-
 // SnapshotStore Selectors (conditional based on mode)
 spread = mode === 'dummy'
-  ? useDummySpreadById(dummyType!, spreadId)
+  ? useDummySpreadById(dummyId!, spreadId)
   : useSpreadById(spreadId);
 
 // Actions: none (read-only component)
@@ -157,10 +149,7 @@ spread = mode === 'dummy'
 ```
 SpreadThumbnail:
   // Get spread data from SnapshotStore
-  spread = mode === 'dummy' ? useDummySpreadById(dummyType, spreadId) : useSpreadById(spreadId)
-
-  // Get currentLanguage from EditorSettingsStore (no prop drilling)
-  currentLanguage = useCurrentLanguage()
+  spread = mode === 'dummy' ? useDummySpreadById(dummyId, spreadId) : useSpreadById(spreadId)
 
   leftPageNum = spread.left_page.number
   rightPageNum = spread.right_page.number
@@ -184,10 +173,9 @@ SpreadThumbnail:
 
         // Layer 2: Textboxes (overlay)
         FOR EACH textbox IN spread.textboxes:
-          langContent = textbox[currentLanguage.code]
-          IF langContent AND isOnLeftPage(langContent.geometry):
-            scaledGeo = scaleToThumbnail(langContent.geometry, 'left')
-            scaledTypo = scaleTypography(langContent.typography)
+          IF isOnLeftPage(textbox.geometry):
+            scaledGeo = scaleToThumbnail(textbox.geometry, 'left')
+            scaledTypo = scaleTypography(textbox.typography)
             RENDER TextboxOverlay at scaledGeo with scaledTypo
 
       RENDER RightPage (same pattern as LeftPage for right side)
@@ -297,8 +285,6 @@ interface DummyImagePlaceholderProps {
 ### 3.2 TextboxOverlay (element)
 
 **Mục đích:** Hiển thị textbox với geometry và typography được scale xuống thumbnail size.
-
-**Special Impact:** ✅ **BỊ ẢNH HƯỞNG** — Content lấy từ `textbox[currentLanguage.code]`
 
 **Props (inline):**
 

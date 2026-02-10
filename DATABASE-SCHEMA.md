@@ -420,6 +420,8 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 ### dummies[] structure
 ```json
 [{
+  "id": "uuid",
+  "title": "Dummy version title",
   "type": "prose | poetry",
   "spreads[]": [{
     "id": "uuid",
@@ -449,6 +451,8 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 }]
 ```
 
+- `id`: UUID định danh dummy version
+- `title`: Tiêu đề dummy version (user nhập tự do)
 - `type`: `prose` = văn xuôi, `poetry` = thơ/vần
 - `layout`, `left_page.layout`, `right_page.layout`: FK → `template_layouts`, cho phép NULL
 - `[language_key]`: key là mã ngôn ngữ (e.g., `en_US`, `vi_VN`, `zh_CN`)

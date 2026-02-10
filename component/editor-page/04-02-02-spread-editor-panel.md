@@ -136,11 +136,10 @@ interface TextboxContent {
 interface SpreadEditorPanelProps {
   spreadId: string;
   mode: SpreadViewMode;
-  dummyType?: DummyType;           // Required when mode === 'dummy'
+  dummyId?: string;                // Required when mode === 'dummy'
   zoomLevel: number;               // 50-200
   isEditable: boolean;
   displayField: 'art_note' | 'visual_description';
-  // currentLanguage via useCurrentLanguage() - no prop drilling
 }
 ```
 
@@ -164,13 +163,9 @@ interface SpreadEditorPanelState {
 **Store Integration:**
 
 ```typescript
-// EditorSettingsStore (global UI state)
-currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
-langCode = currentLanguage.code;
-
 // SnapshotStore Selectors (mode-based) - SINGLE source of data
 spread = mode === 'dummy'
-  ? useDummySpreadById(dummyType, spreadId)
+  ? useDummySpreadById(dummyId, spreadId)
   : useSpreadById(spreadId);
 
 // SnapshotStore Actions
@@ -224,11 +219,11 @@ selectedGeometry = useMemo(() => {
 
   if (selectedElement.type === 'textbox') {
     const textbox = spread.textboxes[selectedElement.index];
-    return textbox?.[langCode]?.geometry;
+    return textbox?.geometry;
   }
 
   return null;
-}, [selectedElement, spread, langCode]);
+}, [selectedElement, spread]);
 ```
 
 ### 2.5 Handler Mappings
@@ -283,22 +278,22 @@ handleResizeEnd():
 updateElementGeometry(newGeometry: Geometry):
   IF selectedElement.type === 'image':
     IF mode === 'dummy':
-      updateDummySpread(dummyType, spreadId, { images: updatedImages })
+      updateDummySpread(dummyId, spreadId, { images: updatedImages })
     ELSE:
       updateSpreadImage(spreadId, selectedElement.index, { geometry: newGeometry })
 
   IF selectedElement.type === 'textbox':
     IF mode === 'dummy':
-      updateDummySpread(dummyType, spreadId, { textboxes: updatedTextboxes })
+      updateDummySpread(dummyId, spreadId, { textboxes: updatedTextboxes })
     ELSE:
-      updateSpreadTextbox(spreadId, selectedElement.index, { [langCode]: { geometry: newGeometry } })
+      updateSpreadTextbox(spreadId, selectedElement.index, { geometry: newGeometry })
 
 // Text change (called by EditableTextbox)
 handleTextChange(textboxIndex: number, newText: string):
   IF mode === 'dummy':
-    updateDummySpread(dummyType, spreadId, { textboxes: updatedTextboxes })
+    updateDummySpread(dummyId, spreadId, { textboxes: updatedTextboxes })
   ELSE:
-    updateSpreadTextbox(spreadId, textboxIndex, { [langCode]: { text: newText } })
+    updateSpreadTextbox(spreadId, textboxIndex, { text: newText })
 
 // Editing state change (called by EditableTextbox)
 handleEditingChange(isEditing: boolean):
@@ -311,7 +306,6 @@ handleEditingChange(isEditing: boolean):
 SpreadEditorPanel:
   // Store data (SINGLE source)
   spread = useSpreadById/useDummySpreadById based on mode
-  langCode = useCurrentLanguage().code
   canvasRef = useRef()
 
   // Canvas sizing
@@ -319,7 +313,7 @@ SpreadEditorPanel:
   scaledHeight = BASE_HEIGHT * (zoomLevel / 100)
 
   // Derive selected geometry
-  selectedGeometry = getSelectedGeometry(selectedElement, spread, langCode)
+  selectedGeometry = getSelectedGeometry(selectedElement, spread)
 
   RENDER OuterContainer (flex, center, overflow-auto):
     RENDER CanvasContainer (position: relative):
@@ -344,9 +338,8 @@ SpreadEditorPanel:
 
       // Textboxes (selection + text change, no drag/resize)
       FOR EACH (textbox, index) IN spread.textboxes:
-        content = textbox[langCode]
         RENDER EditableTextbox với:
-          - textbox, content, index
+          - textbox, index
           - isSelected: selectedElement?.type === 'textbox' && selectedElement?.index === index
           - isEditable
           - onSelect: () => handleElementSelect({ type: 'textbox', index })
@@ -463,14 +456,11 @@ interface EditableImageProps {
 
 **Mục đích:** Editable textbox trong canvas. Selection và text editing only.
 
-**Special Impact:** ✅ **BỊ ẢNH HƯỞNG** — Content theo `currentLanguage.code`
-
 **Props & Callbacks:**
 
 ```typescript
 interface EditableTextboxProps {
   textbox: SpreadViewTextbox;
-  content: TextboxContent;           // Pre-extracted for current language
   index: number;
   isSelected: boolean;
   isEditable: boolean;
@@ -538,7 +528,7 @@ interface SelectionFrameProps {
 
 | Mode | Selector | Update Action |
 |------|----------|---------------|
-| `dummy` | `useDummySpreadById(type, id)` | `updateDummySpread(type, id, partial)` |
+| `dummy` | `useDummySpreadById(dummyId, spreadId)` | `updateDummySpread(dummyId, spreadId, partial)` |
 | `finalize` | `useSpreadById(id)` | `updateSpreadImage()`, `updateSpreadTextbox()` |
 
 ### 4.3 Keyboard Shortcuts

@@ -32,14 +32,14 @@
 ### 1.2 Data Flow
 
 ```
-        ┌─────────────────────┐          ┌───────────────────────┐
-        │    SnapshotStore    │          │  EditorSettingsStore  │
-        │   (Zustand global)  │          │   (Zustand global)    │
-        └──────────┬──────────┘          └───────────┬───────────┘
-                   │                                 │
-         ┌─────────┼─────────────────────────────────┼────────────┐
-         │         │ (selectors)                     │ (selector) │
-         ▼         ▼                                 ▼            ▼
+                    ┌─────────────────────┐
+                    │    SnapshotStore    │
+                    │   (Zustand global)  │
+                    └──────────┬──────────┘
+                               │
+                     ┌─────────┼─────────┐
+                     │         │         │
+                     ▼         ▼         ▼
 ┌───────────────────────────────────────────────────────────────────────────────────┐
 │                              ManuscriptSpreadView                                 │
 │  ┌─────────────────────────────────────────────────────────────────────────────┐  │
@@ -70,10 +70,10 @@
 
 | Feature | mode='dummy' | mode='finalize' |
 |---------|--------------|-----------------|
-| Selector | `useDummySpreads(dummyType)` | `useSpreads()` |
-| Add Action | `addDummySpread(type, spread)` | `addSpread(spread)` |
-| Update Action | `updateDummySpread(type, id, updates)` | `updateSpread(id, updates)` |
-| Reorder Action | `reorderDummySpreads(type, from, to)` | `reorderSpreads(from, to)` |
+| Selector | `useDummySpreads(dummyId)` | `useSpreads()` |
+| Add Action | `addDummySpread(dummyId, spread)` | `addSpread(spread)` |
+| Update Action | `updateDummySpread(dummyId, spreadId, updates)` | `updateSpread(id, updates)` |
+| Reorder Action | `reorderDummySpreads(dummyId, from, to)` | `reorderSpreads(from, to)` |
 | Purpose | Drafting & layout planning | Final assets for export |
 | Image display | `art_note` | `visual_description` |
 | Drag-drop | ✅ Yes | ✅ Yes |
@@ -110,8 +110,7 @@ type DisplayField = 'art_note' | 'visual_description';
 ```typescript
 interface ManuscriptSpreadViewProps {
   mode: SpreadViewMode;               // 'dummy' | 'finalize'
-  dummyType?: DummyType;              // Required for dummy mode ('prose' | 'poetry')
-  // currentLanguage via useCurrentLanguage() - no prop drilling
+  dummyId?: string;                   // Required for dummy mode (UUID)
 }
 
 interface ManuscriptSpreadViewState {
@@ -135,17 +134,14 @@ interface ManuscriptSpreadViewState {
 
 ```typescript
 // SnapshotStore Selectors (mode-conditional)
-dummySpreads = useDummySpreads(dummyType);    // For dummy mode
-snapshotSpreads = useSpreads();                // For finalize mode
+dummySpreads = useDummySpreads(dummyId);       // For dummy mode
+snapshotSpreads = useSpreads();                 // For finalize mode
 spreads = mode === 'dummy' ? dummySpreads : snapshotSpreads;
 
 // ID selectors for optimized list rendering (shallow compare)
-dummySpreadIds = useDummySpreadIds(dummyType);  // For dummy mode
-snapshotSpreadIds = useSpreadIds();              // For finalize mode
+dummySpreadIds = useDummySpreadIds(dummyId);   // For dummy mode
+snapshotSpreadIds = useSpreadIds();             // For finalize mode
 spreadIds = mode === 'dummy' ? dummySpreadIds : snapshotSpreadIds;
-
-// EditorSettingsStore (global UI state)
-currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
 
 // SnapshotStore Actions
 { addDummySpread, updateDummySpread, deleteDummySpread, reorderDummySpreads,
@@ -157,12 +153,9 @@ currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
 ```
 ManuscriptSpreadView:
   // Data from SnapshotStore (mode-conditional)
-  spreads = mode === 'dummy' ? useDummySpreads(dummyType) : useSpreads()
-  spreadIds = mode === 'dummy' ? useDummySpreadIds(dummyType) : useSpreadIds()
+  spreads = mode === 'dummy' ? useDummySpreads(dummyId) : useSpreads()
+  spreadIds = mode === 'dummy' ? useDummySpreadIds(dummyId) : useSpreadIds()
   actions = useSnapshotActions()
-
-  // EditorSettingsStore (no prop drilling)
-  currentLanguage = useCurrentLanguage()
 
   isEditable = true  // Both modes editable
   canAdd = true
@@ -182,24 +175,21 @@ ManuscriptSpreadView:
     IF selectedSpreadId !== null:
       RENDER SpreadEditorPanel với:
         - spreadId: selectedSpreadId
-        - mode, dummyType, zoomLevel
+        - mode, dummyId, zoomLevel
         - isEditable, displayField
-        // SpreadEditorPanel uses useCurrentLanguage() internally
 
     RENDER SpreadThumbnailList với:
-      - mode, dummyType, selectedId: selectedSpreadId
+      - mode, dummyId, selectedId: selectedSpreadId
       - displayField, layout: 'horizontal'
       - isDragEnabled: true, canAdd
       - onSpreadClick: handleSpreadClick
-      // SpreadThumbnailList uses useCurrentLanguage() internally
 
   ELSE (viewMode === 'grid'):
     RENDER SpreadThumbnailList với:
-      - mode, dummyType, selectedId: selectedSpreadId
+      - mode, dummyId, selectedId: selectedSpreadId
       - displayField, layout: 'grid', columnsPerRow
       - isDragEnabled: true, canAdd
       - onSpreadClick: handleSpreadClick
-      // SpreadThumbnailList uses useCurrentLanguage() internally
 
   // Handlers
   handleSpreadClick(id):
@@ -351,16 +341,13 @@ Grid Mode:
 
 **Mục đích:** Inline editor panel cho selected spread, thay thế SpreadEditModal.
 
-**Special Impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox content theo `currentLanguage.code`
-
 **Props & Callbacks:**
 
 ```typescript
 interface SpreadEditorPanelProps {
   spreadId: string;                  // ID-based subscription
   mode: SpreadViewMode;
-  dummyType?: DummyType;             // Required for dummy mode
-  // currentLanguage via useCurrentLanguage() - no prop drilling
+  dummyId?: string;                  // Required for dummy mode
   zoomLevel: number;
   isEditable: boolean;
   displayField: DisplayField;        // 'art_note' | 'visual_description'
@@ -372,12 +359,9 @@ interface SpreadEditorPanelProps {
 **Store Integration (inside component):**
 
 ```typescript
-// EditorSettingsStore
-currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
-
 // SnapshotStore - mode conditional
 spread = mode === 'dummy'
-  ? useDummySpreadById(dummyType, spreadId)
+  ? useDummySpreadById(dummyId, spreadId)
   : useSpreadById(spreadId);
 ```
 
@@ -411,8 +395,6 @@ spread = mode === 'dummy'
 
 **Mục đích:** Unified thumbnails container cho cả horizontal filmstrip và vertical grid.
 
-**Special Impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox preview theo `currentLanguage.code`
-
 **Props & Callbacks:**
 
 ```typescript
@@ -420,9 +402,8 @@ type ThumbnailListLayout = 'horizontal' | 'grid';
 
 interface SpreadThumbnailListProps {
   mode: SpreadViewMode;
-  dummyType?: DummyType;                   // Required for dummy mode
+  dummyId?: string;                        // Required for dummy mode
   selectedId: string | null;               // ID-based selection
-  // currentLanguage via useCurrentLanguage() - no prop drilling
   displayField: DisplayField;
   isDragEnabled: boolean;
   canAdd: boolean;
@@ -440,12 +421,9 @@ interface SpreadThumbnailListProps {
 **Store Integration (inside component):**
 
 ```typescript
-// EditorSettingsStore
-currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
-
 // SnapshotStore - mode conditional
 spreadIds = mode === 'dummy'
-  ? useDummySpreadIds(dummyType)
+  ? useDummySpreadIds(dummyId)
   : useSpreadIds();
 ```
 
@@ -488,9 +466,8 @@ spreadIds = mode === 'dummy'
 interface SpreadThumbnailProps {
   spreadId: string;                      // ID-based, uses store internally
   mode: SpreadViewMode;
-  dummyType?: DummyType;                 // Required for dummy mode
+  dummyId?: string;                      // Required for dummy mode
   isSelected: boolean;
-  // currentLanguage via useCurrentLanguage() - no prop drilling
   displayField: DisplayField;
   isDragging?: boolean;
   isDropTarget?: boolean;
@@ -504,12 +481,9 @@ interface SpreadThumbnailProps {
 **Store Integration (inside component):**
 
 ```typescript
-// EditorSettingsStore
-currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
-
 // SnapshotStore
 spread = mode === 'dummy'
-  ? useDummySpreadById(dummyType, spreadId)
+  ? useDummySpreadById(dummyId, spreadId)
   : useSpreadById(spreadId);
 ```
 
@@ -545,13 +519,13 @@ Lý do: Space-efficient, cùng 1 control phục vụ 2 mục đích.
 const handleAdd = () => {
   const newSpread = createEmptySpread();
   mode === 'dummy'
-    ? addDummySpread(dummyType!, newSpread)
+    ? addDummySpread(dummyId!, newSpread)
     : addSpread(newSpread);
 };
 
 const handleReorder = (fromIdx: number, toIdx: number) => {
   mode === 'dummy'
-    ? reorderDummySpreads(dummyType!, fromIdx, toIdx)
+    ? reorderDummySpreads(dummyId!, fromIdx, toIdx)
     : reorderSpreads(fromIdx, toIdx);
 };
 ```

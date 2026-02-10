@@ -17,7 +17,7 @@
 │  │  │  IF isEditing:                                      │  │  │
 │  │  │    <div contentEditable>{editText}</div>            │  │  │
 │  │  │  ELSE:                                              │  │  │
-│  │  │    <div>{content.text}</div>                        │  │  │
+│  │  │    <div>{textbox.text}</div>                        │  │  │
 │  │  └─────────────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
@@ -29,20 +29,20 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                        EditableTextbox                          │
 │  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Props: textbox, content, index, isSelected, isEditable    │ │
+│  │  Props: textbox, index, isSelected, isEditable             │ │
 │  │  Callbacks: onSelect, onTextChange                         │ │
 │  └────────────────────────────────────────────────────────────┘ │
 │                              │                                  │
-│         ┌────────────────────┼────────────────────┐             │
-│         ▼                    ▼                    ▼             │
-│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐        │
-│  │EditorSettings│    │ Local State │     │ Typography  │        │
-│  │    Store    │     │ • isEditing │     │  Renderer   │        │
-│  │             │     │ • editText  │     │             │        │
-│  │useLanguage- │     │ • isHovered │     │ fontFamily, │        │
-│  │   Code() ⚡  │     │             │     │ fontSize,   │        │
-│  └─────────────┘     └─────────────┘     │ textAlign...│        │
-│                                          └─────────────┘        │
+│              ┌───────────────┼───────────────┐                  │
+│              ▼                               ▼                  │
+│       ┌─────────────┐                 ┌─────────────┐           │
+│       │ Local State │                 │ Typography  │           │
+│       │ • isEditing │                 │  Renderer   │           │
+│       │ • editText  │                 │             │           │
+│       │ • isHovered │                 │ fontFamily, │           │
+│       └─────────────┘                 │ fontSize,   │           │
+│                                       │ textAlign...│           │
+│                                       └─────────────┘           │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -76,11 +76,9 @@
 
 ### 2.1 Overview
 
-**Mục đích:** Editable textbox trong canvas. Handles selection và inline text editing. ⚡ Language-aware: content display theo `currentLanguage` from EditorSettingsStore.
+**Mục đích:** Editable textbox trong canvas. Handles selection và inline text editing.
 
 > **Note:** Drag/resize được handle bởi SelectionFrame overlay, không phải component này.
-
-**Special Impact:** ✅ **BỊ ẢNH HƯỞNG** — Content theo `currentLanguage.code`
 
 **Shared Types:**
 
@@ -108,7 +106,6 @@ interface Typography {
 ```typescript
 interface EditableTextboxProps {
   textbox: SpreadViewTextbox;
-  content: TextboxContent;           // Pre-extracted for current language
   index: number;
   isSelected: boolean;
   isEditable: boolean;
@@ -155,7 +152,7 @@ mapTypographyToCSS(typography: Typography): CSSProperties
 ```
 EditableTextbox:
   editableRef = useRef()
-  typographyStyle = mapTypographyToCSS(content.typography)
+  typographyStyle = mapTypographyToCSS(textbox.typography)
 
   handleClick(e):
     e.stopPropagation()
@@ -181,23 +178,23 @@ EditableTextbox:
       exitEditMode(save: true)
 
   enterEditMode():
-    setEditText(content.text)
+    setEditText(textbox.text)
     setIsEditing(true)
     onEditingChange(true)  // Parent hides SelectionFrame handles
     requestAnimationFrame(() => editableRef.current?.focus())
 
   exitEditMode(save: boolean):
-    IF save && editText !== content.text:
+    IF save && editText !== textbox.text:
       onTextChange(editText)
     setIsEditing(false)
     onEditingChange(false)  // Parent shows SelectionFrame handles
 
   RENDER TextboxContainer (position: absolute):
     style:
-      left: content.geometry.x + '%'
-      top: content.geometry.y + '%'
-      width: content.geometry.width + '%'
-      height: content.geometry.height + '%'
+      left: textbox.geometry.x + '%'
+      top: textbox.geometry.y + '%'
+      width: textbox.geometry.width + '%'
+      height: textbox.geometry.height + '%'
       cursor: isEditable ? 'pointer' : 'default'
       outline: isHovered && !isSelected ? '1px dashed #bdbdbd' : 'none'
       ...typographyStyle
@@ -220,8 +217,8 @@ EditableTextbox:
         {editText}
       </div>
     ELSE:
-      IF content.text:
-        RENDER <div>{content.text}</div>
+      IF textbox.text:
+        RENDER <div>{textbox.text}</div>
       ELSE:
         RENDER <div style={{ fontStyle: 'italic', color: '#9e9e9e' }}>
           Click to add text
@@ -295,7 +292,6 @@ EditableTextbox:
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Edit Mode | contenteditable | Seamless inline UX, no textarea overlay |
-| Language Access | Via props | Parent extracts content for current language |
 | Text Save | On blur or Enter | Natural save trigger |
 | Placeholder | Inline text | Clear affordance |
 | Drag/Resize | Delegated to SelectionFrame | Single interaction handler |

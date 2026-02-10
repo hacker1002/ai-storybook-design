@@ -11,7 +11,7 @@
 ### 1.1 Component Hierarchy
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────┐
+┌─────────────────────────────────────────────────────────────────────────────────┐
 │                                DummySidebar                                     │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
 │  │  SidebarHeader                                                           │   │
@@ -42,7 +42,7 @@
 │  │  │ 📐 Poetry Dummy│                                                      │   │
 │  │  └────────────────┘                                                      │   │
 │  └──────────────────────────────────────────────────────────────────────────┘   │
-└────────────────────────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 1.2 Data Flow
@@ -95,7 +95,7 @@ type DummyType = 'prose' | 'poetry';
 
 interface ManuscriptDummy {
   id: string;
-  name: string;
+  title: string;
   type: DummyType;
   spreads: DummySpread[];
 }
@@ -117,6 +117,7 @@ interface DummySidebarState {
   promptInputs: Record<string, string>;        // dummyId → prompt
   isGenerating: Record<string, boolean>;       // dummyId → loading state
   showAddDropdown: boolean;                    // Add button dropdown visibility
+  editingTitleId: string | null;               // Which dummy's title is being edited
 }
 ```
 
@@ -126,8 +127,8 @@ interface DummySidebarState {
 // SnapshotStore Selectors
 dummies = useDummies();  // ManuscriptDummy[]
 
-// SnapshotStore Actions (for delete)
-{ deleteDummy } = useSnapshotActions();
+// SnapshotStore Actions
+{ deleteDummy, updateDummy } = useSnapshotActions();
 ```
 
 ### 2.3 Render Logic (pseudo)
@@ -167,6 +168,16 @@ DummySidebar:
     IF confirmed:
       deleteDummy(dummyId)
 
+  handleTitleEditStart(dummyId):
+    setEditingTitleId(dummyId)
+
+  handleTitleChange(dummyId, newTitle):
+    updateDummy(dummyId, { title: newTitle })
+    setEditingTitleId(null)
+
+  handleTitleEditCancel():
+    setEditingTitleId(null)
+
   handleAddClick():
     setShowAddDropdown(!showAddDropdown)
 
@@ -203,9 +214,13 @@ DummySidebar:
         - dummy
         - isActive
         - isExpanded
+        - isEditingTitle: editingTitleId === dummy.id
         - promptInput: promptInputs[dummy.id] ?? ''
         - isGenerating: isGenerating[dummy.id] ?? false
         - onToggle: () => handleToggle(dummy.id)
+        - onTitleEditStart: () => handleTitleEditStart(dummy.id)
+        - onTitleChange: (title) => handleTitleChange(dummy.id, title)
+        - onTitleEditCancel: handleTitleEditCancel
         - onPromptChange: (v) => handlePromptChange(dummy.id, v)
         - onGenerate: () => handleGenerate(dummy.id)
         - onDelete: () => handleDelete(dummy.id)
@@ -230,8 +245,28 @@ DummySidebar:
 │ │ │ ✨ Generate  │ │ 🗑    │ │ │
 │ │ └──────────────┘ └───────┘ │ │
 │ └────────────────────────────┘ │
-│ 📐 Poetry Dummy 1  poetry  > │  ← Collapsed
-│ 📐 Prose Dummy 2   prose   > │  ← Collapsed
+│ 📐 Poetry Dummy 1  poetry  >   │  ← Collapsed
+│ 📐 Prose Dummy 2   prose   >   │  ← Collapsed
+└────────────────────────────────┘
+```
+
+**Title Hover State:**
+
+```
+┌────────────────────────────────┐
+│ 📐 Prose Dummy 1   prose  ✏️ ∨  │  ← Pencil icon appears on hover
+│ ────────────────────────────── │
+│ PROMPT                         │
+└────────────────────────────────┘
+```
+
+**Title Edit State:**
+
+```
+┌────────────────────────────────┐
+│ 📐 [Prose Dummy 1      ]  ✓ ✕  │  ← Input field, confirm/cancel
+│ ────────────────────────────── │
+│ PROMPT                         │
 └────────────────────────────────┘
 ```
 
@@ -244,8 +279,8 @@ DummySidebar:
 │                          │ 📐 Prose Dummy  │
 │                          │ 📐 Poetry Dummy │
 │                          └─────────────────┘
-│ 📐 Prose Dummy 1   prose   > │
-│ ...                           │
+│ 📐 Prose Dummy 1   prose    >  │
+│ ...                            │
 └────────────────────────────────┘
 ```
 
@@ -269,7 +304,7 @@ DummySidebar:
 
 ```
 ┌────────────────────────────────┐
-│ 📐 Prose Dummy 1   prose   ∨ │
+│ 📐 Prose Dummy 1   prose    ∨  │
 │ ────────────────────────────── │
 │ PROMPT                         │
 │ ┌────────────────────────────┐ │
@@ -311,9 +346,13 @@ interface DummyItemProps {
   dummy: ManuscriptDummy;
   isActive: boolean;
   isExpanded: boolean;
+  isEditingTitle: boolean;
   promptInput: string;
   isGenerating: boolean;
   onToggle: () => void;
+  onTitleEditStart: () => void;
+  onTitleChange: (title: string) => void;
+  onTitleEditCancel: () => void;
   onPromptChange: (value: string) => void;
   onGenerate: () => void;
   onDelete: () => void;
@@ -323,14 +362,27 @@ interface DummyItemProps {
 **Visual:**
 
 ```
-Collapsed:
+Normal (not hovering):
 ┌────────────────────────────────────────────────────┐
 │ 📐 Prose Dummy 1   [prose]                       > │
 └────────────────────────────────────────────────────┘
 
-Expanded:
+Hover (shows pencil):
 ┌────────────────────────────────────────────────────┐
-│ 📐 Prose Dummy 1   [prose]                       ∨ │
+│ 📐 Prose Dummy 1   [prose]  ✏️                    > │
+│                              ↑ pencil on hover     │
+└────────────────────────────────────────────────────┘
+
+Editing Title:
+┌────────────────────────────────────────────────────┐
+│ 📐 [Prose Dummy 1                ]  ✓  ✕         > │
+│     └─────── input field ────────┘  ↑  ↑           │
+│                                  save cancel       │
+└────────────────────────────────────────────────────┘
+
+Expanded (not editing):
+┌────────────────────────────────────────────────────┐
+│ 📐 Prose Dummy 1   [prose]  ✏️                    ∨ │
 ├────────────────────────────────────────────────────┤
 │ PROMPT                                             │
 │ ┌────────────────────────────────────────────────┐ │
@@ -384,7 +436,7 @@ interface AddDummyDropdownProps {
 ### 4.1 Key Design Decisions
 
 **Dynamic List vs Fixed Tabs**
-Unlike DocSidebar (fixed Brief/Draft/Script tabs), DummySidebar has a dynamic list. User can create multiple dummies of any type.
+DummySidebar has a dynamic list. User can create multiple dummies of any type.
 
 **Accordion Exclusivity**
 Only one DummyItem expanded at a time. Expanding also selects the dummy for viewing in SpreadView.
@@ -413,6 +465,9 @@ Each DummyItem shows a type badge (`prose` or `poetry`) to distinguish dummy typ
 | Add button | `button` | `aria-haspopup="menu"`, `aria-expanded` |
 | DummyList | `listbox` | `aria-label="Dummy layouts"` |
 | DummyItem header | `option` | `aria-selected`, `aria-expanded` |
+| Title input | `textbox` | `aria-label="Edit dummy title"` |
+| Save title btn | `button` | `aria-label="Save title"` |
+| Cancel edit btn | `button` | `aria-label="Cancel editing"` |
 | Delete button | `button` | `aria-label="Delete dummy"` |
 
 ### 4.4 Keyboard Navigation
@@ -422,6 +477,9 @@ Each DummyItem shows a type badge (`prose` or `poetry`) to distinguish dummy typ
 | `Tab` | Move between items |
 | `Enter` / `Space` | Toggle expanded |
 | `Arrow Up/Down` | Navigate items |
+| `F2` | Edit selected dummy title |
+| `Enter` (in title input) | Save title |
+| `Escape` (in title input) | Cancel editing |
 | `Delete` | Delete selected (with confirmation) |
 
 ---

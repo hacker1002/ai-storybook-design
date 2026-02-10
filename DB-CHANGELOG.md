@@ -2,13 +2,17 @@
 
 ---
 
-## [2026-02-10 10:05] Add docs[] title & other type
+## [2026-02-10 10:05] Add docs[] title & other type, dummies[] id & title
 
 ### JSONB docs[]
 - **type**: Added `other` option (brief | draft | script | other)
 - **title**: NEW field - user-entered document title
 
 **Rationale**: `other` cho phép user tự thêm docs tuỳ ý (không thuộc brief/draft/script). `title` cho phép user đặt tên cho document.
+
+### JSONB dummies[]
+- **id**: NEW field UUID
+- **title**: NEW field - user-entered dummy title
 
 Migration: N/A (JSONB field, backward compatible - existing docs có thể không có title)
 

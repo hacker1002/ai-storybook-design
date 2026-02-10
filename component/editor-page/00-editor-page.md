@@ -28,7 +28,7 @@
 │  │        │  ┌─────────────────────────────────────────────┐  │   Sidebar    │  │
 │  │  Icon  │  │ MANUSCRIPT STEP:                            │  │     (AI)     │  │
 │  │  Rail  │  │   DocCreativeSpace        (if doc)          │  │              │  │
-│  │        │  │   DummyCreativeSpace      (if dummy) ⚡      │  │  ┌────────┐  │  │
+│  │        │  │   DummyCreativeSpace      (if dummy)        │  │  ┌────────┐  │  │
 │  │        │  │   SketchCreativeSpace     (if sketch)       │  │  │   X    │  │  │
 │  │        │  │                                             │  │  │ close  │  │  │
 │  │        │  │ ILLUSTRATION STEP:                          │  │  └────────┘  │  │
@@ -95,7 +95,7 @@
   │  CreativeSpaces (use selectors directly from both stores)                 │
   │  ┌─────────────────────────────────────────────────────────────────────┐  │
   │  │ • DocCreativeSpace         → useDocs()                              │  │
-  │  │ • DummyCreativeSpace ⚡     → useDummies(), useCurrentLanguage()     │  │
+  │  │ • DummyCreativeSpace       → useDummies()                           │  │
   │  │ • SketchCreativeSpace      → useSketch()                            │  │
   │  │ • CharactersCreativeSpace  → useCharacters(), useCurrentStep()      │  │
   │  │ • PropsCreativeSpace       → useProps(), useCurrentStep()           │  │
@@ -129,7 +129,7 @@ CreativeSpaces được render dựa trên `currentStep`. Mỗi step có bộ ic
 | CreativeSpace | Receives `currentLanguage` | How it's used |
 |-----------|---------------------------|---------------|
 | DocCreativeSpace | ❌ | Document content not multilingual |
-| **DummyCreativeSpace** | ✅ | Textbox content in dummy spreads |
+| DummyCreativeSpace | ❌ | Dummy spreads not multilingual |
 | SketchCreativeSpace | ❌ | Sketch sheets not multilingual |
 | CharactersCreativeSpace | ❌ | Character metadata not multilingual |
 | PropsCreativeSpace | ❌ | Props metadata not multilingual |
@@ -447,7 +447,7 @@ interface DocCreativeSpaceProps {
 
 ---
 
-### 3.4 DummyCreativeSpace ⚡
+### 3.4 DummyCreativeSpace
 
 📄 **Doc:** [component/editor-page/04-dummy-creative-space.md](component/editor-page/04-dummy-creative-space.md)
 
@@ -455,13 +455,11 @@ interface DocCreativeSpaceProps {
 
 **Mục đích:** Dummy layout editor. Prose/Poetry dummy types với spread grid. Quản lý textboxes và art notes.
 
-**Special Impact:** ✅ Textbox content hiển thị theo `currentLanguage.code`
-
 **Props & Callbacks:**
 
 ```typescript
 interface DummyCreativeSpaceProps {
-  // currentLanguage via useCurrentLanguage() - no prop drilling
+  // No props needed - pure store consumer
 }
 ```
 

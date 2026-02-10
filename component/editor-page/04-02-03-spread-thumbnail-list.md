@@ -35,14 +35,14 @@ Layout: Grid (vertical scroll)
 ### 1.2 Data Flow
 
 ```
-        ┌─────────────────────┐          ┌───────────────────────┐
-        │    SnapshotStore    │          │  EditorSettingsStore  │
-        │   (Zustand global)  │          │   (Zustand global)    │
-        └──────────┬──────────┘          └───────────┬───────────┘
-                   │                                 │
-         ┌─────────┼─────────────────────────────────┼────────────┐
-         │         │ (selectors)                     │ (selector) │
-         ▼         ▼                                 ▼            ▼
+                    ┌─────────────────────┐
+                    │    SnapshotStore    │
+                    │   (Zustand global)  │
+                    └──────────┬──────────┘
+                               │
+                     ┌─────────┼─────────┐
+                     │         │         │
+                     ▼         ▼         ▼
 ┌───────────────────────────────────────────────────────────────────────────────────┐
 │                              SpreadThumbnailList                                  │
 │  ┌─────────────────────────────────────────────────────────────────────────────┐  │
@@ -79,8 +79,6 @@ Layout: Grid (vertical scroll)
 
 **Mục đích:** Thumbnails container (horizontal filmstrip hoặc vertical grid) cho spread navigation và reorder bằng drag-drop.
 
-**Special Impact:** ✅ **BỊ ẢNH HƯỞNG** — Textbox preview theo `currentLanguage.code`
-
 **Shared Types:**
 
 ```typescript
@@ -97,9 +95,8 @@ type DisplayField = 'art_note' | 'visual_description';
 ```typescript
 interface SpreadThumbnailListProps {
   mode: SpreadViewMode;
-  dummyType?: DummyType;                 // Required for dummy mode
+  dummyId?: string;                      // Required for dummy mode (UUID)
   selectedId: string | null;             // ID-based selection
-  // currentLanguage via useCurrentLanguage() - no prop drilling
   displayField: DisplayField;
   isDragEnabled: boolean;
   canAdd: boolean;
@@ -123,12 +120,9 @@ interface SpreadThumbnailListState {
 **Store Integration:**
 
 ```typescript
-// EditorSettingsStore (global UI state)
-currentLanguage = useCurrentLanguage();  // ⚡ no prop drilling
-
 // SnapshotStore Selectors (mode-conditional, shallow compare for minimal re-renders)
 spreadIds = mode === 'dummy'
-  ? useDummySpreadIds(dummyType!)    // string[]
+  ? useDummySpreadIds(dummyId!)      // string[]
   : useSpreadIds();                   // string[]
 
 // SnapshotStore Actions (no re-render)
@@ -138,7 +132,7 @@ const { addDummySpread, reorderDummySpreads, addSpread, reorderSpreads } = useSn
 handleAddSpread(): void {
   const newSpread = createEmptySpread();
   mode === 'dummy'
-    ? addDummySpread(dummyType!, newSpread)
+    ? addDummySpread(dummyId!, newSpread)
     : addSpread(newSpread);
 }
 
@@ -147,7 +141,7 @@ handleDragEnd(activeId: string, overId: string): void {
   const newIndex = spreadIds.indexOf(overId);
   if (oldIndex !== newIndex) {
     mode === 'dummy'
-      ? reorderDummySpreads(dummyType!, oldIndex, newIndex)
+      ? reorderDummySpreads(dummyId!, oldIndex, newIndex)
       : reorderSpreads(oldIndex, newIndex);
   }
 }
@@ -157,8 +151,7 @@ handleDragEnd(activeId: string, overId: string): void {
 
 ```
 SpreadThumbnailList:
-  spreadIds = mode === 'dummy' ? useDummySpreadIds(dummyType) : useSpreadIds()
-  currentLanguage = useCurrentLanguage()  // From EditorSettingsStore
+  spreadIds = mode === 'dummy' ? useDummySpreadIds(dummyId) : useSpreadIds()
   actions = useSnapshotActions()
 
   thumbnailSize = layout === 'horizontal' ? 'small' : 'medium'
@@ -167,11 +160,10 @@ SpreadThumbnailList:
   RENDER ScrollContainer (native scroll, scroll-snap):
     FOR EACH id IN spreadIds:
       RENDER SpreadThumbnail với:
-        - spreadId, mode, dummyType, isSelected: id === selectedId
+        - spreadId, mode, dummyId, isSelected: id === selectedId
         - displayField, size: thumbnailSize
         - isDragging: id === draggedId, isDropTarget: id === dropTargetId
         - isDragEnabled, onClick, onDragStart, onDragOver, onDragEnd
-        // SpreadThumbnail uses useCurrentLanguage() internally
 
     IF canAdd:
       RENDER NewSpreadButton onClick → addSpread/addDummySpread
@@ -239,9 +231,8 @@ SpreadThumbnailList:
 interface SpreadThumbnailProps {
   spreadId: string;                      // ID-based, uses store internally
   mode: SpreadViewMode;
-  dummyType?: DummyType;                 // Required for dummy mode
+  dummyId?: string;                      // Required for dummy mode
   isSelected: boolean;
-  // currentLanguage via useCurrentLanguage() - no prop drilling
   displayField: DisplayField;
   isDragging?: boolean;
   isDropTarget?: boolean;
