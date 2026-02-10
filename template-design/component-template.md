@@ -165,8 +165,8 @@ Selected:             Disabled:
 
 ### 3.1 [ChildComponent1]
 
-📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component1}.md`](component/{page-name}/{hierarchy}-{child-component1}.md)
-**(IMPORTANT) link phải có đầy đủ path từ root (component/{page-name}). Add link child component kể cả chưa có doc**
+📄 **Doc:** [`{child-component1}.md`](./{child-component1}.md)
+**(IMPORTANT) Add link child component kể cả chưa có doc**
 
 **Mục đích:** [Mô tả nhiệm vụ - 1 câu]
 
@@ -196,8 +196,8 @@ interface [ChildComponent1]Props {
 
 ### 3.2 [ChildComponent2]
 
-📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component2}.md`](component/{page-name}/{hierarchy}-{child-component2}.md)
-**(IMPORTANT) link phải có đầy đủ path từ root (component/{page-name}). Add link child component kể cả chưa có doc**
+📄 **Doc:** [`{child-component2}.md`](./{child-component2}.md)
+**(IMPORTANT) Add link child component kể cả chưa có doc**
 
 **Mục đích:** [Mô tả nhiệm vụ - 1 câu]
 
@@ -216,8 +216,8 @@ interface [ChildComponent2]Props {
 
 ### 3.3 [ChildComponent3]
 
-📄 **Doc:** [`component/{page-name}/{hierarchy}-{child-component3}.md`](component/{page-name}/{hierarchy}-{child-component3}.md)
-**(IMPORTANT) link phải có đầy đủ path từ root (component/{page-name}). Add link child component kể cả chưa có doc**
+📄 **Doc:** [`{child-component3}.md`](./{child-component3}.md)
+**(IMPORTANT) Add link child component kể cả chưa có doc**
 
 **Mục đích:** [Mô tả nhiệm vụ - 1 câu]
 
