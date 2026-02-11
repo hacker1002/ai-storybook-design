@@ -16,8 +16,8 @@
 
 ```typescript
 interface GenerateScriptRequest {
-  // Required - Selected draft from previous step
-  draft: DraftItem;
+  // Required - Selected draft from previous step (markdown string)
+  draft: string;                            // Markdown text of selected draft
 
   // Required - User refinement
   prompt: string;                           // Ghi chú bổ sung từ tác giả
@@ -34,20 +34,6 @@ interface GenerateScriptRequest {
     era?: { id: string; name: string; description: string };
     location?: { id: string; name: string; description: string };
   };
-}
-
-// From generate-draft result
-interface DraftItem {
-  title: string;
-  voice_style: string;
-  who: string;
-  what: string;
-  when: string;
-  where: string;
-  why: string;
-  how: string;
-  characters: CharacterProfile[];
-  full_narrative: string;
 }
 ```
 
@@ -98,7 +84,7 @@ AI trả về 1 markdown có các trường:
 
 ```
 1. Validate input
-   - draft: required object with all DraftItem fields
+   - draft: required string (markdown)
    - prompt: required string
    - llmContext: required object with targetAudience, targetCoreValue, formatGenre, contentGenre
 
@@ -118,7 +104,7 @@ AI trả về 1 markdown có các trường:
      • contentGenre → CONTENT_GENRE_MAP
 
 4. Render variables
-   - Replace {%request.draft%} with JSON.stringify(draft)
+   - Replace {%request.draft%} with draft (markdown string)
    - Replace {%request.prompt%} with user input
 
 5. Call LLM

@@ -16,8 +16,8 @@
 
 ```typescript
 interface GenerateDraftRequest {
-  // Required - Selected brief from previous step
-  brief: BriefItem;
+  // Required - Selected brief from previous step (markdown string)
+  brief: string;                            // Markdown text of selected brief
 
   // Required - User refinement
   prompt: string;                           // Ghi chú bổ sung từ tác giả
@@ -34,17 +34,6 @@ interface GenerateDraftRequest {
     era?: { id: string; name: string; description: string };
     location?: { id: string; name: string; description: string };
   };
-}
-
-// From generate-brief result
-interface BriefItem {
-  title: string;
-  logline: string;
-  plot_summary: string;
-  main_character: string;
-  story_question: string;
-  theme_message: string;
-  unique_angle: string;
 }
 ```
 
@@ -91,7 +80,7 @@ AI trả về markdown gồm 2 đoạn, mỗi đoạn có các trường:
 
 ```
 1. Validate input
-   - brief: required object with all BriefItem fields
+   - brief: required string (markdown)
    - prompt: required string
    - llmContext: required object with targetAudience, targetCoreValue, formatGenre, contentGenre
 
@@ -111,7 +100,7 @@ AI trả về markdown gồm 2 đoạn, mỗi đoạn có các trường:
      • contentGenre → CONTENT_GENRE_MAP
 
 4. Render variables
-   - Replace {%request.brief%} with JSON.stringify(brief)
+   - Replace {%request.brief%} with brief (markdown string)
    - Replace {%request.prompt%} with user input
 
 5. Call LLM
