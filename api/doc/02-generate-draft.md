@@ -8,7 +8,7 @@
 ## DB Schema Dependencies
 
 ### Tables Referenced
-- `prompt_templates`: Lấy GENERATE_DRAFT_SKILL, GENERATE_DRAFT_SYSTEM prompts + model
+- `prompt_templates`: Lấy WRITING_DRAFT_SKILL, GENERATE_DRAFT_SYSTEM prompts + model
 - `eras`: Truy vấn era name, description (nếu chỉ truyền id)
 - `locations`: Truy vấn location name, description (nếu chỉ truyền id)
 
@@ -137,6 +137,11 @@ interface CharacterProfile {
 - **LLM Error**: Log error, return 500 with generic message
 - **Parse Error**: If JSON invalid, retry once
 - **Incomplete Response**: If < 2 drafts, return partial with warning
+
+## References
+
+- [Prompt Template System](../README.md#prompt-template-system) - Variable syntax `{%request.brief%}`, `{%request.prompt%}`, skill reference pattern
+- [Enum Mappings](../README.md#enum-mappings) - TARGET_AUDIENCE_MAP, TARGET_CORE_VALUE_MAP, FORMAT_GENRE_MAP, CONTENT_GENRE_MAP
 
 ## Notes
 - API is stateless - does not save drafts to DB

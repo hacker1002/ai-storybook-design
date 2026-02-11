@@ -39,6 +39,11 @@ interface LLMContext {
 }
 ```
 
+## References
+
+- [Prompt Template System](../README.md#prompt-template-system) - Variable syntax, naming convention, skill reference, build flow
+- [Enum Mappings](../README.md#enum-mappings) - book_type, dimension, target_audience, target_core_value, format_genre, content_genre, writing_style
+
 ## Design Principles
 
 1. **Stateless APIs** - Không lưu DB, client tự quản lý flow
