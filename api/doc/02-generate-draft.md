@@ -53,38 +53,30 @@ interface BriefItem {
 ```typescript
 interface GenerateDraftResult {
   success: boolean;
-  data: DraftItem[];                        // Array of 2 drafts
+  data: string;                             // Markdown text containing 2 drafts
   meta?: {
     processingTime?: number;
     tokenUsage?: number;
   };
 }
-
-interface DraftItem {
-  title: string;
-  voice_style: string;                      // Mô tả giọng văn
-
-  // 6W
-  who: string;
-  what: string;
-  when: string;
-  where: string;
-  why: string;
-  how: string;
-
-  characters: CharacterProfile[];
-  full_narrative: string;                   // Cốt truyện đầy đủ + dialogue mẫu
-}
-
-interface CharacterProfile {
-  name: string;
-  role: string;                             // main character, supporting, antagonist
-  appearance: string;
-  personality: string;
-  want: string;
-  arc: string;
-}
 ```
+
+### AI Output Format (Markdown)
+
+AI trả về markdown gồm 2 đoạn, mỗi đoạn có các trường:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| title | string | Tiêu đề draft |
+| voice_style | string | Mô tả giọng văn |
+| who | string | Nhân vật chính là ai |
+| what | string | Chuyện gì xảy ra |
+| when | string | Bối cảnh thời gian |
+| where | string | Bối cảnh không gian |
+| why | string | Tại sao nhân vật hành động |
+| how | string | Nhân vật giải quyết bằng cách nào |
+| characters | array | Danh sách nhân vật (name, role, appearance, personality, want, arc) |
+| full_narrative | string | Cốt truyện đầy đủ + dialogue mẫu |
 
 ## Prompt Templates
 
@@ -126,17 +118,17 @@ interface CharacterProfile {
    - model: from prompt_templates.model
    - thinking_level: high, temperature: 2, responseMimeType: text/plain
 
-6. Parse & validate response
-   - JSON array, length = 2, validate characters array structure
+6. Return markdown response
+   - Return raw markdown text from AI
+   - Client parses markdown to extract 2 drafts
 
-7. Return { success, data: DraftItem[], meta }
+7. Return { success, data: string (markdown), meta }
 ```
 
 ## Error Handling
 - **Validation Error**: Return 400 with field-specific errors
 - **LLM Error**: Log error, return 500 with generic message
-- **Parse Error**: If JSON invalid, retry once
-- **Incomplete Response**: If < 2 drafts, return partial with warning
+- **Empty Response**: If AI returns empty/invalid markdown, retry once
 
 ## References
 
@@ -145,6 +137,7 @@ interface CharacterProfile {
 
 ## Notes
 - API is stateless - does not save drafts to DB
+- AI returns markdown, client parses to extract structured drafts
 - Client stores selected draft locally for next step (generate-script)
 - 2 drafts must differ in voice/tone and storytelling approach
 - full_narrative should include sample dialogues showing character voice

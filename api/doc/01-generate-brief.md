@@ -47,23 +47,27 @@ interface GenerateBriefRequest {
 ```typescript
 interface GenerateBriefResult {
   success: boolean;
-  data: BriefItem[];                        // Array of 3 briefs
+  data: string;                             // Markdown text containing 3 briefs
   meta?: {
     processingTime?: number;                // ms
     tokenUsage?: number;
   };
 }
-
-interface BriefItem {
-  title: string;                            // Tiêu đề hấp dẫn, ngắn gọn
-  logline: string;                          // 1 câu khiến tò mò ngay lập tức
-  plot_summary: string;                     // 3-5 câu: mở đầu → xung đột → cao trào → kết thúc
-  main_character: string;                   // Đặc điểm nổi bật phù hợp plot
-  story_question: string;                   // Câu hỏi cốt lõi
-  theme_message: string;                    // Thông điệp, bài học
-  unique_angle: string;                     // Điều gì khiến truyện đặc biệt
-}
 ```
+
+### AI Output Format (Markdown)
+
+AI trả về markdown gồm 3 đoạn, mỗi đoạn có các trường:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| title | string | Tiêu đề hấp dẫn, ngắn gọn |
+| logline | string | 1 câu khiến tò mò ngay lập tức |
+| plot_summary | string | 3-5 câu: mở đầu → xung đột → cao trào → kết thúc |
+| main_character | string | Đặc điểm nổi bật phù hợp plot |
+| story_question | string | Câu hỏi cốt lõi |
+| theme_message | string | Thông điệp, bài học |
+| unique_angle | string | Điều gì khiến truyện đặc biệt |
 
 ## Prompt Templates
 
@@ -103,17 +107,17 @@ interface BriefItem {
    - model: from prompt_templates.model
    - thinking_level: high, temperature: 2, responseMimeType: text/plain
 
-6. Parse & validate response
-   - JSON array, length = 3, all required fields as strings
+6. Return markdown response
+   - Return raw markdown text from AI
+   - Client parses markdown to extract 3 briefs
 
-7. Return { success, data: BriefItem[], meta }
+7. Return { success, data: string (markdown), meta }
 ```
 
 ## Error Handling
 - **Validation Error**: Return 400 with field-specific errors
 - **LLM Error**: Log error, return 500 with generic message
-- **Parse Error**: If JSON invalid, retry once with explicit JSON instruction
-- **Incomplete Response**: If < 3 briefs, return partial with warning
+- **Empty Response**: If AI returns empty/invalid markdown, retry once
 
 ## References
 
@@ -122,5 +126,6 @@ interface BriefItem {
 
 ## Notes
 - API is stateless - does not save briefs to DB
+- AI returns markdown, client parses to extract structured briefs
 - Client stores selected brief locally for next step (generate-draft)
 - 3 briefs must be distinctly different in approach, tone, character

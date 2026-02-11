@@ -56,40 +56,43 @@ interface DraftItem {
 ```typescript
 interface GenerateScriptResult {
   success: boolean;
-  data: ScriptItem;                         // Single script object
+  data: string;                             // Markdown text containing script
   meta?: {
     processingTime?: number;
     tokenUsage?: number;
   };
 }
-
-interface ScriptItem {
-  title: string;
-  dedication: string | null;
-
-  pages: PageItem[];
-
-  word_count: number;                       // Tổng số từ text
-  reading_time_minutes: number;
-}
-
-interface PageItem {
-  page_number: string;                      // "1", "2-3", "30-31"
-  text: string;                             // Lời văn chính xác trên trang
-  illustration_notes: string;               // Ghi chú cho illustrator
-  page_turn_hook: string | null;            // Yếu tố tạo suspense
-}
 ```
+
+### AI Output Format (Markdown)
+
+AI trả về 1 markdown có các trường:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| title | string | Tiêu đề script |
+| dedication | string/null | Lời đề tặng (optional) |
+| pages | array | Danh sách trang (xem bảng bên dưới) |
+| word_count | integer | Tổng số từ text (không đếm illustration notes) |
+| reading_time_minutes | number | Thời gian đọc ước tính |
+
+**Page Item fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| page_number | string | Số trang ("1", "2-3", "30-31") |
+| text | string | Lời văn chính xác trên trang |
+| illustration_notes | string | Ghi chú cho illustrator |
+| page_turn_hook | string/null | Yếu tố tạo suspense khi lật trang |
 
 ## Prompt Templates
 
 | Type | Name | Description |
 |------|------|-------------|
 | System | `GENERATE_SCRIPT_SYSTEM` | User request + output format |
-| Skill | `WRITING_SCRIPT_SKILL` | Role + knowledge (32-page structure, page turns, illustration notes) |
-| Skill | `PACING_SKILL` | Pacing, rhythm, word count control |
+| Skill | `WRITING_SCRIPT_PACING_SKILL` | Role + knowledge (32-page structure, page turns, illustration notes, pacing, word count) |
 
-**Skill Reference:** `@@Skill sử dụng: WRITING_SCRIPT_SKILL, PACING_SKILL`
+**Skill Reference:** `@@Skill sử dụng: WRITING_SCRIPT_PACING_SKILL`
 
 ## Flow
 
@@ -101,7 +104,7 @@ interface PageItem {
 
 2. Build prompts (Prompt Build Logic)
    a. Fetch system prompt: GENERATE_SCRIPT_SYSTEM
-   b. Extract skill names: parse "@@Skill sử dụng: ..." → ['WRITING_SCRIPT_SKILL', 'PACING_SKILL']
+   b. Extract skill names: parse "@@Skill sử dụng: ..." → ['WRITING_SCRIPT_PACING_SKILL']
    c. Fetch skill prompts from DB
    d. Combine: skillPrompts + systemPrompt
 
@@ -122,18 +125,17 @@ interface PageItem {
    - model: from prompt_templates.model
    - thinking_level: high, temperature: 2, responseMimeType: text/plain
 
-6. Parse & validate response
-   - JSON object, required fields: title, pages, word_count, reading_time_minutes
-   - Validate pages array structure
+6. Return markdown response
+   - Return raw markdown text from AI
+   - Client parses markdown to extract script
 
-7. Return { success, data: ScriptItem, meta }
+7. Return { success, data: string (markdown), meta }
 ```
 
 ## Error Handling
 - **Validation Error**: Return 400 with field-specific errors
 - **LLM Error**: Log error, return 500 with generic message
-- **Parse Error**: If JSON invalid, retry once
-- **Incomplete Pages**: If missing required page structure, return error
+- **Empty Response**: If AI returns empty/invalid markdown, retry once
 
 ## References
 
@@ -142,6 +144,7 @@ interface PageItem {
 
 ## Notes
 - API is stateless - does not save script to DB
+- AI returns markdown, client parses to extract structured script
 - This is the final step in the brief → draft → script flow
 - Output script can be saved to snapshot.docs[] by client
 - Script follows standard 32-page picture book structure
