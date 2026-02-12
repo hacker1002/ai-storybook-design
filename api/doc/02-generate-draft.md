@@ -15,12 +15,24 @@
 ## Parameters
 
 ```typescript
+interface Attachment {
+  filename: string;                          // Tên file gốc
+  mimeType: string;                          // MIME type (image/png, application/pdf, etc.)
+  base64Data: string;                        // Base64 encoded content (max 10MB per file)
+}
+
 interface GenerateDraftRequest {
   // Required - Selected brief from previous step (markdown string)
   brief: string;                            // Markdown text of selected brief
 
   // Required - User refinement
   prompt: string;                           // Ghi chú bổ sung từ tác giả
+
+  // Optional - Current content (for regeneration/refinement)
+  currentDraft?: string;                    // Draft hiện tại (nếu đang chỉnh sửa)
+
+  // Optional - Attachments
+  attachments?: Attachment[];               // File đính kèm (reference materials, images, etc.)
 
   // Required - LLM Context
   llmContext: {
@@ -63,7 +75,7 @@ AI trả về markdown gồm 2 đoạn, mỗi đoạn có các trường:
 | when | string | Bối cảnh thời gian |
 | where | string | Bối cảnh không gian |
 | why | string | Tại sao nhân vật hành động |
-| how | string | Nhân vật giải quyết bằng cách nào |
+| wow_moment | string | Điểm nhấn bất ngờ/cảm xúc của truyện |
 | characters | array | Danh sách nhân vật (name, role, appearance, personality, want, arc) |
 | full_narrative | string | Cốt truyện đầy đủ + dialogue mẫu |
 
@@ -83,6 +95,8 @@ AI trả về markdown gồm 2 đoạn, mỗi đoạn có các trường:
    - brief: required string (markdown)
    - prompt: required string
    - llmContext: required object with targetAudience, targetCoreValue, formatGenre, contentGenre
+   - currentDraft: optional string
+   - attachments: optional array, each item must have filename, mimeType, base64Data (max 10MB)
 
 2. Build prompts (Prompt Build Logic)
    a. Fetch system prompt: GENERATE_DRAFT_SYSTEM
@@ -100,8 +114,11 @@ AI trả về markdown gồm 2 đoạn, mỗi đoạn có các trường:
      • contentGenre → CONTENT_GENRE_MAP
 
 4. Render variables
-   - Replace {%request.brief%} with brief (markdown string)
    - Replace {%request.prompt%} with user input
+   - Replace {%request.brief%} with brief (markdown string)
+   - Replace {%request.current_draft%} with currentDraft (empty string if null)
+   - Replace {%request.attachments%} with attachments metadata (filenames, types), keep attachment sequences
+   - IF attachments: Include as inlineData parts in LLM request (base64 passed directly)
 
 5. Call LLM
    - model: from prompt_templates.model

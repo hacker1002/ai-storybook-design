@@ -15,12 +15,24 @@
 ## Parameters
 
 ```typescript
+interface Attachment {
+  filename: string;                          // Tên file gốc
+  mimeType: string;                          // MIME type (image/png, application/pdf, etc.)
+  base64Data: string;                        // Base64 encoded content (max 10MB per file)
+}
+
 interface GenerateScriptRequest {
   // Required - Selected draft from previous step (markdown string)
   draft: string;                            // Markdown text of selected draft
 
   // Required - User refinement
   prompt: string;                           // Ghi chú bổ sung từ tác giả
+
+  // Optional - Current content (for regeneration/refinement)
+  currentScript?: string;                   // Script hiện tại (nếu đang chỉnh sửa)
+
+  // Optional - Attachments
+  attachments?: Attachment[];               // File đính kèm (reference materials, images, etc.)
 
   // Required - LLM Context
   llmContext: {
@@ -87,6 +99,8 @@ AI trả về 1 markdown có các trường:
    - draft: required string (markdown)
    - prompt: required string
    - llmContext: required object with targetAudience, targetCoreValue, formatGenre, contentGenre
+   - currentScript: optional string
+   - attachments: optional array, each item must have filename, mimeType, base64Data (max 10MB)
 
 2. Build prompts (Prompt Build Logic)
    a. Fetch system prompt: GENERATE_SCRIPT_SYSTEM
@@ -104,8 +118,11 @@ AI trả về 1 markdown có các trường:
      • contentGenre → CONTENT_GENRE_MAP
 
 4. Render variables
-   - Replace {%request.draft%} with draft (markdown string)
    - Replace {%request.prompt%} with user input
+   - Replace {%request.draft%} with draft (markdown string)
+   - Replace {%request.current_script%} with currentScript (empty string if null)
+   - Replace {%request.attachments%} with attachments metadata (filenames, types), keep attachment sequences
+   - IF attachments: Include as inlineData parts in LLM request (base64 passed directly)
 
 5. Call LLM
    - model: from prompt_templates.model

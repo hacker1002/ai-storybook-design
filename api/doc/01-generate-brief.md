@@ -15,9 +15,21 @@
 ## Parameters
 
 ```typescript
+interface Attachment {
+  filename: string;                          // Tên file gốc
+  mimeType: string;                          // MIME type (image/png, application/pdf, etc.)
+  base64Data: string;                        // Base64 encoded content (max 10MB per file)
+}
+
 interface GenerateBriefRequest {
   // Required - User input
   prompt: string;                           // Ý tưởng truyện từ tác giả
+
+  // Optional - Current content (for regeneration/refinement)
+  currentBrief?: string;                    // Brief hiện tại (nếu đang chỉnh sửa)
+
+  // Optional - Attachments
+  attachments?: Attachment[];               // File đính kèm (reference materials, images, etc.)
 
   // Required - LLM Context
   llmContext: {
@@ -84,6 +96,8 @@ AI trả về markdown gồm 3 đoạn, mỗi đoạn có các trường:
 1. Validate input
    - prompt: required, non-empty string
    - llmContext: required object with targetAudience, targetCoreValue, formatGenre, contentGenre
+   - currentBrief: optional string
+   - attachments: optional array, each item must have filename, mimeType, base64Data (max 10MB)
 
 2. Build prompts (Prompt Build Logic)
    a. Fetch system prompt: GENERATE_BRIEF_SYSTEM
@@ -102,6 +116,9 @@ AI trả về markdown gồm 3 đoạn, mỗi đoạn có các trường:
 
 4. Render variables
    - Replace {%request.prompt%} with user input
+   - Replace {%request.current_brief%} with currentBrief (empty string if null)
+   - Replace {%request.attachments%} with attachments metadata (filenames, types), keep attachment sequences
+   - IF attachments: Include as inlineData parts in LLM request (base64 passed directly)
 
 5. Call LLM
    - model: from prompt_templates.model
