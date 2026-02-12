@@ -89,12 +89,19 @@ interface Point {
 interface SelectionFrameProps {
   geometry: Geometry;
   zoomLevel: number;               // For accurate delta calculation
-  showHandles: boolean;            // false during drag or text editing
+  showHandles: boolean;            // false during drag, text editing, or canResize=false
   activeHandle: ResizeHandle | null;  // Highlight active handle
 
+  // Feature flags
+  canDrag?: boolean;               // default: true - enable drag to move
+  canResize?: boolean;             // default: true - enable resize handles
+
+  // Drag callbacks (only called if canDrag=true)
   onDragStart: () => void;
   onDrag: (delta: Point) => void;
   onDragEnd: () => void;
+
+  // Resize callbacks (only called if canResize=true)
   onResizeStart: (handle: ResizeHandle) => void;
   onResize: (handle: ResizeHandle, delta: Point) => void;
   onResizeEnd: () => void;
@@ -155,6 +162,7 @@ SelectionFrame:
   currentHandleRef = useRef()
 
   handleFrameMouseDown(e):
+    IF !canDrag: RETURN  // Skip if drag disabled
     e.stopPropagation()
     e.preventDefault()
     canvasRect = frameRef.current.parentElement.getBoundingClientRect()
@@ -168,6 +176,7 @@ SelectionFrame:
     document.addEventListener('mouseup', handleMouseUp)
 
   handleHandleMouseDown(e, handle):
+    IF !canResize: RETURN  // Skip if resize disabled
     e.stopPropagation()
     e.preventDefault()
     canvasRect = frameRef.current.parentElement.getBoundingClientRect()
@@ -202,12 +211,12 @@ SelectionFrame:
       width: geometry.width + '%'
       height: geometry.height + '%'
       border: '2px solid #2196F3'
-      cursor: 'move'
+      cursor: canDrag ? 'move' : 'default'
       zIndex: 100
 
-    onMouseDown: handleFrameMouseDown
+    onMouseDown: canDrag ? handleFrameMouseDown : null
 
-    IF showHandles:
+    IF showHandles && canResize:
       FOR EACH handle IN HANDLE_POSITIONS:
         isActive = handle === activeHandle
         RENDER HandleDot với:

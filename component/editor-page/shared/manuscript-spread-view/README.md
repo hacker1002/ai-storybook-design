@@ -126,10 +126,16 @@ interface ManuscriptSpreadViewProps<TSpread extends BaseSpread> {
   renderObjectToolbar?: (context: ObjectToolbarContext<TSpread>) => ReactNode;
   renderAnimationToolbar?: (context: AnimationToolbarContext<TSpread>) => ReactNode;
 
-  // === Feature flags ===
+  // === Spread-level feature flags ===
   canAddSpread?: boolean;     // default: false
   canDeleteSpread?: boolean;  // default: false
   canReorderSpread?: boolean; // default: false
+
+  // === Item-level feature flags ===
+  canAddItem?: boolean;       // default: false - can add new image/text/object to spread
+  canDeleteItem?: boolean;    // default: false - can delete items from spread
+  canResizeItem?: boolean;    // default: true - can resize items via SelectionFrame handles
+  canDragItem?: boolean;      // default: true - can drag items to change position
 }
 ```
 
@@ -413,6 +419,12 @@ interface SpreadEditorPanelProps<TSpread extends BaseSpread> {
   onUpdateTextbox: (textboxIndex: number, updates: Partial<SpreadTextbox>) => void;
   onDeleteImage?: (imageIndex: number) => void;
   onDeleteTextbox?: (textboxIndex: number) => void;
+
+  // Item-level feature flags
+  canAddItem?: boolean;       // default: false
+  canDeleteItem?: boolean;    // default: false
+  canResizeItem?: boolean;    // default: true
+  canDragItem?: boolean;      // default: true
 }
 ```
 

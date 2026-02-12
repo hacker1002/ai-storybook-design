@@ -144,6 +144,12 @@ interface SpreadEditorPanelProps<TSpread extends BaseSpread> {
   onUpdateAnimation?: (animIndex: number, updates: Partial<SpreadAnimation>) => void;
   onDeleteImage?: (imageIndex: number) => void;
   onDeleteTextbox?: (textboxIndex: number) => void;
+
+  // === Item-level feature flags ===
+  canAddItem?: boolean;       // default: false - show "Add Item" button
+  canDeleteItem?: boolean;    // default: false - allow delete via context menu/keyboard
+  canResizeItem?: boolean;    // default: true - show resize handles on SelectionFrame
+  canDragItem?: boolean;      // default: true - allow drag to reposition items
 }
 ```
 
@@ -341,14 +347,16 @@ SpreadEditorPanel<TSpread>:
           context = buildAnimationContext(anim, index)
           RENDER props.renderAnimationItem?.(context) ?? null
 
-      // SelectionFrame (built-in, always available)
+      // SelectionFrame (built-in, controlled by feature flags)
       IF selectedElement && selectedGeometry && isEditable:
         RENDER SelectionFrame với:
           geometry: selectedGeometry
           zoomLevel
-          showHandles: !isDragging && !isTextboxEditing
-          onDragStart, onDrag, onDragEnd
-          onResizeStart, onResize, onResizeEnd
+          showHandles: canResizeItem && !isDragging && !isTextboxEditing
+          canDrag: canDragItem
+          canResize: canResizeItem
+          onDragStart, onDrag, onDragEnd       // only if canDragItem
+          onResizeStart, onResize, onResizeEnd // only if canResizeItem
 
       // Toolbar (render if item selected and toolbar render function exists)
       IF selectedElement && isEditable:
@@ -419,12 +427,19 @@ SpreadEditorPanel<TSpread>:
 interface SelectionFrameProps {
   geometry: Geometry;
   zoomLevel: number;               // For accurate delta calculation
-  showHandles: boolean;            // false during drag
+  showHandles: boolean;            // false during drag or if canResize=false
   activeHandle: ResizeHandle | null;
 
+  // Feature flags
+  canDrag?: boolean;               // default: true - enable drag to move
+  canResize?: boolean;             // default: true - enable resize handles
+
+  // Drag callbacks (only called if canDrag=true)
   onDragStart: () => void;
   onDrag: (delta: Point) => void;
   onDragEnd: () => void;
+
+  // Resize callbacks (only called if canResize=true)
   onResizeStart: (handle: ResizeHandle) => void;
   onResize: (handle: ResizeHandle, delta: Point) => void;
   onResizeEnd: () => void;
