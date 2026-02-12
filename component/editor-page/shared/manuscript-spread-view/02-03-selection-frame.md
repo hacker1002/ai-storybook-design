@@ -1,6 +1,8 @@
-# SelectionFrame: Component Design
+# SelectionFrame: Internal Component Design
 
 > **Parent:** [SpreadEditorPanel](./02-spread-editor-panel.md)
+>
+> **Role:** Internal component. Not customizable via render props. Handles ALL drag/resize interactions.
 
 ---
 
@@ -53,13 +55,13 @@
 
 ---
 
-## 2. Root Component Design
+## 2. Component Design
 
 ### 2.1 Overview
 
-**Mục đích:** Visual selection overlay với 8 resize handles. Handles ALL drag/resize interactions for selected elements. Rendered as overlay by SpreadEditorPanel when element is selected.
+**Mục đích:** Visual selection overlay với 8 resize handles. Handles ALL drag/resize interactions for selected elements.
 
-> **Note:** Stateless component. All state (isDragging, isResizing, activeHandle) managed by parent SpreadEditorPanel.
+> **Note:** Stateless component. All state managed by parent SpreadEditorPanel.
 
 **Shared Types:**
 
@@ -87,7 +89,7 @@ interface Point {
 interface SelectionFrameProps {
   geometry: Geometry;
   zoomLevel: number;               // For accurate delta calculation
-  showHandles: boolean;            // false during drag
+  showHandles: boolean;            // false during drag or text editing
   activeHandle: ResizeHandle | null;  // Highlight active handle
 
   onDragStart: () => void;
@@ -99,9 +101,7 @@ interface SelectionFrameProps {
 }
 ```
 
-**Local State:** None (pure presentational, state managed by parent)
-
-**Store Integration:** None
+**Local State:** None (pure presentational)
 
 ### 2.3 Handle Configuration
 
@@ -134,14 +134,12 @@ const HANDLE_CURSORS: Record<ResizeHandle, string> = {
 ### 2.4 Delta Calculation
 
 ```typescript
-// Called internally, uses zoomLevel from props
-// startPos is stored as canvas-relative coordinates (not clientX/Y)
 calculateDelta(event, startPos, canvasRect): Point
   // Convert current mouse to canvas-relative, zoom-adjusted
   currentX = (event.clientX - canvasRect.left) / (zoomLevel / 100)
   currentY = (event.clientY - canvasRect.top) / (zoomLevel / 100)
 
-  // Delta in percentage (startPos already canvas-relative)
+  // Delta in percentage
   deltaX = ((currentX - startPos.x) / canvasRect.width) * 100
   deltaY = ((currentY - startPos.y) / canvasRect.height) * 100
 
@@ -153,22 +151,19 @@ calculateDelta(event, startPos, canvasRect): Point
 ```
 SelectionFrame:
   frameRef = useRef()
-  startPosRef = useRef()          // Canvas-relative start position
-  currentHandleRef = useRef()     // Avoids race condition with activeHandle prop
-  isDraggingRef = useRef(false)   // Track drag vs resize mode
+  startPosRef = useRef()
+  currentHandleRef = useRef()
 
   handleFrameMouseDown(e):
     e.stopPropagation()
     e.preventDefault()
     canvasRect = frameRef.current.parentElement.getBoundingClientRect()
-    // Store canvas-relative coords (not raw clientX/Y)
     startPosRef.current = {
       x: (e.clientX - canvasRect.left) / (zoomLevel / 100),
       y: (e.clientY - canvasRect.top) / (zoomLevel / 100)
     }
     onDragStart()
 
-    // Attach global listeners
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
 
@@ -176,11 +171,7 @@ SelectionFrame:
     e.stopPropagation()
     e.preventDefault()
     canvasRect = frameRef.current.parentElement.getBoundingClientRect()
-    startPosRef.current = {
-      x: (e.clientX - canvasRect.left) / (zoomLevel / 100),
-      y: (e.clientY - canvasRect.top) / (zoomLevel / 100)
-    }
-    // Store handle locally to avoid race condition with prop update
+    startPosRef.current = { ... }
     currentHandleRef.current = handle
     onResizeStart(handle)
 
@@ -188,10 +179,7 @@ SelectionFrame:
     document.addEventListener('mouseup', handleMouseUp)
 
   handleMouseMove(e):
-    canvasRect = frameRef.current.parentElement.getBoundingClientRect()
     delta = calculateDelta(e, startPosRef.current, canvasRect)
-
-    // Use ref instead of prop to avoid race condition
     IF currentHandleRef.current:
       onResize(currentHandleRef.current, delta)
     ELSE:
@@ -204,13 +192,7 @@ SelectionFrame:
     ELSE:
       onDragEnd()
 
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', handleMouseUp)
-
-  // Cleanup on unmount
-  useEffect cleanup:
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', handleMouseUp)
+    document.removeEventListener(...)
 
   RENDER FrameContainer (position: absolute):
     ref: frameRef
@@ -222,7 +204,6 @@ SelectionFrame:
       border: '2px solid #2196F3'
       cursor: 'move'
       zIndex: 100
-      pointerEvents: 'auto'
 
     onMouseDown: handleFrameMouseDown
 
@@ -237,7 +218,7 @@ SelectionFrame:
             transform: 'translate(-50%, -50%)'
             width: isActive ? HANDLE_SIZE + 2 : HANDLE_SIZE
             height: isActive ? HANDLE_SIZE + 2 : HANDLE_SIZE
-            background: isActive ? ACTIVE_HANDLE_COLOR : SELECTION_COLOR
+            background: SELECTION_COLOR
             borderRadius: '50%'
             cursor: HANDLE_CURSORS[handle]
             zIndex: 101
@@ -277,8 +258,8 @@ No handles, solid border
 ╟───────┼───────╢
 ○               ○
 ╚═══○═══╧═══○═══╝
-● = active handle (highlighted, 10px)
-○ = inactive handles (normal, 8px)
+● = active handle (10px)
+○ = inactive handles (8px)
 ```
 
 ---
@@ -289,12 +270,10 @@ No handles, solid border
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Handle Count | 8 | Standard resize pattern |
-| Handle Shape | Circle | Clear affordance, no rotation ambiguity |
-| Border Style | Solid 2px | Visible, not distracting |
-| Z-Index | 100/101 | Above elements, handles above frame |
-| State Location | Parent (SpreadEditorPanel) | Single source of truth |
-| Mouse Tracking | Global listeners | Continues working outside frame bounds |
+| Internal component | Not customizable | Consistent behavior |
+| Stateless | Parent manages | Single source of truth |
+| Global listeners | Document events | Works outside bounds |
+| 8 Handles | Standard pattern | Intuitive resize |
 
 ### 3.2 Constants
 
@@ -304,7 +283,6 @@ const HANDLE_SIZE = 8;            // pixels
 const ACTIVE_HANDLE_SIZE = 10;    // pixels
 const BORDER_WIDTH = 2;           // pixels
 const SELECTION_COLOR = '#2196F3';
-const ACTIVE_HANDLE_COLOR = '#1976D2';
 
 const Z_INDEX = {
   frame: 100,
@@ -317,34 +295,14 @@ const Z_INDEX = {
 | Case | Behavior |
 |------|----------|
 | Resize below minimum | Clamp to MIN_SIZE |
-| Drag outside canvas | Clamp to canvas bounds (0-100) |
-| Rapid mouse movement | Handled by global listeners |
+| Drag outside canvas | Clamp to bounds (0-100) |
 | Mouse up outside window | Cleanup via document listener |
 
-### 3.4 Accessibility
-
-```typescript
-<div
-  role="group"
-  aria-label="Selection controls"
-  aria-roledescription="Drag to move, use handles to resize"
->
-  {handles.map(handle => (
-    <div
-      role="slider"
-      aria-label={`Resize ${handle}`}
-      tabIndex={0}
-      onKeyDown={handleKeyResize}
-    />
-  ))}
-</div>
-```
-
-### 3.5 Performance
+### 3.4 Performance
 
 - Use `will-change: transform` during drag/resize
-- Throttle `handleMouseMove` (16ms / 60fps) via `requestAnimationFrame`
-- Cleanup global listeners on unmount via `useEffect` return
-- Use refs for interaction state to avoid stale closures
+- Throttle `handleMouseMove` via `requestAnimationFrame`
+- Cleanup global listeners on unmount
+- Use refs to avoid stale closures
 
 ---

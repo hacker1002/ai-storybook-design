@@ -1,6 +1,6 @@
 # ManuscriptSpreadView: Component Design
 
-> **Note:** Unified component thay thế cả `ManuscriptDummyView` và `ManuscriptFinalizationView`. Used by Prose Dummy, Poetry Dummy, và Finalization steps.
+> **Note:** Props-driven component với render props pattern. Data-agnostic - consumer cung cấp data và render functions.
 
 **Screenshots:**
 - Edit mode: `component/editor-page/screenshots/manuscript-edit-view.png`
@@ -14,7 +14,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│                              ManuscriptSpreadView                                │
+│                         ManuscriptSpreadView<TSpread>                            │
 │  ┌────────────────────────────────────────────────────────────────────────────┐  │
 │  │  SpreadViewHeader                                                          │  │
 │  │  [⚏]                                       ─ ●────── + 100% (or 4 cols)   │  │
@@ -32,52 +32,33 @@
 ### 1.2 Data Flow
 
 ```
-                    ┌─────────────────────┐
-                    │    SnapshotStore    │
-                    │   (Zustand global)  │
-                    └──────────┬──────────┘
-                               │
-                     ┌─────────┼─────────┐
-                     │         │         │
-                     ▼         ▼         ▼
-┌───────────────────────────────────────────────────────────────────────────────────┐
-│                              ManuscriptSpreadView                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────────┐  │
-│  │  Props: mode, dummyType?                                                    │  │
-│  │  Local State: viewMode, selectedSpreadId, zoomLevel, columnsPerRow          │  │
-│  └─────────────────────────────────────────────────────────────────────────────┘  │
-│         │                              │                              │           │
-│         ▼                              ▼                              ▼           │
-│  ┌──────────────────┐          ┌─────────────────────┐        ┌─────────────────┐ │
-│  │ SpreadViewHeader │          │  SpreadEditorPanel  │        │SpreadThumbnailList│
-│  │                  │          │  (edit mode only)   │        │                 │ │
-│  │ Props:           │          │                     │        │ Props:          │ │
-│  │ • viewMode       │          │ Props:              │        │ • mode          │ │
-│  │ • zoomLevel      │          │ • spreadId          │        │ • dummyType?    │ │
-│  │ • columnsPerRow  │          │ • mode, dummyType?  │        │ • selectedId    │ │
-│  │ • spreadViewMode │          │ • zoomLevel         │        │ • layout        │ │
-│  │                  │          │ • isEditable        │        │ • columnsPerRow │ │
-│  │ Callbacks:       │          │ • displayField      │        │ • canAdd        │ │
-│  │ • onViewModeToggle│         │                     │        │                 │ │
-│  │ • onZoomChange   │          │ (uses both stores)  │        │ Callbacks:      │ │
-│  │ • onColumnsChange│          └─────────────────────┘        │ • onSpreadClick │ │
-│  └──────────────────┘                                         │ (uses stores)   │ │
-│                                                               └─────────────────┘ │
-└───────────────────────────────────────────────────────────────────────────────────┘
+Consumer Component
+       │
+       │ passes spreads[], callbacks, render props
+       ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    ManuscriptSpreadView<TSpread>                 │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  Props:                                                    │  │
+│  │  • spreads: TSpread[]                                      │  │
+│  │  • selectedSpreadId?: string                               │  │
+│  │  • onSelectSpread, onUpdateSpread, etc.                    │  │
+│  │  • renderImageItem, renderTextItem, etc.                   │  │
+│  │  • canAddSpread, canDeleteSpread, canReorderSpread         │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                              │                                   │
+│         ┌────────────────────┼────────────────────┐              │
+│         ▼                    ▼                    ▼              │
+│  ┌───────────────┐   ┌─────────────────┐   ┌──────────────────┐  │
+│  │SpreadViewHeader│  │SpreadEditorPanel│   │SpreadThumbnailList│ │
+│  │               │   │                 │   │                  │  │
+│  │ viewMode,     │   │ spreadId,       │   │ spreads,         │  │
+│  │ zoom, columns │   │ renderItems,    │   │ selectedId,      │  │
+│  │               │   │ render*Item,    │   │ render*Item      │  │
+│  │               │   │ render*Toolbar  │   │                  │  │
+│  └───────────────┘   └─────────────────┘   └──────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
 ```
-
-### 1.3 Mode Comparison
-
-| Feature | mode='dummy' | mode='finalize' |
-|---------|--------------|-----------------|
-| Selector | `useDummySpreads(dummyId)` | `useSpreads()` |
-| Add Action | `addDummySpread(dummyId, spread)` | `addSpread(spread)` |
-| Update Action | `updateDummySpread(dummyId, spreadId, updates)` | `updateSpread(id, updates)` |
-| Reorder Action | `reorderDummySpreads(dummyId, from, to)` | `reorderSpreads(from, to)` |
-| Purpose | Drafting & layout planning | Final assets for export |
-| Image display | `art_note` | `visual_description` |
-| Drag-drop | ✅ Yes | ✅ Yes |
-| Add spread | ✅ Yes | ✅ Yes |
 
 ---
 
@@ -85,125 +66,213 @@
 
 ### 2.1 Overview
 
-**Mục đích:** Unified spread view cho cả Dummy và Finalization steps. Hiển thị spread grid/filmstrip với inline editor panel, thay thế modal-based editing.
+**Mục đích:** Props-driven spread view với render props pattern cho flexible item rendering. Consumer controls data source và item appearance.
 
-**Key Changes từ Design cũ:**
-1. Gộp `ManuscriptDummyView` và `ManuscriptFinalizationView` thành 1 component
-2. Click spread → inline `SpreadEditorPanel` thay vì modal
-3. Dual-purpose slider: Zoom (edit mode) hoặc Columns (grid mode)
-4. Toggle button với tooltip "Show full spread view"
+**Key Characteristics:**
+1. Generic type `<TSpread>` cho reusable với different spread types
+2. Render props cho items với full context (item + spreadId + index + isSelected + callbacks)
+3. Optional toolbars - null if not provided
+4. Feature flags control add/delete/reorder capabilities
 
 **Shared Types:**
 
 ```typescript
-type SpreadViewMode = 'dummy' | 'finalize';
 type ViewMode = 'edit' | 'grid';
-type DisplayField = 'art_note' | 'visual_description';
+type ItemType = 'image' | 'text' | 'object' | 'animation';
 
-// DummySpread, DummyImage, DummyTextbox defined in parent (03-manuscript-creative-space.md)
+// Minimum spread structure required
+interface BaseSpread {
+  id: string;
+  left_page: { number: number };
+  right_page: { number: number };
+  images: SpreadImage[];
+  textboxes: SpreadTextbox[];
+  objects?: SpreadObject[];
+  animations?: SpreadAnimation[];
+}
 ```
 
 ### 2.2 Interface
 
-**Props & Local State:**
+**Props:**
 
 ```typescript
-interface ManuscriptSpreadViewProps {
-  mode: SpreadViewMode;               // 'dummy' | 'finalize'
-  dummyId?: string;                   // Required for dummy mode (UUID)
-}
+interface ManuscriptSpreadViewProps<TSpread extends BaseSpread> {
+  // === Data (required) ===
+  spreads: TSpread[];
 
+  // === Selection ===
+  selectedSpreadId?: string;
+  onSelectSpread?: (spreadId: string) => void;
+
+  // === Spread-level callbacks ===
+  onUpdateSpread?: (spreadId: string, updates: Partial<TSpread>) => void;
+  onReorderSpread?: (spreadId: string, newIndex: number) => void;
+  onAddSpread?: () => void;
+  onDeleteSpread?: (spreadId: string) => void;
+
+  // === Render configuration (required) ===
+  renderItems: ItemType[];  // ['image', 'text', 'object', 'animation']
+
+  // === Item render functions (required if item type in renderItems) ===
+  renderImageItem?: (context: ImageItemContext<TSpread>) => ReactNode;
+  renderTextItem?: (context: TextItemContext<TSpread>) => ReactNode;
+  renderObjectItem?: (context: ObjectItemContext<TSpread>) => ReactNode;
+  renderAnimationItem?: (context: AnimationItemContext<TSpread>) => ReactNode;
+
+  // === Toolbar render functions (optional, null if not provided) ===
+  renderImageToolbar?: (context: ImageToolbarContext<TSpread>) => ReactNode;
+  renderTextToolbar?: (context: TextToolbarContext<TSpread>) => ReactNode;
+  renderObjectToolbar?: (context: ObjectToolbarContext<TSpread>) => ReactNode;
+  renderAnimationToolbar?: (context: AnimationToolbarContext<TSpread>) => ReactNode;
+
+  // === Feature flags ===
+  canAddSpread?: boolean;     // default: false
+  canDeleteSpread?: boolean;  // default: false
+  canReorderSpread?: boolean; // default: false
+}
+```
+
+**Local State:**
+
+```typescript
 interface ManuscriptSpreadViewState {
   // Layout
   viewMode: ViewMode;                 // 'edit' | 'grid'
-
-  // Selection (ID-based for optimized re-renders)
-  selectedSpreadId: string | null;
 
   // View controls (dual-purpose slider)
   zoomLevel: number;                  // 25-200, default 100 (edit mode)
   columnsPerRow: number;              // 1-6, default 4 (grid mode)
 
-  // Drag state
-  draggedId: string | null;
-  dropTargetId: string | null;
+  // NOTE: Drag state (draggedId, dropTargetId) managed internally by SpreadThumbnailList
 }
 ```
 
-**Store Integration:**
+### 2.3 Context Interfaces
+
+**Base Context:**
 
 ```typescript
-// SnapshotStore Selectors (mode-conditional)
-dummySpreads = useDummySpreads(dummyId);       // For dummy mode
-snapshotSpreads = useSpreads();                 // For finalize mode
-spreads = mode === 'dummy' ? dummySpreads : snapshotSpreads;
-
-// ID selectors for optimized list rendering (shallow compare)
-dummySpreadIds = useDummySpreadIds(dummyId);   // For dummy mode
-snapshotSpreadIds = useSpreadIds();             // For finalize mode
-spreadIds = mode === 'dummy' ? dummySpreadIds : snapshotSpreadIds;
-
-// SnapshotStore Actions
-{ addDummySpread, updateDummySpread, deleteDummySpread, reorderDummySpreads,
-  addSpread, updateSpread, deleteSpread, reorderSpreads } = useSnapshotActions();
+interface BaseItemContext<TSpread> {
+  item: unknown;              // Item data (image/text/object/animation)
+  itemIndex: number;          // Index within items array
+  spreadId: string;           // Parent spread ID
+  spread: TSpread;            // Full spread data
+  isSelected: boolean;        // Item selection state
+  isSpreadSelected: boolean;  // Spread selection state
+}
 ```
 
-### 2.3 Render Logic (pseudo)
+**Item-Specific Contexts:**
+
+```typescript
+interface ImageItemContext<TSpread> extends BaseItemContext<TSpread> {
+  item: SpreadImage;
+  onSelect: () => void;
+  onUpdate: (updates: Partial<SpreadImage>) => void;
+  onDelete: () => void;
+}
+
+interface TextItemContext<TSpread> extends BaseItemContext<TSpread> {
+  item: SpreadTextbox;
+  onSelect: () => void;
+  onTextChange: (text: string) => void;
+  onUpdate: (updates: Partial<SpreadTextbox>) => void;
+  onDelete: () => void;
+}
+
+interface ObjectItemContext<TSpread> extends BaseItemContext<TSpread> {
+  item: SpreadObject;
+  onSelect: () => void;
+  onUpdate: (updates: Partial<SpreadObject>) => void;
+  onDelete: () => void;
+}
+
+interface AnimationItemContext<TSpread> extends BaseItemContext<TSpread> {
+  item: SpreadAnimation;
+  onSelect: () => void;
+  onUpdate: (updates: Partial<SpreadAnimation>) => void;
+  onDelete: () => void;
+}
+```
+
+**Toolbar Contexts:**
+
+```typescript
+interface ImageToolbarContext<TSpread> extends ImageItemContext<TSpread> {
+  onGenerateImage: () => void;
+  onReplaceImage: () => void;
+}
+
+interface TextToolbarContext<TSpread> extends TextItemContext<TSpread> {
+  onFormatText: (format: TextFormat) => void;
+}
+
+interface ObjectToolbarContext<TSpread> extends ObjectItemContext<TSpread> {
+  onEditObject: () => void;
+}
+
+interface AnimationToolbarContext<TSpread> extends AnimationItemContext<TSpread> {
+  onPlayAnimation: () => void;
+  onEditAnimation: () => void;
+}
+```
+
+### 2.4 Render Logic (pseudo)
 
 ```
-ManuscriptSpreadView:
-  // Data from SnapshotStore (mode-conditional)
-  spreads = mode === 'dummy' ? useDummySpreads(dummyId) : useSpreads()
-  spreadIds = mode === 'dummy' ? useDummySpreadIds(dummyId) : useSpreadIds()
-  actions = useSnapshotActions()
+ManuscriptSpreadView<TSpread>:
+  // Data from props
+  spreads = props.spreads
+  selectedSpread = spreads.find(s => s.id === selectedSpreadId)
 
-  isEditable = true  // Both modes editable
-  canAdd = true
-  displayField = mode === 'dummy' ? 'art_note' : 'visual_description'
-
-  IF spreadIds.length === 0:
+  IF spreads.length === 0:
     RENDER EmptyState với:
-      - mode === 'dummy' → "No spreads yet. Click + to add."
-      - mode === 'finalize' → "No spreads. Run Generate Art Direction."
+      - "No spreads yet."
+      - IF canAddSpread: Add button
     RETURN
 
   RENDER SpreadViewHeader với:
-    - viewMode, zoomLevel, columnsPerRow, spreadViewMode: mode
+    - viewMode, zoomLevel, columnsPerRow
     - onViewModeToggle, onZoomChange, onColumnsChange
 
   IF viewMode === 'edit':
-    IF selectedSpreadId !== null:
+    IF selectedSpread:
       RENDER SpreadEditorPanel với:
-        - spreadId: selectedSpreadId
-        - mode, dummyId, zoomLevel
-        - isEditable, displayField
+        - spread: selectedSpread
+        - spreadIndex: spreads.findIndex(s => s.id === selectedSpreadId)
+        - zoomLevel, isEditable: true
+        - renderItems, render*Item, render*Toolbar
+        - onUpdate*
 
     RENDER SpreadThumbnailList với:
-      - mode, dummyId, selectedId: selectedSpreadId
-      - displayField, layout: 'horizontal'
-      - isDragEnabled: true, canAdd
-      - onSpreadClick: handleSpreadClick
+      - spreads, selectedId: selectedSpreadId
+      - layout: 'horizontal'
+      - renderItems, render*Item
+      - canAdd, canReorder
+      - onSpreadClick, onReorderSpread, onAddSpread
 
   ELSE (viewMode === 'grid'):
     RENDER SpreadThumbnailList với:
-      - mode, dummyId, selectedId: selectedSpreadId
-      - displayField, layout: 'grid', columnsPerRow
-      - isDragEnabled: true, canAdd
-      - onSpreadClick: handleSpreadClick
+      - spreads, selectedId: selectedSpreadId
+      - layout: 'grid', columnsPerRow
+      - renderItems, render*Item
+      - canAdd, canReorder
+      - onSpreadClick, onReorderSpread, onAddSpread
 
   // Handlers
   handleSpreadClick(id):
-    setSelectedSpreadId(id)
+    onSelectSpread?.(id)
     IF viewMode === 'grid':
-      setViewMode('edit')  // Auto-switch to edit
+      setViewMode('edit')
 
   toggleViewMode():
     setViewMode(viewMode === 'edit' ? 'grid' : 'edit')
-    IF switching to 'edit' AND selectedSpreadId === null AND spreadIds.length > 0:
-      setSelectedSpreadId(spreadIds[0])
+    IF switching to 'edit' AND !selectedSpreadId AND spreads.length > 0:
+      onSelectSpread?.(spreads[0].id)
 ```
 
-### 2.4 Visual
+### 2.5 Visual
 
 **Edit Mode (viewMode: 'edit'):**
 
@@ -219,10 +288,9 @@ ManuscriptSpreadView:
 │                │  │     Left Page       │     Right Page      │ │               │
 │                │  │   ┌───────────┐     │                     │ │               │
 │                │  │   │  [Image]  │     │  ┌─────────────┐    │ │               │
-│                │  │   │           │     │  │  Textbox    │    │ │               │
-│                │  │   │ "art_note"│     │  │   ╔═══╗     │    │ │               │
-│                │  │   └───────────┘     │  │   ║ T ║     │    │ │               │
-│                │  │                     │  │   ╚═══╝     │    │ │               │
+│                │  │   │ (rendered │     │  │  Textbox    │    │ │               │
+│                │  │   │  by prop) │     │  │ (rendered   │    │ │               │
+│                │  │   └───────────┘     │  │  by prop)   │    │ │               │
 │                │  │     2               │  └─────────────┘  3 │ │               │
 │                │  └─────────────────────┴─────────────────────┘ │               │
 │                └────────────────────────────────────────────────┘               │
@@ -233,7 +301,7 @@ ManuscriptSpreadView:
 │  │  │   │  │  ║  │   │  ║  │  │   │  │  │  │   │  │  │  │   │  │  │   NEW   │   │
 │  │  └───┘  │  ║  └───┘  ║  │  └───┘  │  │  └───┘  │  │  └───┘  │  │         │   │
 │  │   0-1   │  ║   2-3   ║  │   4-5   │  │   6-7   │  │   8-9   │  └─────────┘   │
-│  └─────────┘  ╚═════════╝  └─────────┘  └─────────┘  └─────────┘    ↑ add       │
+│  └─────────┘  ╚═════════╝  └─────────┘  └─────────┘  └─────────┘   (if canAdd)  │
 │                   ↑ selected (blue border)                                      │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -248,17 +316,17 @@ ManuscriptSpreadView:
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
 │  │  0  │  1    │  │  2  │  3    │  │  4  │  5    │  │  6  │  7    │             │
 │  │ ┌────────┐  │  │ ┌────────┐  │  │ ┌────────┐  │  │ ┌────────┐  │             │
-│  │ │"art    │  │  │ │"art    │  │  │ │"art    │  │  │ │"art    │  │             │
-│  │ │note"   │  │  │ │note"   │  │  │ │note"   │  │  │ │note"   │  │             │
+│  │ │(render │  │  │ │(render │  │  │ │(render │  │  │ │(render │  │             │
+│  │ │ props) │  │  │ │ props) │  │  │ │ props) │  │  │ │ props) │  │             │
 │  │ └────────┘  │  │ └────────┘  │  │ └────────┘  │  │ └────────┘  │             │
 │  │     text    │  │     text    │  │     text    │  │     text    │             │
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│       ↕ drag-drop                                                               │
+│       ↕ drag-drop (if canReorder)                                               │
 │  ┌─────────────┐  ┌───────────────────┐                                         │
-│  │  8  │  9    │  │        +          │  ← NewSpreadButton                      │
+│  │  8  │  9    │  │        +          │  ← NewSpreadButton (if canAdd)          │
 │  │ ┌────────┐  │  │   Add New Spread  │                                         │
-│  │ │"art    │  │  │                   │                                         │
-│  │ │note"   │  │  └───────────────────┘                                         │
+│  │ │(render │  │  │                   │                                         │
+│  │ │ props) │  │  └───────────────────┘                                         │
 │  │ └────────┘  │                                                                │
 │  └─────────────┘                                                                │
 └─────────────────────────────────────────────────────────────────────────────────┘
@@ -274,15 +342,9 @@ ManuscriptSpreadView:
 │                             📄 No spreads yet                                   │
 │                                                                                 │
 │                         ┌─────────────────────┐                                 │
-│                         │          +          │                                 │
-│                         │   Add First Spread  │  ← dummy mode                   │
+│                         │          +          │  ← Only if canAddSpread         │
+│                         │   Add First Spread  │                                 │
 │                         └─────────────────────┘                                 │
-│                                                                                 │
-│                         OR                                                      │
-│                                                                                 │
-│                         📄 No spreads in snapshot                               │
-│                         Run "Generate Art Direction"   ← finalize mode          │
-│                         to create spreads.                                      │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -291,10 +353,9 @@ ManuscriptSpreadView:
 
 ## 3. Child Components Interface
 
-> **Lưu ý quan trọng:**
+> **Note:**
 > - Section này **CHỈ** định nghĩa **props và callbacks** (contract giữa parent-child)
-> - **KHÔNG** thiết kế store integration tại đây — child component tự thiết kế trong file riêng
-> - State và logic chi tiết của mỗi child sẽ được thiết kế trong file riêng
+> - Child components receive render props from parent
 
 ### 3.1 SpreadViewHeader
 
@@ -309,28 +370,11 @@ interface SpreadViewHeaderProps {
   viewMode: ViewMode;                    // 'edit' | 'grid'
   zoomLevel: number;                     // 25-200, default 100 (edit mode)
   columnsPerRow: number;                 // 1-6, default 4 (grid mode)
-  spreadViewMode: SpreadViewMode;        // 'dummy' | 'finalize'
 
   onViewModeToggle: () => void;
   onZoomChange: (level: number) => void;
   onColumnsChange: (columns: number) => void;
 }
-```
-
-**Visual:**
-
-```
-Edit Mode:
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  [⚏]                                                      ─ ●────────── + 100%  │
-│   ↑ toggle icon                                             └→ Zoom (25%-200%)  │
-└─────────────────────────────────────────────────────────────────────────────────┘
-
-Grid Mode:
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  [⚏]                                                      ─ ●────────── +   4  │
-│   ↑ toggle (tooltip: "Show full spread view")               └→ Columns (1-6)    │
-└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -339,52 +383,37 @@ Grid Mode:
 
 📄 **Doc:** [02-spread-editor-panel.md](./02-spread-editor-panel.md)
 
-**Mục đích:** Inline editor panel cho selected spread, thay thế SpreadEditModal.
+**Mục đích:** Inline editor panel cho selected spread với render props.
 
 **Props & Callbacks:**
 
 ```typescript
-interface SpreadEditorPanelProps {
-  spreadId: string;                  // ID-based subscription
-  mode: SpreadViewMode;
-  dummyId?: string;                  // Required for dummy mode
+interface SpreadEditorPanelProps<TSpread extends BaseSpread> {
+  spread: TSpread;
+  spreadIndex: number;
   zoomLevel: number;
   isEditable: boolean;
-  displayField: DisplayField;        // 'art_note' | 'visual_description'
-  // No spread prop - uses store selectors internally
-  // No callbacks - uses store actions directly
+
+  // Render configuration
+  renderItems: ItemType[];
+  renderImageItem: (context: ImageItemContext<TSpread>) => ReactNode;
+  renderTextItem: (context: TextItemContext<TSpread>) => ReactNode;
+  renderObjectItem?: (context: ObjectItemContext<TSpread>) => ReactNode;
+  renderAnimationItem?: (context: AnimationItemContext<TSpread>) => ReactNode;
+
+  // Toolbar render (optional)
+  renderImageToolbar?: (context: ImageToolbarContext<TSpread>) => ReactNode;
+  renderTextToolbar?: (context: TextToolbarContext<TSpread>) => ReactNode;
+  renderObjectToolbar?: (context: ObjectToolbarContext<TSpread>) => ReactNode;
+  renderAnimationToolbar?: (context: AnimationToolbarContext<TSpread>) => ReactNode;
+
+  // Callbacks
+  onUpdateSpread: (updates: Partial<TSpread>) => void;
+  onUpdateImage: (imageIndex: number, updates: Partial<SpreadImage>) => void;
+  onUpdateTextbox: (textboxIndex: number, updates: Partial<SpreadTextbox>) => void;
+  onDeleteImage?: (imageIndex: number) => void;
+  onDeleteTextbox?: (textboxIndex: number) => void;
 }
-```
-
-**Store Integration (inside component):**
-
-```typescript
-// SnapshotStore - mode conditional
-spread = mode === 'dummy'
-  ? useDummySpreadById(dummyId, spreadId)
-  : useSpreadById(spreadId);
-```
-
-**Visual:**
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              SpreadEditorPanel                                  │
-│  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │                            SpreadCanvas                                   │  │
-│  │  ┌─────────────────────────────┬─────────────────────────────┐            │  │
-│  │  │         Left Page           │         Right Page          │            │  │
-│  │  │                             │                             │            │  │
-│  │  │    ┌─────────────────┐      │      ┌─────────────────┐    │            │  │
-│  │  │    │     Image       │      │      │     Textbox     │    │            │  │
-│  │  │    │   "art_note"    │      │      │    ╔═══════╗    │    │            │  │
-│  │  │    └─────────────────┘      │      │    ║   T   ║    │    │            │  │
-│  │  │                             │      │    ╚═══════╝    │    │            │  │
-│  │  │           2                 │             3               │            │  │
-│  │  └─────────────────────────────┴─────────────────────────────┘            │  │
-│  └───────────────────────────────────────────────────────────────────────────┘  │
-│  Features: Click to select, drag to move, resize handles, inline text edit      │
-└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -393,63 +422,37 @@ spread = mode === 'dummy'
 
 📄 **Doc:** [03-spread-thumbnail-list.md](./03-spread-thumbnail-list.md)
 
-**Mục đích:** Unified thumbnails container cho cả horizontal filmstrip và vertical grid.
+**Mục đích:** Thumbnails container cho spread navigation và reorder.
 
 **Props & Callbacks:**
 
 ```typescript
-type ThumbnailListLayout = 'horizontal' | 'grid';
+interface SpreadThumbnailListProps<TSpread extends BaseSpread> {
+  spreads: TSpread[];
+  selectedId: string | null;
 
-interface SpreadThumbnailListProps {
-  mode: SpreadViewMode;
-  dummyId?: string;                        // Required for dummy mode
-  selectedId: string | null;               // ID-based selection
-  displayField: DisplayField;
-  isDragEnabled: boolean;
+  // Layout
+  layout: ThumbnailListLayout;           // 'horizontal' | 'grid'
+  columnsPerRow?: number;                // Grid only, default 4
+
+  // Render configuration (same as parent)
+  renderItems: ItemType[];
+  renderImageItem: (context: ImageItemContext<TSpread>) => ReactNode;
+  renderTextItem: (context: TextItemContext<TSpread>) => ReactNode;
+  renderObjectItem?: (context: ObjectItemContext<TSpread>) => ReactNode;
+  renderAnimationItem?: (context: AnimationItemContext<TSpread>) => ReactNode;
+
+  // Feature flags
   canAdd: boolean;
+  canReorder: boolean;
+  canDelete: boolean;
 
-  // Layout configuration
-  layout: ThumbnailListLayout;             // 'horizontal' = filmstrip, 'grid' = vertical
-  columnsPerRow?: number;                  // Only for grid layout, default 4
-
-  // Selection callback only (parent manages selection state)
-  onSpreadClick: (id: string) => void;
-  // Note: Add/Reorder handled via store actions internally
+  // Callbacks
+  onSpreadClick: (spreadId: string) => void;
+  onReorderSpread?: (fromIndex: number, toIndex: number) => void;
+  onAddSpread?: () => void;
+  onDeleteSpread?: (spreadId: string) => void;
 }
-```
-
-**Store Integration (inside component):**
-
-```typescript
-// SnapshotStore - mode conditional
-spreadIds = mode === 'dummy'
-  ? useDummySpreadIds(dummyId)
-  : useSpreadIds();
-```
-
-**Visual (layout='horizontal'):**
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ◀ ┌─────────┐  ╔═════════╗  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌───────┐ ▶ │
-│    │   0-1   │  ║   2-3   ║  │   4-5   │  │   6-7   │  │   8-9   │  │  NEW  │   │
-│    └─────────┘  ╚═════════╝  └─────────┘  └─────────┘  └─────────┘  └───────┘   │
-│                     ↑ selected                                                  │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
-**Visual (layout='grid'):**
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │     0-1     │  │     2-3     │  │     4-5     │  │     6-7     │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────────┐                                           │
-│  │     8-9     │  │       + NEW     │                                           │
-│  └─────────────┘  └─────────────────┘                                           │
-│                        ↓ vertical scroll                                        │
-└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -458,79 +461,96 @@ spreadIds = mode === 'dummy'
 
 📄 **Doc:** [03-01-spread-thumbnail.md](./03-01-spread-thumbnail.md)
 
-**Mục đích:** Thumbnail preview của một spread, dùng chung cho cả horizontal và grid layouts.
+**Mục đích:** Thumbnail preview của một spread.
 
 **Props & Callbacks:**
 
 ```typescript
-interface SpreadThumbnailProps {
-  spreadId: string;                      // ID-based, uses store internally
-  mode: SpreadViewMode;
-  dummyId?: string;                      // Required for dummy mode
+interface SpreadThumbnailProps<TSpread extends BaseSpread> {
+  spread: TSpread;
+  spreadIndex: number;
   isSelected: boolean;
-  displayField: DisplayField;
+  size: 'small' | 'medium';
+
+  // Render configuration (same as parent, view-only mode)
+  renderItems: ItemType[];
+  renderImageItem: (context: ImageItemContext<TSpread>) => ReactNode;
+  renderTextItem: (context: TextItemContext<TSpread>) => ReactNode;
+
+  // Drag state
+  isDragEnabled?: boolean;
   isDragging?: boolean;
   isDropTarget?: boolean;
-  isDragEnabled?: boolean;
-  size?: 'small' | 'medium';             // small for horizontal, medium for grid
 
+  // Callbacks
   onClick: () => void;
+  onDragStart?: () => void;
+  onDragOver?: () => void;
+  onDragEnd?: () => void;
 }
-```
-
-**Store Integration (inside component):**
-
-```typescript
-// SnapshotStore
-spread = mode === 'dummy'
-  ? useDummySpreadById(dummyId, spreadId)
-  : useSpreadById(spreadId);
 ```
 
 ---
 
-## 4. Technical Notes
+## 4. Utility Components
 
-### 4.1 Key Design Decisions
+> **Note:** Optional helper components consumers can import and use inside render props.
 
-**Unified Component**
-Gộp DummyView và FinalizationView thành 1 component với `mode` prop. Lý do: Cả 2 có cùng data structure (`spreads[]`), cùng UI pattern, chỉ khác selector/action và display field.
+### 4.1 EditableImage
 
-**Inline Editor thay Modal**
-Thay SpreadEditModal bằng SpreadEditorPanel inline. Lý do: UX tốt hơn, không bị context switch, dễ so sánh với filmstrip.
+📄 **Doc:** [02-01-editable-image.md](./02-01-editable-image.md)
 
-**ID-based Subscription**
-SpreadEditorPanel và SpreadThumbnail nhận `spreadId` và fetch data từ store. Lý do: Tối ưu re-render - chỉ component nào có data thay đổi mới re-render.
-
-**Dual-Purpose Slider**
-Slider behavior khác nhau dựa trên viewMode:
-- Edit mode: Zoom level (25%-200%)
-- Grid mode: Columns per row (1-6)
-
-Lý do: Space-efficient, cùng 1 control phục vụ 2 mục đích.
-
-### 4.2 Store Integration Notes
-
-**ID Selectors:** Component uses `useDummySpreadIds(type)` và `useSpreadIds()` for optimized list rendering. These selectors use shallow comparison để minimize re-renders khi chỉ spread order/content thay đổi mà không thay đổi IDs.
-
-**Mode-conditional Actions:**
+Default image renderer. Consumer can use in `renderImageItem`:
 
 ```typescript
-const handleAdd = () => {
-  const newSpread = createEmptySpread();
-  mode === 'dummy'
-    ? addDummySpread(dummyId!, newSpread)
-    : addSpread(newSpread);
-};
-
-const handleReorder = (fromIdx: number, toIdx: number) => {
-  mode === 'dummy'
-    ? reorderDummySpreads(dummyId!, fromIdx, toIdx)
-    : reorderSpreads(fromIdx, toIdx);
-};
+renderImageItem={(context) => (
+  <EditableImage
+    image={context.item}
+    index={context.itemIndex}
+    isSelected={context.isSelected}
+    isEditable={true}
+    onSelect={context.onSelect}
+  />
+)}
 ```
 
-### 4.3 Layout Constants
+### 4.2 EditableTextbox
+
+📄 **Doc:** [02-02-editable-textbox.md](./02-02-editable-textbox.md)
+
+Default text renderer. Consumer can use in `renderTextItem`:
+
+```typescript
+renderTextItem={(context) => (
+  <EditableTextbox
+    text={context.item.text}
+    geometry={context.item.geometry}
+    typography={context.item.typography}
+    index={context.itemIndex}
+    isSelected={context.isSelected}
+    isEditable={true}
+    onSelect={context.onSelect}
+    onTextChange={context.onTextChange}
+    onEditingChange={(editing) => { /* notify parent */ }}
+  />
+)}
+```
+
+---
+
+## 5. Technical Notes
+
+### 5.1 Key Design Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Props-driven | Data via props | No store coupling, reusable |
+| Generic type | `<TSpread>` | Works with any spread structure |
+| Render props | Context objects | Full control, extensible |
+| Feature flags | Boolean props | Explicit capability control |
+| Toolbars optional | Null if missing | Progressive enhancement |
+
+### 5.2 Layout Constants
 
 | Element | Value | Note |
 |---------|-------|------|
@@ -540,7 +560,7 @@ const handleReorder = (fromIdx: number, toIdx: number) => {
 | Filmstrip thumbnail | 100×80px | Fixed size |
 | Grid thumbnail | Dynamic | Based on columns và container width |
 
-### 4.4 State Persistence
+### 5.3 State Persistence
 
 Persist view preferences to localStorage với key `spread-view-prefs`:
 
@@ -554,7 +574,7 @@ interface ViewPreferences {
 
 **Defaults:** `viewMode: 'edit'`, `zoomLevel: 100`, `columnsPerRow: 4`
 
-### 4.5 Keyboard Shortcuts
+### 5.4 Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
@@ -562,10 +582,9 @@ interface ViewPreferences {
 | `Home` / `End` | First/last spread |
 | `G` | Toggle view mode |
 | `+` / `-` | Zoom in/out (edit) or adjust columns (grid) |
-| `Delete` | Delete selected spread (with confirmation) |
-| `Ctrl+Z` | Undo last change |
+| `Delete` | Delete selected spread (if canDeleteSpread) |
 
-### 4.6 Accessibility
+### 5.5 Accessibility
 
 | Element | Role | ARIA |
 |---------|------|------|

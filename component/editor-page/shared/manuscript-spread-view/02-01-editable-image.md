@@ -1,6 +1,8 @@
-# EditableImage: Component Design
+# EditableImage: Utility Component Design
 
 > **Parent:** [SpreadEditorPanel](./02-spread-editor-panel.md)
+>
+> **Role:** Optional utility component. Consumer can import and use inside `renderImageItem` render prop.
 
 ---
 
@@ -27,44 +29,40 @@
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 Data Flow
+### 1.2 Usage Pattern
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        EditableImage                            │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Props: image, index, isSelected, displayField, isEditable │ │
-│  │  Callbacks: onSelect                                       │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                              │                                  │
-│                              ▼                                  │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Local State: isHovered                                    │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                              │                                  │
-│                              ▼                                  │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Display Logic:                                            │ │
-│  │  • IF generated_image_url → render <img>                   │ │
-│  │  • ELSE → render placeholder with displayField content     │ │
-│  └────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+```typescript
+// Consumer uses inside renderImageItem prop
+<ManuscriptSpreadView
+  spreads={spreads}
+  renderItems={['image', 'text']}
+  renderImageItem={(context) => (
+    <EditableImage
+      image={context.item}
+      index={context.itemIndex}
+      isSelected={context.isSelected}
+      isEditable={true}
+      onSelect={context.onSelect}
+    />
+  )}
+  // ...
+/>
 ```
 
 ---
 
-## 2. Root Component Design
+## 2. Component Design
 
 ### 2.1 Overview
 
-**Mục đích:** Image placeholder trong canvas. Handles selection only. Displays art_note hoặc visual_description khi chưa có generated image.
+**Mục đích:** Default image renderer for ManuscriptSpreadView. Displays image or placeholder with description text.
 
-> **Note:** Drag/resize được handle bởi SelectionFrame overlay, không phải component này.
+> **Note:** Drag/resize handled by SelectionFrame, không phải component này.
 
 **Shared Types:**
 
 ```typescript
-interface SpreadViewImage {
+interface SpreadImage {
   geometry: Geometry;
   art_note?: string;
   visual_description?: string;
@@ -85,10 +83,9 @@ interface Geometry {
 
 ```typescript
 interface EditableImageProps {
-  image: SpreadViewImage;
+  image: SpreadImage;
   index: number;
   isSelected: boolean;
-  displayField: 'art_note' | 'visual_description';
   isEditable: boolean;
 
   onSelect: () => void;
@@ -106,25 +103,22 @@ interface EditableImageState {
 }
 ```
 
-**Store Integration:** None (receives data via props)
-
 ### 2.3 Display Logic
 
 ```typescript
-getDisplayContent(image: SpreadViewImage, field: DisplayField): string | null
+getDisplayContent(image: SpreadImage): string | null
   IF image.generated_image_url:
     return null  // Will render actual image
-  IF field === 'art_note':
-    return image.art_note || 'No art note'
-  IF field === 'visual_description':
-    return image.visual_description || 'No visual description'
+
+  // Use art_note or visual_description based on availability
+  return image.art_note || image.visual_description || 'No description'
 ```
 
 ### 2.4 Render Logic (pseudo)
 
 ```
 EditableImage:
-  displayContent = getDisplayContent(image, displayField)
+  displayContent = getDisplayContent(image)
 
   handleClick(e):
     e.stopPropagation()
@@ -208,29 +202,6 @@ EditableImage:
    dashed outline (hover hint)
 ```
 
-**Selected:**
-
-```
-╔═══════════════════════════════════╗
-║  ┌───────────────────────────┐    ║
-║  │       [Content]           │    ║
-║  └───────────────────────────┘    ║
-╚═══════════════════════════════════╝
-   SelectionFrame rendered by parent
-```
-
-**Disabled (isEditable = false):**
-
-```
-┌─────────────────────────────────┐
-│  ┌───────────────────────────┐  │
-│  │       [Content]           │  │
-│  │      (no interaction)     │  │
-│  └───────────────────────────┘  │
-└─────────────────────────────────┘
-   cursor: default, no hover effect
-```
-
 ---
 
 ## 3. Technical Notes
@@ -239,23 +210,14 @@ EditableImage:
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Display Priority | generated_image > displayField | Show actual image when available |
+| Utility component | Optional import | Consumer can use custom |
+| Display Priority | generated_image > description | Show actual image when available |
 | Placeholder Style | Dashed border, gray bg | Clear visual distinction |
 | Text Truncation | Ellipsis after 3 lines | Prevent overflow |
-| Drag/Resize | Delegated to SelectionFrame | Single interaction handler |
 
 ### 3.2 Image Loading
 
 ```typescript
-// Initial state when generated_image_url exists
-isLoading = true, hasError = false
-
-// On successful load
-onLoad: setIsLoading(false)
-
-// On error → fallback to placeholder
-onError: setHasError(true), setIsLoading(false)
-
 // Reset states when generated_image_url changes
 useEffect(() => {
   IF image.generated_image_url:
@@ -267,14 +229,9 @@ useEffect(() => {
 ### 3.3 Accessibility
 
 ```typescript
-// Use displayField content for placeholder, "Image" for generated images
-ariaLabel = image.generated_image_url && !hasError
-  ? `Image ${index + 1}`
-  : displayContent
-
 <div
   role="img"
-  aria-label={ariaLabel}
+  aria-label={displayContent || `Image ${index + 1}`}
   tabIndex={isEditable ? 0 : -1}
   onKeyDown={(e) => e.key === 'Enter' && onSelect()}
 >

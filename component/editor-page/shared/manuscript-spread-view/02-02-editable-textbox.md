@@ -1,6 +1,8 @@
-# EditableTextbox: Component Design
+# EditableTextbox: Utility Component Design
 
 > **Parent:** [SpreadEditorPanel](./02-spread-editor-panel.md)
+>
+> **Role:** Optional utility component. Consumer can import and use inside `renderTextItem` render prop.
 
 ---
 
@@ -17,33 +19,34 @@
 │  │  │  IF isEditing:                                      │  │  │
 │  │  │    <div contentEditable>{editText}</div>            │  │  │
 │  │  │  ELSE:                                              │  │  │
-│  │  │    <div>{textbox.text}</div>                        │  │  │
+│  │  │    <div>{text}</div>                                │  │  │
 │  │  └─────────────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 Data Flow
+### 1.2 Usage Pattern
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        EditableTextbox                          │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Props: textbox, index, isSelected, isEditable             │ │
-│  │  Callbacks: onSelect, onTextChange                         │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                              │                                  │
-│              ┌───────────────┼───────────────┐                  │
-│              ▼                               ▼                  │
-│       ┌─────────────┐                 ┌─────────────┐           │
-│       │ Local State │                 │ Typography  │           │
-│       │ • isEditing │                 │  Renderer   │           │
-│       │ • editText  │                 │             │           │
-│       │ • isHovered │                 │ fontFamily, │           │
-│       └─────────────┘                 │ fontSize,   │           │
-│                                       │ textAlign...│           │
-│                                       └─────────────┘           │
-└─────────────────────────────────────────────────────────────────┘
+```typescript
+// Consumer uses inside renderTextItem prop
+<ManuscriptSpreadView
+  spreads={spreads}
+  renderItems={['image', 'text']}
+  renderTextItem={(context) => (
+    <EditableTextbox
+      text={context.item.text}
+      geometry={context.item.geometry}
+      typography={context.item.typography}
+      index={context.itemIndex}
+      isSelected={context.isSelected}
+      isEditable={true}
+      onSelect={context.onSelect}
+      onTextChange={context.onTextChange}
+      onEditingChange={(editing) => { /* notify parent */ }}
+    />
+  )}
+  // ...
+/>
 ```
 
 ### 1.3 Mode Transitions
@@ -72,21 +75,22 @@
 
 ---
 
-## 2. Root Component Design
+## 2. Component Design
 
 ### 2.1 Overview
 
-**Mục đích:** Editable textbox trong canvas. Handles selection và inline text editing.
+**Mục đích:** Default text renderer for ManuscriptSpreadView. Handles selection và inline text editing.
 
-> **Note:** Drag/resize được handle bởi SelectionFrame overlay, không phải component này.
+> **Note:** Drag/resize handled by SelectionFrame, không phải component này.
 
 **Shared Types:**
 
 ```typescript
-interface TextboxContent {
-  text: string;
-  geometry: Geometry;
-  typography: Typography;
+interface Geometry {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 interface Typography {
@@ -105,14 +109,20 @@ interface Typography {
 
 ```typescript
 interface EditableTextboxProps {
-  textbox: SpreadViewTextbox;
+  // Core data (flattened for easy mapping)
+  text: string;
+  geometry: Geometry;
+  typography?: Typography;
+
+  // State
   index: number;
   isSelected: boolean;
   isEditable: boolean;
 
+  // Callbacks
   onSelect: () => void;
   onTextChange: (text: string) => void;
-  onEditingChange: (isEditing: boolean) => void;  // Notify parent to hide SelectionFrame handles
+  onEditingChange: (isEditing: boolean) => void;  // Notify parent to hide handles
   // NO onDrag/onResize - handled by SelectionFrame
 }
 ```
@@ -127,23 +137,17 @@ interface EditableTextboxState {
 }
 ```
 
-**Store Integration:**
-
-```typescript
-// No store access needed - parent provides pre-extracted content for current language
-```
-
 ### 2.3 Typography Mapping
 
 ```typescript
 mapTypographyToCSS(typography: Typography): CSSProperties
   return {
-    fontFamily: typography.fontFamily || 'inherit',
-    fontSize: typography.fontSize ? `${typography.fontSize}px` : 'inherit',
-    fontWeight: typography.fontWeight || 'normal',
-    textAlign: typography.textAlign || 'left',
-    lineHeight: typography.lineHeight || 1.5,
-    color: typography.color || 'inherit',
+    fontFamily: typography?.fontFamily || 'inherit',
+    fontSize: typography?.fontSize ? `${typography.fontSize}px` : 'inherit',
+    fontWeight: typography?.fontWeight || 'normal',
+    textAlign: typography?.textAlign || 'left',
+    lineHeight: typography?.lineHeight || 1.5,
+    color: typography?.color || 'inherit',
   }
 ```
 
@@ -152,7 +156,7 @@ mapTypographyToCSS(typography: Typography): CSSProperties
 ```
 EditableTextbox:
   editableRef = useRef()
-  typographyStyle = mapTypographyToCSS(textbox.typography)
+  typographyStyle = mapTypographyToCSS(typography)
 
   handleClick(e):
     e.stopPropagation()
@@ -178,23 +182,23 @@ EditableTextbox:
       exitEditMode(save: true)
 
   enterEditMode():
-    setEditText(textbox.text)
+    setEditText(text)
     setIsEditing(true)
     onEditingChange(true)  // Parent hides SelectionFrame handles
     requestAnimationFrame(() => editableRef.current?.focus())
 
   exitEditMode(save: boolean):
-    IF save && editText !== textbox.text:
+    IF save && editText !== text:
       onTextChange(editText)
     setIsEditing(false)
     onEditingChange(false)  // Parent shows SelectionFrame handles
 
   RENDER TextboxContainer (position: absolute):
     style:
-      left: textbox.geometry.x + '%'
-      top: textbox.geometry.y + '%'
-      width: textbox.geometry.width + '%'
-      height: textbox.geometry.height + '%'
+      left: geometry.x + '%'
+      top: geometry.y + '%'
+      width: geometry.width + '%'
+      height: geometry.height + '%'
       cursor: isEditable ? 'pointer' : 'default'
       outline: isHovered && !isSelected ? '1px dashed #bdbdbd' : 'none'
       ...typographyStyle
@@ -217,8 +221,8 @@ EditableTextbox:
         {editText}
       </div>
     ELSE:
-      IF textbox.text:
-        RENDER <div>{textbox.text}</div>
+      IF text:
+        RENDER <div>{text}</div>
       ELSE:
         RENDER <div style={{ fontStyle: 'italic', color: '#9e9e9e' }}>
           Click to add text
@@ -249,18 +253,6 @@ EditableTextbox:
    dashed outline (hover hint)
 ```
 
-**Selected (not editing):**
-
-```
-╔═══════════════════════════════════╗
-║  Once upon a time, there was      ║
-║  a brave little cat who...        ║
-║                                   ║
-╚═══════════════════════════════════╝
-   SelectionFrame rendered by parent
-   Can drag/resize via SelectionFrame handles
-```
-
 **Editing:**
 
 ```
@@ -271,7 +263,6 @@ EditableTextbox:
 ╚═══════════════════════════════════╝
    Blue tint background
    SelectionFrame handles hidden
-   Text is contenteditable
 ```
 
 **Empty Text:**
@@ -291,15 +282,15 @@ EditableTextbox:
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Edit Mode | contenteditable | Seamless inline UX, no textarea overlay |
+| Utility component | Optional import | Consumer can use custom |
+| Flattened props | text, geometry, typography | Easy mapping from context |
+| Edit Mode | contenteditable | Seamless inline UX |
 | Text Save | On blur or Enter | Natural save trigger |
-| Placeholder | Inline text | Clear affordance |
-| Drag/Resize | Delegated to SelectionFrame | Single interaction handler |
 
 ### 3.2 ContentEditable Handling
 
 ```typescript
-// Prevent paste with formatting - use Selection API (execCommand deprecated)
+// Prevent paste with formatting
 handlePaste(e):
   e.preventDefault()
   text = e.clipboardData.getData('text/plain')
@@ -315,7 +306,6 @@ handleKeyDown(e):
   IF e.key === 'Enter' && !e.shiftKey:
     e.preventDefault()
     exitEditMode(save: true)
-  // Shift+Enter allows default behavior (newline)
 ```
 
 ### 3.3 Constants
@@ -337,10 +327,5 @@ const PLACEHOLDER_COLOR = '#9e9e9e';
   tabIndex={isEditable ? 0 : -1}
 >
 ```
-
-### 3.5 Performance
-
-- Debounce `onTextChange` (300ms)
-- Use `white-space: pre-wrap` for proper line breaks
 
 ---

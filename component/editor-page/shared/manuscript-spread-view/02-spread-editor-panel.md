@@ -1,8 +1,8 @@
 # SpreadEditorPanel: Component Design
 
-> **Note:** Replaces `SpreadEditModal`. Inline editor panel thay vì modal, hiển thị khi có spread được select.
+> **Note:** Props-driven editor panel với render props. Receives spread data và render functions from parent.
 >
-> **Merged:** SpreadCanvas đã được merge vào component này để đơn giản hóa architecture.
+> **Merged:** SpreadCanvas đã được merge vào component này.
 
 ---
 
@@ -12,17 +12,16 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              SpreadEditorPanel                                  │
+│                         SpreadEditorPanel<TSpread>                              │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
 │  │                         Canvas Container                                  │  │
 │  │  ┌─────────────────────────────┬─────────────────────────────┐            │  │
 │  │  │         LeftPage            │         RightPage           │            │  │
 │  │  │                             │                             │            │  │
 │  │  │    ┌─────────────────┐      │      ┌─────────────────┐    │            │  │
-│  │  │    │  EditableImage  │      │      │ EditableTextbox │    │            │  │
-│  │  │    │  ┌───────────┐  │      │      │  ┌───────────┐  │    │            │  │
-│  │  │    │  │  content  │  │      │      │  │   text    │  │    │            │  │
-│  │  │    │  └───────────┘  │      │      │  └───────────┘  │    │            │  │
+│  │  │    │ renderImageItem │      │      │ renderTextItem  │    │            │  │
+│  │  │    │  (consumer's)   │      │      │  (consumer's)   │    │            │  │
+│  │  │    │                 │      │      │                 │    │            │  │
 │  │  │    └─────────────────┘      │      └─────────────────┘    │            │  │
 │  │  │           2                 │             3               │            │  │
 │  │  └─────────────────────────────┴─────────────────────────────┘            │  │
@@ -31,6 +30,10 @@
 │  │  ║                    SelectionFrame (overlay)                       ║    │  │
 │  │  ║  ●────────●────────●  (when element selected)                     ║    │  │
 │  │  ╚═══════════════════════════════════════════════════════════════════╝    │  │
+│  │                                                                           │  │
+│  │  ┌───────────────────────────────────────────────────────────────────┐    │  │
+│  │  │  Toolbar (if selected & render*Toolbar provided)                  │    │  │
+│  │  └───────────────────────────────────────────────────────────────────┘    │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -38,43 +41,37 @@
 ### 1.2 Data Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              SpreadEditorPanel                                  │
-│  ┌────────────────────────────────────────────────────────────────────────────┐ │
-│  │  Local State:                                                              │ │
-│  │  • selectedElement: SelectedElement | null                                 │ │
-│  │  • isDragging, isResizing: boolean                                         │ │
-│  │  • activeHandle: ResizeHandle | null                                       │ │
-│  │  • dragStartPos: Point                                                     │ │
-│  └────────────────────────────────────────────────────────────────────────────┘ │
-│                              │                                                  │
-│         ┌────────────────────┼────────────────────┐                             │
-│         ▼                    ▼                    ▼                             │
-│  ┌─────────────┐     ┌─────────────────┐  ┌─────────────────┐                   │
-│  │EditableImage│     │EditableTextbox  │  │ SelectionFrame  │                   │
-│  │ Props:      │     │ Props:          │  │ Props:          │                   │
-│  │ • image     │     │ • textbox       │  │ • geometry      │                   │
-│  │ • index     │     │ • content       │  │ • zoomLevel     │                   │
-│  │ • isSelected│     │ • isSelected    │  │ • showHandles   │                   │
-│  │             │     │                 │  │ • activeHandle  │                   │
-│  │ Callbacks:  │     │ Callbacks:      │  │                 │                   │
-│  │ • onSelect  │     │ • onSelect      │  │ Callbacks:      │                   │
-│  │             │     │ • onTextChange  │  │ • onDragStart   │                   │
-│  └─────────────┘     └─────────────────┘  │ • onDrag/End    │                   │
-│                                           │ • onResizeStart │                   │
-│                                           │ • onResize/End  │                   │
-│                                           └─────────────────┘                   │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                       │
-                                       ▼
-                          ┌─────────────────────────┐
-                          │   SnapshotStore         │
-                          │  ┌───────────────────┐  │
-                          │  │ useSpreadById     │  │
-                          │  │ useDummySpreadById│  │
-                          │  │ useSnapshotActions│  │
-                          │  └───────────────────┘  │
-                          └─────────────────────────┘
+ManuscriptSpreadView<TSpread>
+       │
+       │ passes spread, renderItems, render*Item, render*Toolbar, callbacks
+       ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                  SpreadEditorPanel<TSpread>                      │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  Props:                                                    │  │
+│  │  • spread: TSpread (data from parent)                      │  │
+│  │  • renderImageItem, renderTextItem, etc.                   │  │
+│  │  • renderImageToolbar, renderTextToolbar, etc.             │  │
+│  │  • onUpdateImage, onUpdateTextbox, etc.                    │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                              │                                   │
+│                              ▼                                   │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  For each item in renderItems:                             │  │
+│  │                                                            │  │
+│  │  1. Build context with item data + callbacks               │  │
+│  │  2. Call render*Item(context)                              │  │
+│  │  3. If selected + toolbar exists, call render*Toolbar      │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                              │                                   │
+│         ┌────────────────────┼────────────────────┐              │
+│         ▼                    ▼                    ▼              │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐          │
+│  │ Consumer's   │   │ Consumer's   │   │ Selection    │          │
+│  │ ImageItem    │   │ TextItem     │   │ Frame        │          │
+│  │ Component    │   │ Component    │   │ (built-in)   │          │
+│  └──────────────┘   └──────────────┘   └──────────────┘          │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -83,14 +80,13 @@
 
 ### 2.1 Overview
 
-**Mục đích:** Inline editor panel cho selected spread. Cho phép select, drag, resize images/textboxes và edit textbox content inline.
+**Mục đích:** Inline editor panel cho selected spread. Cho phép select, drag, resize items via SelectionFrame. Render items via render props from parent.
 
 **Shared Types:**
 
 ```typescript
-type SpreadViewMode = 'dummy' | 'finalize';
-type DummyType = 'prose' | 'poetry';
-type SelectedElementType = 'image' | 'textbox';
+type ItemType = 'image' | 'text' | 'object' | 'animation';
+type SelectedElementType = 'image' | 'textbox' | 'object' | 'animation';
 type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
 interface SelectedElement {
@@ -109,23 +105,6 @@ interface Geometry {
   width: number;  // percentage 0-100
   height: number; // percentage 0-100
 }
-
-interface SpreadViewImage {
-  geometry: Geometry;
-  art_note?: string;
-  visual_description?: string;
-  generated_image_url?: string;
-}
-
-interface SpreadViewTextbox {
-  [langCode: string]: TextboxContent;  // Keyed by language code
-}
-
-interface TextboxContent {
-  text: string;
-  geometry: Geometry;
-  typography?: Typography;
-}
 ```
 
 ### 2.2 Interface
@@ -133,13 +112,38 @@ interface TextboxContent {
 **Props:**
 
 ```typescript
-interface SpreadEditorPanelProps {
-  spreadId: string;
-  mode: SpreadViewMode;
-  dummyId?: string;                // Required when mode === 'dummy'
+interface SpreadEditorPanelProps<TSpread extends BaseSpread> {
+  // === Data (from parent) ===
+  spread: TSpread;
+  spreadIndex: number;
+
+  // === View config ===
   zoomLevel: number;               // 50-200
   isEditable: boolean;
-  displayField: 'art_note' | 'visual_description';
+
+  // === Render configuration ===
+  renderItems: ItemType[];         // ['image', 'text', 'object', 'animation']
+
+  // === Item render functions ===
+  renderImageItem: (context: ImageItemContext<TSpread>) => ReactNode;
+  renderTextItem: (context: TextItemContext<TSpread>) => ReactNode;
+  renderObjectItem?: (context: ObjectItemContext<TSpread>) => ReactNode;
+  renderAnimationItem?: (context: AnimationItemContext<TSpread>) => ReactNode;
+
+  // === Toolbar render functions (optional) ===
+  renderImageToolbar?: (context: ImageToolbarContext<TSpread>) => ReactNode;
+  renderTextToolbar?: (context: TextToolbarContext<TSpread>) => ReactNode;
+  renderObjectToolbar?: (context: ObjectToolbarContext<TSpread>) => ReactNode;
+  renderAnimationToolbar?: (context: AnimationToolbarContext<TSpread>) => ReactNode;
+
+  // === Callbacks ===
+  onUpdateSpread: (updates: Partial<TSpread>) => void;
+  onUpdateImage: (imageIndex: number, updates: Partial<SpreadImage>) => void;
+  onUpdateTextbox: (textboxIndex: number, updates: Partial<SpreadTextbox>) => void;
+  onUpdateObject?: (objectIndex: number, updates: Partial<SpreadObject>) => void;
+  onUpdateAnimation?: (animIndex: number, updates: Partial<SpreadAnimation>) => void;
+  onDeleteImage?: (imageIndex: number) => void;
+  onDeleteTextbox?: (textboxIndex: number) => void;
 }
 ```
 
@@ -151,7 +155,7 @@ interface SpreadEditorPanelState {
   selectedElement: SelectedElement | null;
   isTextboxEditing: boolean;         // Hide SelectionFrame handles when true
 
-  // Drag/Resize (managed here, passed to SelectionFrame)
+  // Drag/Resize
   isDragging: boolean;
   isResizing: boolean;
   activeHandle: ResizeHandle | null;
@@ -160,23 +164,48 @@ interface SpreadEditorPanelState {
 }
 ```
 
-**Store Integration:**
+### 2.3 Context Building
+
+Panel builds context objects for render props:
 
 ```typescript
-// SnapshotStore Selectors (mode-based) - SINGLE source of data
-spread = mode === 'dummy'
-  ? useDummySpreadById(dummyId, spreadId)
-  : useSpreadById(spreadId);
+buildImageContext(image: SpreadImage, index: number): ImageItemContext<TSpread>
+  return {
+    item: image,
+    itemIndex: index,
+    spreadId: spread.id,
+    spread: spread,
+    isSelected: selectedElement?.type === 'image' && selectedElement.index === index,
+    isSpreadSelected: true,
+    onSelect: () => handleElementSelect({ type: 'image', index }),
+    onUpdate: (updates) => onUpdateImage(index, updates),
+    onDelete: () => onDeleteImage?.(index),
+  }
 
-// SnapshotStore Actions
-const {
-  updateSpreadImage,
-  updateSpreadTextbox,
-  updateDummySpread,
-} = useSnapshotActions();
+buildTextContext(textbox: SpreadTextbox, index: number): TextItemContext<TSpread>
+  return {
+    item: textbox,
+    itemIndex: index,
+    spreadId: spread.id,
+    spread: spread,
+    isSelected: selectedElement?.type === 'textbox' && selectedElement.index === index,
+    isSpreadSelected: true,
+    onSelect: () => handleElementSelect({ type: 'textbox', index }),
+    onTextChange: (text) => onUpdateTextbox(index, { text }),
+    onUpdate: (updates) => onUpdateTextbox(index, updates),
+    onDelete: () => onDeleteTextbox?.(index),
+  }
+
+// Toolbar contexts extend item contexts
+buildImageToolbarContext(image, index): ImageToolbarContext<TSpread>
+  return {
+    ...buildImageContext(image, index),
+    onGenerateImage: () => { /* consumer implements via callback */ },
+    onReplaceImage: () => { /* consumer implements via callback */ },
+  }
 ```
 
-### 2.3 Coordinate System
+### 2.4 Coordinate System
 
 ```typescript
 // Canvas Constants
@@ -204,26 +233,6 @@ isOnLeftPage(geometry: Geometry): boolean
 
 isOnRightPage(geometry: Geometry): boolean
   return geometry.x + geometry.width / 2 >= 50
-```
-
-### 2.4 Geometry Derivation
-
-```typescript
-// Get geometry of selected element
-selectedGeometry = useMemo(() => {
-  if (!selectedElement || !spread) return null;
-
-  if (selectedElement.type === 'image') {
-    return spread.images[selectedElement.index]?.geometry;
-  }
-
-  if (selectedElement.type === 'textbox') {
-    const textbox = spread.textboxes[selectedElement.index];
-    return textbox?.geometry;
-  }
-
-  return null;
-}, [selectedElement, spread]);
 ```
 
 ### 2.5 Handler Mappings
@@ -274,28 +283,15 @@ handleResizeEnd():
   setIsResizing(false)
   setActiveHandle(null)
 
-// Store update
+// Store update via callbacks
 updateElementGeometry(newGeometry: Geometry):
   IF selectedElement.type === 'image':
-    IF mode === 'dummy':
-      updateDummySpread(dummyId, spreadId, { images: updatedImages })
-    ELSE:
-      updateSpreadImage(spreadId, selectedElement.index, { geometry: newGeometry })
+    onUpdateImage(selectedElement.index, { geometry: newGeometry })
 
   IF selectedElement.type === 'textbox':
-    IF mode === 'dummy':
-      updateDummySpread(dummyId, spreadId, { textboxes: updatedTextboxes })
-    ELSE:
-      updateSpreadTextbox(spreadId, selectedElement.index, { geometry: newGeometry })
+    onUpdateTextbox(selectedElement.index, { geometry: newGeometry })
 
-// Text change (called by EditableTextbox)
-handleTextChange(textboxIndex: number, newText: string):
-  IF mode === 'dummy':
-    updateDummySpread(dummyId, spreadId, { textboxes: updatedTextboxes })
-  ELSE:
-    updateSpreadTextbox(spreadId, textboxIndex, { text: newText })
-
-// Editing state change (called by EditableTextbox)
+// Editing state change (called by consumer's component)
 handleEditingChange(isEditing: boolean):
   setIsTextboxEditing(isEditing)
 ```
@@ -303,59 +299,63 @@ handleEditingChange(isEditing: boolean):
 ### 2.6 Render Logic (pseudo)
 
 ```
-SpreadEditorPanel:
-  // Store data (SINGLE source)
-  spread = useSpreadById/useDummySpreadById based on mode
+SpreadEditorPanel<TSpread>:
+  // Data from props
+  spread = props.spread
   canvasRef = useRef()
 
   // Canvas sizing
   scaledWidth = BASE_WIDTH * (zoomLevel / 100)
   scaledHeight = BASE_HEIGHT * (zoomLevel / 100)
 
-  // Derive selected geometry
+  // Derive selected geometry from local selection state
   selectedGeometry = getSelectedGeometry(selectedElement, spread)
 
   RENDER OuterContainer (flex, center, overflow-auto):
-    RENDER CanvasContainer (position: relative):
+    RENDER CanvasContainer onClick={handleCanvasClick} ref={canvasRef}:
       style: { width: scaledWidth, height: scaledHeight }
-      onClick: handleCanvasClick
-      ref: canvasRef
 
-      // Page divider
+      // Page divider and numbers
       RENDER Divider at x=50%
+      RENDER PageNumber left: spread.left_page.number
+      RENDER PageNumber right: spread.right_page.number
 
-      // Page numbers
-      RENDER PageNumber left: spread.leftPageNumber
-      RENDER PageNumber right: spread.rightPageNumber
+      // Render items based on renderItems config
+      IF renderItems.includes('image'):
+        FOR EACH (image, index) IN spread.images:
+          context = buildImageContext(image, index)
+          RENDER props.renderImageItem(context)
 
-      // Images (selection only, no drag/resize callbacks)
-      FOR EACH (image, index) IN spread.images:
-        RENDER EditableImage với:
-          - image, index
-          - isSelected: selectedElement?.type === 'image' && selectedElement?.index === index
-          - displayField, isEditable
-          - onSelect: () => handleElementSelect({ type: 'image', index })
+      IF renderItems.includes('text'):
+        FOR EACH (textbox, index) IN spread.textboxes:
+          context = buildTextContext(textbox, index)
+          RENDER props.renderTextItem(context)
 
-      // Textboxes (selection + text change, no drag/resize)
-      FOR EACH (textbox, index) IN spread.textboxes:
-        RENDER EditableTextbox với:
-          - textbox, index
-          - isSelected: selectedElement?.type === 'textbox' && selectedElement?.index === index
-          - isEditable
-          - onSelect: () => handleElementSelect({ type: 'textbox', index })
-          - onTextChange: (text) => handleTextChange(index, text)
-          - onEditingChange: handleEditingChange
+      IF renderItems.includes('object') AND spread.objects:
+        FOR EACH (obj, index) IN spread.objects:
+          context = buildObjectContext(obj, index)
+          RENDER props.renderObjectItem?.(context) ?? null
 
-      // SelectionFrame overlay (handles ALL drag/resize)
-      // Hide handles when dragging OR when textbox is in editing mode
+      IF renderItems.includes('animation') AND spread.animations:
+        FOR EACH (anim, index) IN spread.animations:
+          context = buildAnimationContext(anim, index)
+          RENDER props.renderAnimationItem?.(context) ?? null
+
+      // SelectionFrame (built-in, always available)
       IF selectedElement && selectedGeometry && isEditable:
         RENDER SelectionFrame với:
-          - geometry: selectedGeometry
-          - zoomLevel
-          - showHandles: !isDragging && !isTextboxEditing
-          - activeHandle
-          - onDragStart, onDrag, onDragEnd
-          - onResizeStart, onResize, onResizeEnd
+          geometry: selectedGeometry
+          zoomLevel
+          showHandles: !isDragging && !isTextboxEditing
+          onDragStart, onDrag, onDragEnd
+          onResizeStart, onResize, onResizeEnd
+
+      // Toolbar (render if item selected and toolbar render function exists)
+      IF selectedElement && isEditable:
+        toolbarContext = buildToolbarContext(selectedElement)
+        toolbarRenderer = getToolbarRenderer(selectedElement.type)
+        IF toolbarRenderer:
+          RENDER toolbarRenderer(toolbarContext)
 ```
 
 ### 2.7 Visual States
@@ -370,11 +370,10 @@ SpreadEditorPanel:
 │  │  │         Left Page           │         Right Page          │            │  │
 │  │  │    ┌─────────────────┐      │      ┌─────────────────┐    │            │  │
 │  │  │    │     Image       │      │      │     Textbox     │    │            │  │
-│  │  │    │   ┌─────────┐   │      │      │  Once upon a    │    │            │  │
-│  │  │    │   │"A cat   │   │      │      │  time, there    │    │            │  │
-│  │  │    │   │sitting..│   │      │      │  was a brave... │    │            │  │
-│  │  │    │   └─────────┘   │      │      └─────────────────┘    │            │  │
-│  │  │    └─────────────────┘      │                             │            │  │
+│  │  │    │   (rendered by  │      │      │  (rendered by   │    │            │  │
+│  │  │    │   consumer)     │      │      │   consumer)     │    │            │  │
+│  │  │    │                 │      │      │                 │    │            │  │
+│  │  │    └─────────────────┘      │      └─────────────────┘    │            │  │
 │  │  │           2                 │             3               │            │  │
 │  │  └─────────────────────────────┴─────────────────────────────┘            │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
@@ -390,34 +389,15 @@ SpreadEditorPanel:
 │  │         Left Page           │         Right Page          │                  │
 │  │    ╔═══════════════════╗    │      ┌─────────────────┐    │                  │
 │  │    ║●────────●────────●║    │      │     Textbox     │    │                  │
-│  │    ●│                 │●    │      │  Once upon a    │    │                  │
-│  │    ║│   ┌─────────┐   │║    │      │  time...        │    │                  │
-│  │    ║│   │"A cat   │   │║    │      └─────────────────┘    │                  │
-│  │    ●│   │sitting..│   │●    │                             │                  │
-│  │    ║│   └─────────┘   │║    │                             │                  │
+│  │    ●│                 │●    │      │                 │    │                  │
+│  │    ║│   (consumer's   │║    │      │                 │    │                  │
+│  │    ║│    component)   │║    │      │                 │    │                  │
+│  │    ●│                 │●    │      │                 │    │                  │
 │  │    ║●────────●────────●║    │                             │                  │
 │  │    ╚═══════════════════╝    │             3               │                  │
 │  └─────────────────────────────┴─────────────────────────────┘                  │
 │  ● = resize handles (via SelectionFrame) | Cursor: move/resize                  │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
-**Textbox Selected (inline editing):**
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ┌─────────────────────────────┬─────────────────────────────┐                  │
-│  │         Left Page           │         Right Page          │                  │
-│  │    ┌─────────────────┐      │    ╔═══════════════════╗    │                  │
-│  │    │     Image       │      │    ║●────────●────────●║    │                  │
-│  │    │   ┌─────────┐   │      │    ●│                 │●    │                  │
-│  │    │   │"A cat   │   │      │    ║│  Once upon a    │║    │                  │
-│  │    │   │sitting..│   │      │    ║│  time, there█   │║← cursor               │
-│  │    │   └─────────┘   │      │    ●│  was a brave... │●    │                  │
-│  │    └─────────────────┘      │    ║●────────●────────●║    │                  │
-│  │           2                 │    ╚═══════════════════╝    │                  │
-│  └─────────────────────────────┴─────────────────────────────┘                  │
-│  Double-click to edit text inline                                               │
+│  [Toolbar appears if renderImageToolbar provided]                               │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -425,60 +405,13 @@ SpreadEditorPanel:
 
 ## 3. Child Components Interface
 
-> **Note:** Drag/resize được handle bởi SelectionFrame, không phải EditableImage/EditableTextbox.
+> **Note:** Drag/resize được handle bởi SelectionFrame, không phải consumer's render components.
 
-### 3.1 EditableImage
-
-📄 **Doc:** [02-01-editable-image.md](./02-01-editable-image.md)
-
-**Mục đích:** Image placeholder trong canvas. Selection only, không handle drag/resize.
-
-**Props & Callbacks:**
-
-```typescript
-interface EditableImageProps {
-  image: SpreadViewImage;
-  index: number;
-  isSelected: boolean;
-  displayField: 'art_note' | 'visual_description';
-  isEditable: boolean;
-
-  onSelect: () => void;
-  // NO onDrag/onResize - handled by SelectionFrame
-}
-```
-
----
-
-### 3.2 EditableTextbox
-
-📄 **Doc:** [02-02-editable-textbox.md](./02-02-editable-textbox.md)
-
-**Mục đích:** Editable textbox trong canvas. Selection và text editing only.
-
-**Props & Callbacks:**
-
-```typescript
-interface EditableTextboxProps {
-  textbox: SpreadViewTextbox;
-  index: number;
-  isSelected: boolean;
-  isEditable: boolean;
-
-  onSelect: () => void;
-  onTextChange: (text: string) => void;
-  onEditingChange: (isEditing: boolean) => void;  // Notify parent to hide handles
-  // NO onDrag/onResize - handled by SelectionFrame
-}
-```
-
----
-
-### 3.3 SelectionFrame
+### 3.1 SelectionFrame
 
 📄 **Doc:** [02-03-selection-frame.md](./02-03-selection-frame.md)
 
-**Mục đích:** Visual selection overlay với 8 resize handles. Handles ALL drag/resize interactions.
+**Mục đích:** Visual selection overlay với 8 resize handles. Internal component, not customizable.
 
 **Props & Callbacks:**
 
@@ -498,17 +431,6 @@ interface SelectionFrameProps {
 }
 ```
 
-**Visual:**
-
-```
-╔═══●═══╤═══●═══╗
-●               ●
-╟───────┼───────╢
-●               ●
-╚═══●═══╧═══●═══╝
-● = resize handles (8 total)
-```
-
 ---
 
 ## 4. Technical Notes
@@ -517,31 +439,22 @@ interface SelectionFrameProps {
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Inline vs Modal | Inline panel | Context preserved, better continuous editing UX |
-| Merged Canvas | Single component | Simpler architecture, single store subscription |
-| Zoom | CSS dimensions | Simple, performant, maintains vector quality |
-| Coordinate System | Percentages (0-100) | Responsive, independent of canvas size |
-| Store Access | ID-based selector | Only re-renders when THIS spread changes |
-| Drag/Resize | SelectionFrame only | Single interaction handler, cleaner separation |
+| Props-driven | Spread via props | No store coupling |
+| Render props | Consumer provides | Full customization |
+| SelectionFrame | Built-in | Consistent drag/resize |
+| Toolbar optional | Null if missing | Progressive enhancement |
+| Context objects | Full data + callbacks | Extensible |
 
-### 4.2 Mode-based Store Access
-
-| Mode | Selector | Update Action |
-|------|----------|---------------|
-| `dummy` | `useDummySpreadById(dummyId, spreadId)` | `updateDummySpread(dummyId, spreadId, partial)` |
-| `finalize` | `useSpreadById(id)` | `updateSpreadImage()`, `updateSpreadTextbox()` |
-
-### 4.3 Keyboard Shortcuts
+### 4.2 Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
 | `Escape` | Deselect element |
-| `Delete` | Delete selected (with confirmation) |
+| `Delete` | Delete selected (calls onDelete callback) |
 | `Arrow keys` | Nudge selected by 1% |
 | `Shift + Arrow` | Nudge by 5% |
-| `Enter` | Edit textbox (delegated to EditableTextbox when focused) |
 
-### 4.4 Canvas Constants
+### 4.3 Canvas Constants
 
 ```typescript
 const BASE_WIDTH = 800;
@@ -552,20 +465,18 @@ const NUDGE_STEP = 1;        // percentage
 const NUDGE_STEP_SHIFT = 5;  // percentage
 ```
 
-### 4.5 Performance
+### 4.4 Performance
 
-- Single store subscription (no redundant fetches)
-- Memoize coordinate transformations
+- Memoize context builders with `useMemo`
 - `will-change: transform` for smooth zoom
 - Event delegation for canvas clicks
+- Render only items in renderItems array
 
-### 4.6 Accessibility
+### 4.5 Accessibility
 
 | Element | Role | ARIA |
 |---------|------|------|
 | Canvas | `application` | `aria-label="Spread editor"` |
-| Image | `img` | `aria-label={displayField content}` |
-| Textbox | `textbox` | `aria-label="Text content"` |
 | SelectionFrame | `group` | `aria-label="Selection controls"` |
 
 ---
