@@ -26,13 +26,9 @@
 │  │  │ └────────────────────────────────────────────────────────────────┘ │  │   │
 │  │  │ ┌────────────────────────────────────────────────────────────────┐ │  │   │
 │  │  │ │ PromptPanel                                                    │ │  │   │
-│  │  │ │   TARGET AUDIENCE: [Select target audience...]                 │ │  │   │
-│  │  │ │   CORE VALUE: [Select core value...]                           │ │  │   │
-│  │  │ │   FORMAT GENRE: [Select format genre...]                       │ │  │   │
-│  │  │ │   CONTENT GENRE: [Select content genre...]                     │ │  │   │
-│  │  │ │   ERA: [Select era (optional)...]                              │ │  │   │
-│  │  │ │   LOCATION: [Select location (optional)...]                    │ │  │   │
-│  │  │ │   PROMPT: [Enter your prompt...]                               │ │  │   │
+│  │  │ │   PROMPT                                                [📎]   │ │  │   │
+│  │  │ │   [file1.pdf ×] [image2.png ×]  ← Attachments (optional)       │ │  │   │
+│  │  │ │   [Enter your prompt...]                                       │ │  │   │
 │  │  │ │   [✨ Generate]                                                │ │  │   │
 │  │  │ └────────────────────────────────────────────────────────────────┘ │  │   │
 │  │  └────────────────────────────────────────────────────────────────────┘  │   │
@@ -68,8 +64,7 @@
                 │  │              DocTabItem × N                   │    │
                 │  │  Props: doc, isActive, isExpanded, etc.       │    │
                 │  │  ┌─────────────────────────────────────────┐  │    │
-                │  │  │  PromptPanel (Brief only: attributes)   │  │    │
-                │  │  │  → uses bookSettings, bookReferences    │  │    │
+                │  │  │  PromptPanel (prompt + attachments)     │  │    │
                 │  │  └─────────────────────────────────────────┘  │    │
                 │  └───────────────────────────────────────────────┘    │
                 └───────────────────────────────────────────────────────┘
@@ -109,10 +104,19 @@ interface DocSidebarProps {
   onDeleteDoc: (index: number) => void;      // Only for 'other' type
 }
 
+interface AttachedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  file: File;
+}
+
 interface DocSidebarState {
   expandedIndex: number | null;              // Which accordion is expanded
   editingTitleIndex: number | null;          // Which doc title is being edited
   promptInputs: Record<number, string>;      // Prompt per doc index
+  attachments: Record<number, AttachedFile[]>; // Attachments per doc index
   isGenerating: Record<number, boolean>;     // Loading state per doc
 }
 ```
@@ -120,10 +124,9 @@ interface DocSidebarState {
 **Store Integration:**
 
 ```typescript
-// BookStore - for Brief tab attributes
-bookSettings = useBookSettings();    // bookType, dimension, targetAudience, targetCoreValue, formatGenre, contentGenre, writingStyle
-bookReferences = useBookReferences(); // eraId, locationId, artstyleId
-{ updateSettings, updateReferences } = useBookActions();
+// BookStore - for book metadata (used by parent, not PromptPanel)
+bookSettings = useBookSettings();
+bookReferences = useBookReferences();
 
 // Generate action handled via callback or separate hook
 ```
@@ -160,6 +163,7 @@ DocSidebar:
   [expandedIndex, setExpandedIndex] = useState(activeDocIndex)
   [editingTitleIndex, setEditingTitleIndex] = useState(null)
   [promptInputs, setPromptInputs] = useState({})
+  [attachments, setAttachments] = useState({})
   [isGenerating, setIsGenerating] = useState({})
 
   handleToggle(index):
@@ -184,6 +188,20 @@ DocSidebar:
 
   handlePromptChange(index, value):
     setPromptInputs({ ...promptInputs, [index]: value })
+
+  handleAttachmentsChange(index, files):
+    setAttachments({ ...attachments, [index]: files })
+
+  handleAddAttachment(index, newFiles):
+    currentFiles = attachments[index] || []
+    // Validate: max 5 files, max 10MB per file
+    validFiles = filterValidFiles(newFiles)
+    combined = [...currentFiles, ...validFiles].slice(0, 5)
+    setAttachments({ ...attachments, [index]: combined })
+
+  handleRemoveAttachment(index, fileId):
+    currentFiles = attachments[index] || []
+    setAttachments({ ...attachments, [index]: currentFiles.filter(f => f.id !== fileId) })
 
   handleGenerate(index):
     setIsGenerating({ ...isGenerating, [index]: true })
@@ -214,12 +232,14 @@ DocSidebar:
         - canEditTitle
         - canDelete
         - promptInput: promptInputs[index] || ''
+        - attachments: attachments[index] || []
         - isGenerating: isGenerating[index] || false
         - onToggle: () => handleToggle(index)
         - onStartEditTitle: () => handleStartEditTitle(index)
         - onFinishEditTitle: (title) => handleFinishEditTitle(index, title)
         - onDelete: () => onDeleteDoc(index)
         - onPromptChange: (v) => handlePromptChange(index, v)
+        - onAttachmentsChange: (files) => handleAttachmentsChange(index, files)
         - onGenerate: () => handleGenerate(index)
 ```
 
@@ -233,19 +253,7 @@ DocSidebar:
 │ ┌────────────────────────────┐ │
 │ │ 📄 Brief                 ∨ │ │  ← Expanded, Active
 │ │ ────────────────────────── │ │
-│ │ TARGET AUDIENCE *          │ │
-│ │ [Select target audience...]│ │
-│ │ CORE VALUE *               │ │
-│ │ [Select core value...]     │ │
-│ │ FORMAT GENRE *             │ │
-│ │ [Select format genre...]   │ │
-│ │ CONTENT GENRE *            │ │
-│ │ [Select content genre...]  │ │
-│ │ ERA                        │ │
-│ │ [Select era (optional)...] │ │
-│ │ LOCATION                   │ │
-│ │ [Select location...]       │ │
-│ │ PROMPT                     │ │
+│ │ PROMPT                 [📎]│ │
 │ │ ┌────────────────────────┐ │ │
 │ │ │ Enter your prompt for  │ │ │
 │ │ │ this manuscript...     │ │ │
@@ -254,8 +262,35 @@ DocSidebar:
 │ │ │     ✨ Generate        │ │ │
 │ │ └────────────────────────┘ │ │
 │ └────────────────────────────┘ │
-│ 📄 Draft                   > │ │  ← Collapsed
-│ 📄 Script                  > │ │  ← Collapsed
+│ 📄 Draft                   >   │  ← Collapsed
+│ 📄 Script                  >   │  ← Collapsed
+└────────────────────────────────┘
+```
+
+**Expanded State (with Attachments):**
+
+```
+┌────────────────────────────────┐
+│ Docs                      [+]  │
+│ ┌────────────────────────────┐ │
+│ │ 📄 Brief                 ∨ │ │
+│ │ ────────────────────────── │ │
+│ │ PROMPT                 [📎]│ │
+│ │ ┌────────────────────────┐ │ │
+│ │ │ ┌───────────┐┌──────────┐│ │  ← File chips
+│ │ │ │ref.pdf [×]││char...[×]││ │
+│ │ │ └───────────┘└──────────┘│ │
+│ │ └────────────────────────┘ │ │
+│ │ ┌────────────────────────┐ │ │
+│ │ │ Generate a story about │ │ │
+│ │ │ a magical forest...    │ │ │
+│ │ └────────────────────────┘ │ │
+│ │ ┌────────────────────────┐ │ │
+│ │ │     ✨ Generate        │ │ │
+│ │ └────────────────────────┘ │ │
+│ └────────────────────────────┘ │
+│ 📄 Draft                   >   │
+│ 📄 Script                  >   │
 └────────────────────────────────┘
 ```
 
@@ -377,12 +412,14 @@ interface DocTabItemProps {
   canEditTitle: boolean;        // true for 'other' type
   canDelete: boolean;           // true for 'other' type
   promptInput: string;
+  attachments: AttachedFile[];  // Attached files for this doc
   isGenerating: boolean;
   onToggle: () => void;
   onStartEditTitle: () => void;
   onFinishEditTitle: (title: string) => void;
   onDelete: () => void;
   onPromptChange: (value: string) => void;
+  onAttachmentsChange: (files: AttachedFile[]) => void;
   onGenerate: () => void;
 }
 ```
@@ -421,33 +458,41 @@ Active + Collapsed:
 
 ### 3.3 PromptPanel
 
-**Mục đích:** Form với attribute selectors và prompt textarea.
+📄 **Doc:** [`../shared/prompt-panel.md`](../shared/prompt-panel.md)
 
-**Elements:**
+**Mục đích:** Prompt textarea với file attachments và generate button.
 
-| Element | Type | Notes |
-|---------|------|-------|
-| Attribute selects | `<select>` | Target Audience, Core Value, etc. |
-| Prompt textarea | `<textarea>` | Multi-line input |
-| Generate button | `<button>` | Triggers AI generation |
+**Props & Callbacks:**
 
-**Attribute Fields (Brief only):**
+```typescript
+interface PromptPanelProps {
+  promptInput: string;
+  attachments: AttachedFile[];
+  isGenerating: boolean;
+  onPromptChange: (value: string) => void;
+  onAttachmentsChange: (files: AttachedFile[]) => void;
+  onGenerate: () => void;
+}
+```
 
-| Field | Required | Store Field | Options |
-|-------|----------|-------------|---------|
-| TARGET AUDIENCE | ✅ | `bookSettings.targetAudience` | Constants |
-| CORE VALUE | ✅ | `bookSettings.targetCoreValue` | Constants |
-| FORMAT GENRE | ✅ | `bookSettings.formatGenre` | Constants |
-| CONTENT GENRE | ✅ | `bookSettings.contentGenre` | Constants |
-| ERA | ❌ | `bookReferences.eraId` | DB lookup (eras table) |
-| LOCATION | ❌ | `bookReferences.locationId` | DB lookup (locations table) |
+**Visual:**
 
-**Store Binding:**
-- Values read from `useBookSettings()` / `useBookReferences()`
-- Changes update via `updateSettings()` / `updateReferences()`
-- Changes persist to BookStore → saved to DB
+```
+┌──────────────────────────────────────────┐
+│ PROMPT                               [📎]│
+│ ┌──────────────────────────────────────┐ │
+│ │ [File chips - when attached]         │ │
+│ └──────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────┐ │
+│ │ Enter your prompt...                 │ │
+│ └──────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────┐ │
+│ │          ✨ Generate                 │ │
+│ └──────────────────────────────────────┘ │
+└──────────────────────────────────────────┘
+```
 
-> **Note:** Draft, Script, Other tabs show only PROMPT field (no attributes).
+> **Note:** See full design in [`../shared/prompt-panel.md`](../shared/prompt-panel.md)
 
 ---
 
@@ -477,8 +522,8 @@ Only one tab expanded at a time. Expanding a new tab collapses the previous one 
 3. Auto-enter title edit mode (input focused, text selected)
 4. User types new title → blur/Enter to confirm
 
-**Attribute Fields Location**
-Attribute fields (TARGET AUDIENCE, CORE VALUE, etc.) appear only in Brief tab. Draft, Script, and Other tabs show only the PROMPT textarea.
+**PromptPanel**
+PromptPanel is a shared component with prompt textarea, file attachments, and generate button. See [`../shared/prompt-panel.md`](../shared/prompt-panel.md).
 
 **Generate Dependency Chain**
 
