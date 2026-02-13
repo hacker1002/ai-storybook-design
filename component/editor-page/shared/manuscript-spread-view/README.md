@@ -83,12 +83,21 @@ type ItemType = 'image' | 'text' | 'object' | 'animation';
 // Minimum spread structure required
 interface BaseSpread {
   id: string;
-  left_page: { number: number };
-  right_page: { number: number };
+  pages: PageData[];  // NEW: 1 element (DPS) or 2 elements (non-DPS)
   images: SpreadImage[];
   textboxes: SpreadTextbox[];
   objects?: SpreadObject[];
   animations?: SpreadAnimation[];
+}
+
+interface PageData {
+  number: string | number;  // DPS: "0-1" | non-DPS: 0, 1
+  type: 'normal_page' | 'front_matter' | 'back_matter' | 'dedication';
+  layout: string | null;    // UUID FK → template_layouts
+  background: {
+    color: string;          // hex color
+    texture: string | null; // texture key or null
+  };
 }
 ```
 
@@ -121,10 +130,15 @@ interface ManuscriptSpreadViewProps<TSpread extends BaseSpread> {
   renderAnimationItem?: (context: AnimationItemContext<TSpread>) => ReactNode;
 
   // === Toolbar render functions (optional, null if not provided) ===
+  renderPageToolbar?: (context: PageToolbarContext<TSpread>) => ReactNode;  // NEW
   renderImageToolbar?: (context: ImageToolbarContext<TSpread>) => ReactNode;
   renderTextToolbar?: (context: TextToolbarContext<TSpread>) => ReactNode;
   renderObjectToolbar?: (context: ObjectToolbarContext<TSpread>) => ReactNode;
   renderAnimationToolbar?: (context: AnimationToolbarContext<TSpread>) => ReactNode;
+
+  // === Page callbacks (optional) ===
+  onUpdatePage?: (pageIndex: number, updates: Partial<PageData>) => void;  // NEW
+  availableLayouts?: LayoutOption[];  // NEW: Template layouts from DB
 
   // === Spread-level feature flags ===
   canAddSpread?: boolean;     // default: false
@@ -205,6 +219,21 @@ interface AnimationItemContext<TSpread> extends BaseItemContext<TSpread> {
 **Toolbar Contexts:**
 
 ```typescript
+interface PageToolbarContext<TSpread> {
+  page: PageData;
+  pageIndex: number;
+  position: 'left' | 'right' | 'single';
+  spread: TSpread;
+  spreadId: string;
+  isSelected: boolean;
+  onUpdateLayout: (layoutId: string) => void;     // ⚡ Locked if page.layout !== null
+  onUpdateColor: (color: string) => void;
+  onUpdateTexture: (texture: TextureOption) => void;
+  availableLayouts: LayoutOption[];
+  availableTextures: TextureOption[];
+  isLayoutLocked: boolean;  // = page.layout !== null
+}
+
 interface ImageToolbarContext<TSpread> extends ImageItemContext<TSpread> {
   onGenerateImage: () => void;
   onReplaceImage: () => void;
@@ -430,7 +459,34 @@ interface SpreadEditorPanelProps<TSpread extends BaseSpread> {
 
 ---
 
-### 3.3 SpreadThumbnailList
+---
+
+### 3.3 PageItem
+
+📄 **Doc:** [02-04-page-item.md](./02-04-page-item.md)
+
+**Mục đích:** Render page backgrounds với lowest z-index. Optional toolbar cho page properties (layout, color, texture).
+
+**Props & Callbacks:**
+
+```typescript
+interface PageItemProps<TSpread extends BaseSpread> {
+  page: PageData;
+  pageIndex: number;
+  spread: TSpread;
+  spreadId: string;
+  position: 'left' | 'right' | 'single';
+  isSelected: boolean;
+  onSelect?: () => void;
+  onUpdatePage: (updates: Partial<PageData>) => void;
+  renderPageToolbar?: (context: PageToolbarContext<TSpread>) => ReactNode;
+  availableLayouts: LayoutOption[];
+}
+```
+
+---
+
+### 3.4 SpreadThumbnailList
 
 📄 **Doc:** [03-spread-thumbnail-list.md](./03-spread-thumbnail-list.md)
 
@@ -469,7 +525,7 @@ interface SpreadThumbnailListProps<TSpread extends BaseSpread> {
 
 ---
 
-### 3.4 SpreadThumbnail
+### 3.5 SpreadThumbnail
 
 📄 **Doc:** [03-01-spread-thumbnail.md](./03-01-spread-thumbnail.md)
 
