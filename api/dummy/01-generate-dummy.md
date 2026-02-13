@@ -55,47 +55,39 @@ interface TextboxData {
   id: string;                               // UUID
   geometry: PageGeometry;
   text: string;                             // Text content cho textbox này
-  font_size_pt: number;                     // Font size in points
-  text_alignment: "left" | "center" | "right";
-  line_height: number;                      // Line height multiplier
 }
 
 interface ImageData {
   id: string;                               // UUID
   geometry: PageGeometry;
   art_note: string;                         // Art description/instruction
-  edge_treatment?: "bleed" | "spot" | "vignette" | "crop";
-  shape?: "circle" | "oval";                // For crop edge treatment
 }
 
 interface SpreadData {
   id: string;                               // UUID
-  type: 1 | 0;                              // 1: double page spread, 0: single pages
-  number: number;                           // Spread number
-  layout: string;                           // template_layout ID
-  left_page?: {
-    number: number;
-    type: string;                           // "normal_page" | "front_matter" | ...
+  pages: {                                  // Unified DPS/non-DPS structure
+    number: string | number;                // DPS: "0-1", "2-3" | Non-DPS: 0, 1, 2, 3
+    type: string;                           // "normal_page" | "front_matter" | "back_matter" | "dedication"
     layout?: string;                        // template_layout ID (optional)
-  };
-  right_page?: {
-    number: number;
-    type: string;
-    layout?: string;                        // template_layout ID (optional)
-  };
+    background?: {                          // Page background
+      color: string;                        // Hex color
+      texture?: string;                     // Texture URL
+    };
+  }[];                                      // DPS: 1 element | Non-DPS: 2 elements
   textboxes: TextboxData[];                 // All textboxes on this spread
   images: ImageData[];                      // All images on this spread
-  manuscript: string;                       // Original script text for this spread
 }
 
 interface GenerateDummyResult {
   success: boolean;
   data: {
+    id: string;                             // UUID for dummy version
+    title: string;                          // Dummy version title (AI-generated)
+    type: "prose" | "verse" | "poetry";     // Text format type
     spreads: SpreadData[];                  // Array of spreads with layout + geometry
-    total_pages: number;                    // Total page count
-    type: "prose" | "poetry";               // Text format type
   };
   meta?: {
+    total_pages: number;                    // Total page count
     processingTime?: number;                // ms
     tokenUsage?: number;
   };
@@ -122,7 +114,7 @@ interface GenerateDummyResult {
 
 2. Fetch template layouts
    - Query template_layouts table for available layouts
-   - Build layout catalog with IDs, titles, types (spread/single), slot structures
+   - Build layout catalog with IDs, titles, types (spread/single), textboxes[], images[] structures
    - Include in AI context
 
 3. Build prompts (Prompt Build Logic)
@@ -146,7 +138,7 @@ interface GenerateDummyResult {
    - IF attachments: Include as inlineData parts in LLM request
 
 6. Call LLM
-   - model: gemini-3-pro (from prompt_templates.model)
+   - model: from prompt_templates.model
    - thinking_level: high
    - temperature: 1
    - responseMimeType: application/json
@@ -156,7 +148,13 @@ interface GenerateDummyResult {
    - Ensure all required fields present
    - Validate geometry values (0-100 range)
 
-8. Return { success: true, data: { spreads, total_pages, type }, meta }
+8. Build final output
+   - Generate UUID for dummy version
+   - Extract title from AI response (AI-generated)
+   - Structure matches DB dummies[] format exactly
+   - Include: id, title, type, spreads (with pages[] structure)
+
+9. Return { success: true, data: { id, title, type, spreads }, meta: { total_pages, ... } }
 ```
 
 ## Error Handling
@@ -174,8 +172,12 @@ interface GenerateDummyResult {
 ## Notes
 - API generates dummy data but does NOT save to DB
 - Client stores dummy data in `snapshots.dummies[]` field
+- **Output structure matches DB schema exactly** - ready for direct insertion into `dummies[]`
 - Geometry uses percentage coordinates (0-100) for responsive design
 - Layout selection based on text/image ratio and page content
 - AI autonomously selects appropriate template_layout IDs from catalog
 - Supports both single pages and double-page spreads
-- Text can be prose or poetry format (AI determines based on script)
+- **pages[] structure:**
+  - DPS (type=1): 1 element with `number: "0-1"`, `"2-3"`, etc.
+  - Non-DPS (type=0): 2 elements with `number: 0, 1` or `2, 3`, etc.
+- Text format types: `prose | verse | poetry` (AI determines based on script)
