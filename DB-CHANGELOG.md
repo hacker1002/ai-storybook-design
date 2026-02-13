@@ -2,6 +2,33 @@
 
 ---
 
+## [2026-02-13 16:18] Schema Changes: Template Layouts & JSONB Additions
+
+### Table: template_layouts
+- **slots**: REMOVED → flattened to `textboxes[]`, `images[]` direct fields
+- **Breaking:** `template.slots.textboxes[]` → `template.textboxes[]`
+
+### JSONB spreads[] - BREAKING CHANGES
+- **left_page, right_page, background**: REMOVED → replaced by `pages[]` array
+- **pages[]**: NEW - unified DPS/non-DPS structure `[{ number, type, layout, background }]`
+  - DPS: 1 element (`number: "0-1"`)
+  - Non-DPS: 2 elements (`number: 0, 1`)
+- **Breaking:** `spread.left_page` → `spread.pages[0]`, `spread.background` → `spread.pages[0].background`
+
+### JSONB spreads[].textboxes[] - BREAKING CHANGE
+- **fill, outline, audio**: MOVED inside `[language_key]` scope (per-language styling)
+- **Breaking:** `textbox.fill` → `textbox.[language].fill`
+
+### New Fields (backward compatible)
+- **dummies[].spreads[].images[].typography**: Display frame text settings
+- **dummies[].type**: `prose | verse | poetry`
+- **props[].sounds[].description**: Sound context
+- **stages[].sounds[].description**: Sound context
+
+Migration: `../supabase/migrations/20260213000003_schema_changes_feb13.sql`
+
+---
+
 ## [2026-02-10 10:05] Add docs[] title & other type, dummies[] id & title
 
 ### JSONB docs[]

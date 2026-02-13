@@ -25,7 +25,7 @@
 | `artstyle_id` | UUID | FK → `art_styles` *(required: creative)* - hỏi nếu ko có |
 | `background_music` | JSONB | `{ title, media_url }` |
 | `typography` | JSONB | Default typography settings cho truyện |
-| `template_layout` | JSONB | Default layout cho trang mới `{ spread: id, left_page: id, right_page: id }` - FK → `template_layouts` |
+| `template_layout` | JSONB | Default layout references for new spreads `{ spread: id, left_page: id, right_page: id }` - FK → `template_layouts` |
 | `remix` | JSONB | Thông tin remix (languages, price, access_resources) |
 | `print & export` | JSONB | Thông tin in ấn & export |
 
@@ -53,7 +53,7 @@
   "right_page": "uuid"
 }
 ```
-*Note: IDs reference `template_layouts` table*
+*Note: IDs reference `template_layouts` table. When creating new spreads, left_page and right_page template IDs are used to populate the pages[] array (1 element for DPS, 2 elements for non-DPS).*
 
 **remix structure:**
 ```json
@@ -117,8 +117,12 @@ Bảng lưu phiên bản remix của snapshot - chỉ chứa spreads và assets 
   "number": 1,
   "manuscript": "...",
   "layout": "uuid",
-  "left_page": { "number": 1, "type": "normal_page", "layout": "uuid" },
-  "right_page": { "number": 2, "type": "normal_page", "layout": "uuid" },
+  "pages[]": [{
+    "number": "0-1",
+    "type": "normal_page | front_matter | back_matter | dedication",
+    "layout": "uuid",
+    "background": { "color": "#fff", "texture": "..." }
+  }],
   "background": { "color": "#fff", "texture": "..." },
   "textboxes[]": [...],
   "objects[]": [...],
@@ -276,23 +280,24 @@ Bảng lưu các vấn đề tồn đọng trong book.
 | `thumbnail_url` | VARCHAR | URL ảnh thumbnail |
 | `book_type` | SMALLINT | Loại sách áp dụng |
 | `type` | SMALLINT | 1: double page, 2: single page |
-| `slots` | JSONB | Nội dung layout (textboxes[], images[]) |
+| `textboxes[]` | JSONB | Textbox slots in layout |
+| `images[]` | JSONB | Image slots in layout |
 
-**slots structure:**
+**textboxes[] structure:**
 ```json
-{
-  "textboxes[]": [{
-    "geometry": { "x": 0, "y": 0, "w": 100, "h": 50 },
-    "z-index": 1,
-    "fill": { "color": "#fff", "opacity": 1 },
-    "outline": { "color": "#000", "width": 1, "radius": 0, "type": "solid" }
-  }],
-  "images[]": [{
-    "geometry": { "x": 0, "y": 50, "w": 100, "h": 50 },
-    "z-index": 0,
-    "edge_treatment": "spot | vignette | crop"
-  }]
-}
+[{
+  "geometry": { "x": 0, "y": 0, "w": 100, "h": 50 },
+  "z-index": 1,
+}]
+```
+
+**images[] structure:**
+```json
+[{
+  "geometry": { "x": 0, "y": 50, "w": 100, "h": 50 },
+  "z-index": 0,
+  "edge_treatment": "spot | vignette | crop"
+}]
 ```
 
 ## Bảng AI
@@ -425,20 +430,19 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
   "type": "prose | poetry",
   "spreads[]": [{
     "id": "uuid",
-    "layout": "uuid",
-    "left_page": {
-      "number": 1,
-      "type": "normal_page",
-      "layout": "uuid"
-    },
-    "right_page": {
-      "number": 2,
-      "type": "normal_page",
-      "layout": "uuid"
-    },
+    "pages[]": [{
+      "number": "0-1",
+      "type": "normal_page | front_matter | back_matter | dedication",
+      "layout": "uuid",
+      "background": {
+        "color": "#fff",
+        "texture": "..."
+      }
+    }],
     "images[]": [{
+      "art_note": "art description của dummy",
       "geometry": { "x": 0, "y": 0, "w": 100, "h": 100 },
-      "art_note": "art description của dummy"
+      "typography": { "size": 16, "color": "#000000" }
     }],
     "textboxes[]": [{
       "[language_key]": {
@@ -453,8 +457,12 @@ Background jobs cho các task chạy async (generate manuscript, export, etc.)
 
 - `id`: UUID định danh dummy version
 - `title`: Tiêu đề dummy version (user nhập tự do)
-- `type`: `prose` = văn xuôi, `poetry` = thơ/vần
-- `layout`, `left_page.layout`, `right_page.layout`: FK → `template_layouts`, cho phép NULL
+- `type`: `prose` = văn xuôi, `verse` = thơ/vần, `poetry` = thơ ca
+- `pages[]`: Spread có 1 element (DPS) hoặc 2 elements (non-DPS)
+- `pages[].number`: DPS format "0-1", "2-3"; non-DPS format 0, 1, 2, 3
+- `pages[].type`: normal_page, front_matter, back_matter, dedication
+- `pages[].layout`: FK → `template_layouts`, cho phép NULL
+- `images[].typography`: Typography settings for dummy text display frame
 - `[language_key]`: key là mã ngôn ngữ (e.g., `en_US`, `vi_VN`, `zh_CN`)
 
 ### sketch structure
@@ -476,14 +484,14 @@ Sketch data chứa các sheet ảnh của characters/props được sinh ra từ
 ```json
 {
   "id": "uuid",
-  "type": 1,
-  "number": 1,
-  "layout": "uuid",
-  "left_page": { "number": 1, "type": "normal_page", "layout": "uuid" },
-  "right_page": { "number": 2, "type": "normal_page", "layout": "uuid" },
   "manuscript": "cốt truyện của spread",
+  "pages[]": [{
+    "number": "0-1",
+    "type": "normal_page | front_matter | back_matter | dedication",
+    "layout": "uuid",
+    "background": { "color": "#fff", "texture": "..." }
+  }],
   "tiny_sketch_media_url": "...",
-  "background": { "color": "#fff", "texture": "..." },
   "images[]": [{
     "id": "uuid",
     "title": "...",
@@ -502,11 +510,11 @@ Sketch data chứa các sheet ảnh của characters/props được sinh ra từ
     "[language_key]": {
       "text": "...",
       "geometry": { "x": 0, "y": 0, "w": 100, "h": 100, "rotation": 0 },
-      "typography": { "size": 16, "weight": 400, "style": "normal", "family": "...", "color": "#000", "line_height": 1.5, "letter_spacing": 0, "decoration": "none", "text_align": "left", "text_transform": "none" }
-    },
-    "fill": { "color": "...", "opacity": 1 },
-    "outline": { "color": "...", "width": 1, "radius": 0, "type": "solid" },
-    "audio": { "script": "...", "media_url": "...", "speed": 1, "emotion": "...", "voice": "..." }
+      "typography": { "size": 16, "weight": 400, "style": "normal", "family": "...", "color": "#000", "line_height": 1.5, "letter_spacing": 0, "decoration": "none", "text_align": "left", "text_transform": "none" },
+      "fill": { "color": "...", "opacity": 1 },
+      "outline": { "color": "...", "width": 1, "radius": 0, "type": "solid" },
+      "audio": { "script": "...", "media_url": "...", "speed": 1, "emotion": "...", "voice": "..." }
+    }
   }],
   "objects[]": [{
     "id": "uuid",
@@ -543,10 +551,11 @@ Sketch data chứa các sheet ảnh của characters/props được sinh ra từ
 }
 ```
 
-- `type`: 1 = dps (double page spread), 0 = non-dps (2 trang nhỏ)
-- `layout`, `left_page.layout`, `right_page.layout`: FK → `template_layouts`, cho phép NULL
-- `left_page.type` / `right_page.type`: normal_page, front_matter, back_matter, dedication, ...
-- `background`: màu nền và texture cho spread
+- `pages[]`: Spread có 1 element (DPS) hoặc 2 elements (non-DPS)
+- `pages[].number`: DPS format "0-1", "2-3"; non-DPS format 0, 1, 2, 3
+- `pages[].type`: normal_page, front_matter, back_matter, dedication, ...
+- `pages[].layout`: FK → `template_layouts`, cho phép NULL
+- `pages[].background`: màu nền và texture cho page
 - `images[].setting`: reference tới stage setting (format: `@<stage_key>/<setting_key>`)
 - `textboxes[].[language_key]`: key là mã ngôn ngữ (e.g., `en_US`, `vi_VN`), mỗi textbox có thể có nhiều language
 - `objects[]`: các object trên spread (character, prop, background, foreground, vfx...)
@@ -675,7 +684,12 @@ Sketch data chứa các sheet ảnh của characters/props được sinh ra từ
     "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "image_references[]": [{ "title": "...", "media_url": "..." }]
   }],
-  "sounds[]": [{ "name": "...", "key": "...", "media_url": "..." }],
+  "sounds[]": [{
+    "name": "...",
+    "key": "...",
+    "description": "...",
+    "media_url": "..."
+  }],
   "crop_sheets[]": [{
     "title": "...",
     "image_url": "...",
@@ -729,7 +743,12 @@ Sketch data chứa các sheet ảnh của characters/props được sinh ra từ
     "illustrations[]": [{ "media_url": "...", "created_time": "...", "is_selected": true }],
     "image_references[]": [{ "title": "...", "media_url": "..." }]
   }],
-  "sounds[]": [{ "name": "...", "key": "...", "media_url": "..." }]
+  "sounds[]": [{
+    "name": "...",
+    "key": "...",
+    "description": "...",
+    "media_url": "..."
+  }]
 }
 ```
 
